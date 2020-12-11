@@ -1,0 +1,25 @@
+{
+    "name": "nwidart/account",
+    "description": "",
+    "authors": [
+        {
+            "name": "Ahmad Elkenany",
+            "email": "dev.elknany@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Account\\Providers\\AccountServiceProvider"
+            ],
+            "aliases": {
+                
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Account\\": ""
+        }
+    }
+}

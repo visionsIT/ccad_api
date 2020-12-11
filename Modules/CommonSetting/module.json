@@ -1,0 +1,14 @@
+{
+    "name": "CommonSetting",
+    "alias": "commonsetting",
+    "description": "",
+    "keywords": [],
+    "active": 1,
+    "order": 0,
+    "providers": [
+        "Modules\\CommonSetting\\Providers\\CommonSettingServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

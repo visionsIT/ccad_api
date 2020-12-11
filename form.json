@@ -1,0 +1,130 @@
+{
+    "first_name" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "text"
+    },
+    "last_name" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "text"
+    },
+    "password" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "text"
+    },
+    "email" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "email"
+    },
+    "username" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "text"
+    },
+    "title" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "text"
+    },
+    "company_name" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : {},
+        "validation" : {},
+        "type" : "select"
+    },
+    "job_title" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : {},
+        "validation" : {},
+        "type" : "select"
+    },
+    "address" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "text"
+    },
+    "post_code" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "text"
+    },
+    "country" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : {},
+        "validation" : {},
+        "type" : "select"
+    },
+    "telephone" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "number"
+    },
+    "mobile" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "number"
+    },
+    "date_of_birth" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : 0,
+        "validation" : {},
+        "type" : "date"
+    },
+    "communication_preference" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : {},
+        "validation" : {},
+        "type" : "radio_button"
+    },
+    "language" : {
+        "is_hidden" : 0,
+        "is_mandatory" : 0,
+        "is_identifier" : 0,
+        "list_of_values" : {},
+        "validation" : {},
+        "type" : "radio_button"
+    }
+}
