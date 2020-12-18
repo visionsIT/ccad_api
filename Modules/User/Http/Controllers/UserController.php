@@ -27,6 +27,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Modules\User\Exports\UserExport;
 use Validator;
 use DB;
+use File;
 
 class UserController extends Controller
 {
@@ -38,7 +39,7 @@ class UserController extends Controller
         $this->middleware('auth:api', ['paginatedUsers']);
     }
 
-
+    
     /*******************
     fn to get all users
     *******************/
@@ -463,6 +464,32 @@ class UserController extends Controller
             $programUser->status = $request->change_status;
             $programUser->save();
 
+            return response()->json(['message' => 'Status has been changed successfully.'], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+    }
+    /************************
+    fn to change status from
+    groups******************/
+    public function changeGroupUserStatus(Request $request){
+        try {
+            $rules = [
+                'group_id' => 'required|integer|exists:roles,id',
+                'account_id' => 'required|integer|exists:accounts,id',
+                'role_id' => 'required|integer|exists:user_roles,id',
+                'change_status' => 'required|integer',
+            ];
+
+            $validator = \Validator::make($request->all(), $rules);
+
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+            $check_record = UsersGroupList::where(['account_id'=>$request->account_id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->update(['status'=>$request->change_status]);
+            
+            
             return response()->json(['message' => 'Status has been changed successfully.'], 200);
 
         } catch (\Throwable $th) {

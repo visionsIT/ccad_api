@@ -1,11 +1,11 @@
 <?php
 
 Route::resource('nominations', 'NominationController');
-Route::resource('value_set', 'ValueSetController');
+Route::resource('value_set', 'CampaignLevelController');
 
-Route::post('update_value_set/{id}', 'ValueSetController@updateType');
-Route::post('add_value_set', 'ValueSetController@addNewType');
-Route::get('get_campaign_type_list', 'ValueSetController@campaignList');
+Route::post('update_value_set/{id}', 'CampaignLevelController@updateType');
+Route::post('add_value_set', 'CampaignLevelController@addNewType');
+Route::get('get_campaign_type_list', 'CampaignLevelController@campaignList');
 
 Route::get('nomination/type/by/{value_set_id}', 'NominationTypeController@getNominationTypeBy');
 Route::resource('nomination_type', 'NominationTypeController');
@@ -13,7 +13,9 @@ Route::post('nomination_type/update/{id}', 'NominationTypeController@updateTypeD
 Route::put('update/badge', 'NominationTypeController@updateBadges');
 Route::get('badges/{account_id}', 'NominationTypeController@NominationBadges');
 Route::get('nominations/{nomination_id}/values', 'NominationController@NominationValues');
-Route::get('nominations/{nomination_id}/wall', 'NominationController@NominationWall');
+//Route::get('nominations/{nomination_id}/wall', 'NominationController@NominationWall');
+Route::get('nominations/campaign/wall', 'NominationController@NominationCampaignWall');
+Route::get('nomination/ecards_wall', 'NominationController@NominationEcardWall');
 Route::get('badges/wall', 'NominationController@NominationBadgesWall');
 Route::resource('nominations/{id}/decline', 'NominationDeclineController');
 Route::resource('nominations/{id}/type', 'NominationTypeController');
@@ -68,7 +70,7 @@ Route::post('user/approve_claim', 'UserNominationController@approveClaim');
 Route::post('user/decline_claim', 'UserNominationController@declineClaim');
 
 Route::post('nomination_type/update_status', 'NominationTypeController@updateStatus');
-Route::post('value_set/update_status', 'ValueSetController@updateStatus');
+Route::post('value_set/update_status', 'CampaignLevelController@updateStatus');
 Route::post('award_levels/update_status', 'AwardsLevelController@updateStatus');
 
 
@@ -85,8 +87,8 @@ Route::post('send_ecard_ripple', 'RippleSettingsController@sendEcardRipple');
 Route::post('save_eligible_users_settings', 'RippleSettingsController@saveEligibleUsersSettings');
 
 
-Route::get('get_nomination_type/{campaign_id}/{program_user_id}', 'ValueSetController@getNominationType');
-Route::get('get_campaign_type', 'ValueSetController@getCampaignTypes');
+Route::get('get_nomination_type/{campaign_id}/{program_user_id}', 'CampaignLevelController@getNominationType');
+Route::get('get_campaign_type', 'CampaignLevelController@getCampaignTypes');
 
 Route::post('save_wall_settings', 'NominationController@saveWallSettings');
 Route::get('get_wall_settings/{campaign_id}', 'NominationController@getWallSettings');

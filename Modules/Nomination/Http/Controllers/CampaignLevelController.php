@@ -15,7 +15,7 @@ use Modules\Nomination\Models\CampaignTypes;
 use Modules\Nomination\Models\CampaignSettings;
 use Modules\User\Models\ProgramUsers;
 use DB;
-class ValueSetController extends Controller
+class CampaignLevelController extends Controller
 {
     private $repository;
     private $types_services;
@@ -33,7 +33,7 @@ class ValueSetController extends Controller
      */
     public function index(): Fractal
     {
-        
+     
         $types = $this->repository->get();
         return fractal($types, new ValueSetTransformer);
     }

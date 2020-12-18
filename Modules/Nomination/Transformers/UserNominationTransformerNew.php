@@ -13,15 +13,16 @@ class UserNominationTransformerNew extends TransformerAbstract
      */
     public function transform(UserNomination $model): array
     {
+
         $protocol = strtolower(substr($_SERVER["SERVER_PROTOCOL"],0,5))=='https'?'https':'http';
         $imgUrl = $protocol.'://'.$_SERVER['HTTP_HOST'].'/uploaded/user_nomination_files/';
         
         //$wall_setting = $model->campaign->value_set_relation->wall_setings['wall_settings'];//for_wall_sett
-       
+      
         return [
             'id'                        => $model->id,
             'campaign_id'               => $model->campaignid,
-            'campaign_type_id'          => $model->campaign->value_set_relation->campaign_id->id,
+            //'campaign_type_id'          => $model->campaign->value_set_relation->campaign_id->id,
             //'nomination_id'             => $model->campaign,
             'user'                      => $model->user,
             'nominated_user'            => $model->user_relation,

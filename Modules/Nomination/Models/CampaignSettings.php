@@ -13,6 +13,11 @@ class CampaignSettings extends Model
     {
         return $this->belongsTo(ValueSet::class, 'value_set');
     }*/
+
+    public function usernomination()
+    {
+        return $this->hasMany(UserNomination::class, 'campaign_id', 'campaign_id');
+    }
 }
 
 

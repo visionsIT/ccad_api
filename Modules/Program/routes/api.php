@@ -14,6 +14,8 @@ Route::get('programs/{id}/points/current', 'PointController@currentBalance');
 Route::resource('programs/{id}/users/{user_id}/points', 'PointController', [ 'except' => 'show' ]);
 Route::get('programs/{id}/users/{user_id}/points/current', 'PointController@currentBalance');
 
+Route::get('total_balace_by_program_id/{program_id}', 'PointController@totalBalanceByProgramid');
+
 /* --------------- Program Points Settings --------------- */
 Route::get('programs/{id}/points-expiries', 'PointExpiresController@index');
 Route::post('programs/{id}/points-expiries', 'PointExpiresController@handleExpiration');

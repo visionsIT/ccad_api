@@ -6,6 +6,8 @@ use Modules\Reward\Mails\OrderConfirmation;
 use Modules\Reward\Mails\OrderShipping;
 use Modules\Reward\Mails\OrderPlaced;
 use Modules\Reward\Repositories\ProductOrderRepository;
+use Modules\User\Models\UsersPoint;
+use Modules\User\Models\ProgramUsers;
 
 /**
  * Class CatalogueService
@@ -109,12 +111,25 @@ class ProductOrderService
     public function cancelOrder($id): bool
     {
         $order = $this->repository->find($id);
-
         if ($order->status === 3 || $order->status === -1) {
             return FALSE;
         }
 
         $this->repository->update([ 'status' => -1 ], $id);
+
+        $program_user = ProgramUsers::where(['account_id'=>$order->account_id])->first();
+        $user_points = UsersPoint::where([ 'user_id' => $program_user->id])->latest()->first();
+        $old_points = $user_points->balance;
+        $new_pts = (((int)$old_points)+((int)$order->value));
+        UsersPoint::create([
+                'value'    => $order->value, 
+                'product_order_id'=>$id,
+                'user_id'    => $program_user->id, 
+                'transaction_type_id'    => 6,  
+                'description' => '',
+                'balance'    => $new_pts, 
+                'created_by_id' => $user_points->created_by_id 
+            ]);
 
         $image_url = [
             'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
@@ -128,6 +143,7 @@ class ProductOrderService
             'product_name'     => $order->product->name,
             'value'    => $order->value,
         ];
+
         Mail::send('emails.orderCancellation', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
             $m->to($data["email"])->subject('Order Cancellation!');
         });

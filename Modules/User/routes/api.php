@@ -43,6 +43,7 @@ Route::post('user/add_feedback', 'TeamController@newFeedback');
 Route::get('program/users/importemployee', 'UserManageController@importEmployeeApi');
 Route::get('program/{program}/role_users/{role_id}', 'UserController@getUsersRoleWise');
 Route::post('user/change_status', 'UserController@updateUserStatus');
+Route::post('user/change_gu_status','UserController@changeGroupUserStatus');
 Route::get('user/{user_id}', 'UserController@show');
 Route::post('user/updateinfo/{user_id}', 'UserController@updateUserInfo');
 Route::get('user/points/{user_id}', 'UserController@getUserPoints');

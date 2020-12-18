@@ -78,8 +78,6 @@ class UserNomination extends Model
         return $this->belongsTo(NominationType::class, 'value');
     }
 
-
-
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
@@ -87,7 +85,6 @@ class UserNomination extends Model
     {
         return $this->belongsTo(AwardsLevel::class, 'points');
     }
-
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
@@ -103,6 +100,11 @@ class UserNomination extends Model
     public function campaignid(): \Illuminate\Database\Eloquent\Relations\BelongsTo //
     {
         return $this->belongsTo(ValueSet::class, 'campaign_id');
+    }
+
+    public function campaignSetting(): \Illuminate\Database\Eloquent\Relations\BelongsTo //
+    {
+        return $this->belongsTo(CampaignSettings::class, 'campaign_id', 'campaign_id');
     }
 
 

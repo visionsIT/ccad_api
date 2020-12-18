@@ -22,6 +22,7 @@ use Modules\User\Models\UserCampaignsBudget;
 use Modules\User\Models\UserCampaignsBudgetLogs;
 use DB;
 use Illuminate\Support\Facades\Mail;
+use File;
 
 class RippleSettingsController extends Controller
 {
@@ -299,9 +300,10 @@ class RippleSettingsController extends Controller
 
     public function rippleBudgetByEmail(Request $request) {
 
+
         try {
-            $email_address=  $request->email_add;
-            $budget_bal = $this->repository->getRippleBudget($email_address);
+            //$email_address=  $request->email_add;
+            $budget_bal = $this->repository->getRippleBudget($request);
 
             return response()->json(['data' => $budget_bal], 200);
         }catch (\Throwable $th) {
@@ -356,6 +358,7 @@ class RippleSettingsController extends Controller
         $receiverIds = explode(',', $request->send_to_id);
         $recevrCount = count($receiverIds);
         $senderUser = ProgramUsers::find($request->sender_id);
+
         //$senderUser =  ProgramUsers::where('account_id', $request->sender_id)->first();
         $points_allowed = $result->points_allowed;
 
@@ -535,7 +538,7 @@ class RippleSettingsController extends Controller
                     $EcardDataCreated = UsersEcards::create([
                         'ecard_id' => $request->ecard_id,
                         'sent_to' => $receiverid,
-                        'campaign_id' => '8',
+                        'campaign_id' => $campaign_id,
                         'image_message' => $request->image_message,
                         'sent_by' => $request->sender_id,
                         'points' => $inputPoint,
@@ -551,41 +554,108 @@ class RippleSettingsController extends Controller
                         ])->update(['ecard_id' => $ecard_lat_inserted_id ]);
                     }
                      
-                    $image_url = [
-                        'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-                        'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-                        'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-                        'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-                    ];
 
-                   
+                    /****** Card Module ******/
 
-                    $eCardDetails = Ecards::find($request->ecard_id);
-                    $data = [
-                        'email' => $sendToUser->email,
-                        'username' => $sendToUser->first_name.' '. $sendToUser->last_name,
-                        'card_title' => $eCardDetails->card_title,
-                        'sendername' => $senderUser->first_name.' '. $senderUser->last_name,
-                        'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
-                        'image_message' => $request->image_message
-                    ];
-                    try {
+                    if($approval_request == 0){
+
+                        $image_url = [
+                            'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
+                        ];
+
+            
+                        $eCardDetails = Ecards::find($request->ecard_id);
+
+                        $path = public_path().'/uploaded/e_card_images/new';
+                        if(!File::exists($path)) {
+                            File::makeDirectory($path, $mode = 0777, true, true);
+                        }
+                        $randm = rand(100,1000000);
+                        $newImage = $randm.time().'-'.$eCardDetails->card_image;
+                        $file_path = "/uploaded/e_card_images/new";
+
+                        $prev_img = '/uploaded/e_card_images/'.$eCardDetails->card_image;
+                        $prev_img_path = url($prev_img);
+                        //$prev_img_path = env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image;
+
+                        $update = UsersEcards::where('id',$ecard_lat_inserted_id)->update(['new_image'=>$newImage,'image_path'=>$file_path]);
+
+                        if($update === 1){
+                            $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
+                            $client = new \Pdfcrowd\HtmlToImageClient("visions5", "3d020236c9a48cf82c620797434b8803");
+                            $client->setOutputFormat("png");
+                            $output_stream = fopen($destinationPath, "wb");
+
+                            $image = $client->convertStringToStream('<html>
+                                <head>
+                                    <style>
+                                      body {
+                                        min-height: 350px;
+                                      }
+                                    </style>
+                                </head>
+                                <body>
+                                    <table width="650" cellpadding="0" style="font-family: arial; color: #333333; margin: auto; border: 1px solid #ddd; border-collapse: collapse;">
+                                        <tr>
+                                            <td>
+                                                <table width="100%" style="border-collapse: collapse;">
+                                                    <tr>
+                                                        <td align="center" style="padding: 40px 20px;">
+                                                            <table width="100%" style="background-image: url('.$prev_img_path.');background-size: contain;background-repeat: no-repeat;background-position: center; border-collapse: collapse; height: 456px;">
+                                                                <tr>
+                                                                    <td style="height: 100%; width: 100%; background-color: rgba(0,0,0,0); text-align: left;" valign="top">
+                                                                        <h4 style="color: #000;font-size: 22px;max-width: 440px;margin: 135px auto 0;font-weight: normal;">'.$request->image_message.'</h4>
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </body>
+                                </html>',$output_stream);
+                            fclose($output_stream);
+                        }
+
+                        $new_img = '/uploaded/e_card_images/new/'.$newImage;
+                        $new_img_path = url($new_img);
+
+                        $data = [
+                            'email' => $sendToUser->email,
+                            'username' => $sendToUser->first_name.' '. $sendToUser->last_name,
+                            'card_title' => $eCardDetails->card_title,
+                            'sendername' => $senderUser->first_name.' '. $senderUser->last_name,
+                            'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
+                            'image_message' => $request->image_message,
+                            'color_code' => "#e6141a",
+                            'new_image' => $newImage,
+                            'file_path' => $file_path,
+                            'full_img_path' => $new_img_path,
+                            'link_to_ecard' => $new_img_path
+                        ];
+                        try {
+
+                            Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                                $m->from('info@meritincentives.com','Vodafone Egypt');    
+                                $m->to($data["email"])->subject($data["card_title"].' Ecard!');
+                            });
 
 
-                        $data["email"] = "suruchi@visions.net.in";
-                        Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                            $m->to($data["email"])->subject($data["card_title"].' Ecard!');
-                        });
-
-
+                            DB::commit();
+                        } catch (\Exception $e) {
+                           
+                            DB::rollBack();
+                            array_push($failed, $e->getMessage());
+                        }
+                    }else{
                         DB::commit();
-                    } catch (\Exception $e) {
-                       //echo 'Caught exception: ',  $e->getMessage(), "\n";
-                        DB::rollBack();
-                        array_push($failed, $e->getMessage());
                     }
+
+
                 } catch (\Exception $e) {
-                    
+                   
                     DB::rollBack();
                     array_push($failed, $e->getMessage());
                 }

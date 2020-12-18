@@ -43,6 +43,7 @@ use Modules\User\Models\RippleBudgetLog;
 use Modules\User\Models\UserCampaignsBudget;
 use Modules\User\Models\UserCampaignsBudgetLogs;
 use Modules\Program\Models\UsersEcards;
+use Illuminate\Support\Facades\Mail;
 use DB;
 class UserNominationController extends Controller
 {
@@ -529,11 +530,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         // Get receiver program user id
         $receiver_account_id = $user_nomination->user; 
-        $program_user_receiver = ProgramUsers::select('id')->where('account_id', $receiver_account_id)->first();
+        $program_user_receiver = ProgramUsers::select('*')->where('account_id', $receiver_account_id)->first();
         $receiver_program_id = $program_user_receiver->id;
 
         // Get Sender program user id
-        $program_user_sender = ProgramUsers::select('id')->where('account_id', $user_nomination->account_id)->first();
+        $program_user_sender = ProgramUsers::select('*')->where('account_id', $user_nomination->account_id)->first();
         $sender_program_id = $program_user_sender->id;
         
         // Points Need to add
@@ -573,7 +574,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             // Only for Nomination Type
 
             if($request->campaign_type == 4) {
-                $budget_type = 1;
+          
                 if($budget_type == 1){ 
 
 
@@ -582,8 +583,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                    $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$approver_program_id)->where('campaign_id',$campaign_id)->latest()->first();
                    
                     if(!$campaign_budget){
-
-                        return response()->json(['message' => "Budget is not allocated yet"], 422);
+                       
+                        return response()->json(['message'=>"Budget is not allocated yet", 'status'=>'error']);
 
                     }else{
 
@@ -628,11 +629,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     
                     if(!$current_budget_bal) {
                         //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
-                        return response()->json(['message' => "Balance is not allocated"], 422);
+                        return response()->json(['message'=>"Balance is not allocated", 'status'=>'error']);
                     }
                     if($current_budget_bal < ($points_update)) {
                         //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
-                        return response()->json(['message' => "You don't have enough overall balance to nominate"], 422);
+                        return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
                     }
 
 
@@ -671,10 +672,67 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 'created_by_id' => $sender_program_id // Who send
             ]);
 
+            if($request->campaign_type == 4) {
 
+                $sender_email = $user_nomination->account->email;
+                $subject ="Kafu by AD Ports - Your nomination was approved !";
+                $message = "Dear " . $user_nomination->account->name ;
+                $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been approved ";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
+                $this->nomination_service->sendmail($sender_email,$subject,$message);
             }
+
+
+
+            if($request->campaign_type == 2) {
+
+                /****** Start Send ecrad ***********/
+
+
+                
+                $image_url = [
+                            'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
+                        ];
+
+               $eCardDetails =  UsersEcards::select('users_ecards.new_image','users_ecards.image_path','users_ecards.image_message','ecards.card_title','ecards.card_image')
+                ->leftJoin('ecards', 'ecards.id', '=', 'users_ecards.ecard_id')
+                ->where(['users_ecards.id' => $user_nomination->ecard_id])
+                ->get()->first();
+
+
+                $new_img = $eCardDetails->image_path.$eCardDetails->new_image;
+                $new_img_path = url($new_img);
+
+                $data = [
+                    'email' => $program_user_receiver->email,
+                    'username' => $program_user_receiver->first_name.' '. $program_user_receiver->last_name,
+                    'card_title' => $eCardDetails->card_title,
+                    'sendername' => $program_user_sender->first_name.' '. $program_user_sender->last_name,
+                    'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
+                    'image_message' => $eCardDetails->image_message,
+                    'color_code' => "#e6141a",
+                    'link_to_ecard' => $new_img_path
+                ];
+                try {
+
+                    Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                        $m->to($data["email"])->subject($data["card_title"].' Ecard!');
+                    });
+
+
+                } catch (\Exception $e) {
+                   
+                   return response()->json(['message'=>$e->getMessage(), 'status'=>'error']);
+                }
+
+                /****** End Send ecrad ***********/
+                }
+            }
+
+
             $nominationData['reject_reason'] = $request->decline_reason;
             $nominationData['approver_account_id'] = $request->approver_account_id;
+            $msgResponse ="Nomination has been approved successfully.";
         }
 
         
@@ -740,19 +798,19 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
 
 
-            //$this->nomination_service->sendmail($sender_email,$subject,$message);
-           
+            $this->nomination_service->sendmail($sender_email,$subject,$message);
+            $msgResponse ="Nomination has been declined successfully.";
            
         }
 
         $this->repository->update($nominationData, $id);
         DB::commit();
-        return response()->json(['Data Updated Successfully']);
+        return response()->json(['message'=>$msgResponse, 'status'=>'success']);
 
     }catch (\Exception $e) {
                        
         DB::rollBack();
-        return response()->json(['message' =>  $e->getMessage()], 422);
+        return response()->json(['message'=>$e->getMessage(), 'status'=>'error']);
     }
 
 
@@ -798,11 +856,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             // Get receiver program user id
             $receiver_account_id = $user_nomination->user; 
-            $program_user_receiver = ProgramUsers::select('id')->where('account_id', $receiver_account_id)->first();
+            $program_user_receiver = ProgramUsers::select('*')->where('account_id', $receiver_account_id)->first();
             $receiver_program_id = $program_user_receiver->id;
 
             // Get Sender program user id
-            $program_user_sender = ProgramUsers::select('id')->where('account_id', $user_nomination->account_id)->first();
+            $program_user_sender = ProgramUsers::select('*')->where('account_id', $user_nomination->account_id)->first();
             $sender_program_id = $program_user_sender->id;
 
             // Points Need to add
@@ -810,7 +868,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
 
              // Get Sender program user id
-            $approver_program_data = ProgramUsers::select('id')->where('account_id', $request->approver_account_id)->first();
+            $approver_program_data = ProgramUsers::select('*')->where('account_id', $request->approver_account_id)->first();
             $approver_program_id = $approver_program_data->id;
 
             $budget_type =  $user_nomination->point_type;
@@ -832,8 +890,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$approver_program_id)->where('campaign_id',$campaign_id)->latest()->first();
 
                     if(!$campaign_budget){
-
-                        return response()->json(['message'=>"Budget is not allocated yet", 'status'=>'error']);
+                        
+                        return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
                         
                     }else{
 
@@ -878,11 +936,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     
                     if(!$current_budget_bal) {
                         //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
-                        return response()->json(['message' => "Balance is not allocated"], 422);
+                        return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
                     }
                     if($current_budget_bal < ($points_update)) {
                         //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
-                        return response()->json(['message' => "You don't have enough overall balance to nominate"], 422);
+                        return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
                     }
 
 
@@ -919,40 +977,85 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 'created_by_id' => $sender_program_id // Who send
             ]);
             
+
+             if($request->campaign_type == 2) {
+
+
+                /****** Start Send ecrad ***********/
+                
+                $image_url = [
+                                'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
+                                'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
+                                'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
+                                'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
+                            ];
+
+               $eCardDetails =  UsersEcards::select('users_ecards.image_message','ecards.card_title','ecards.card_image')
+                ->leftJoin('ecards', 'ecards.id', '=', 'users_ecards.ecard_id')
+                ->where(['users_ecards.id' => $user_nomination->ecard_id])
+                ->get()->first();
+
+
+                $data = [
+                    'email' => $program_user_receiver->email,
+                    'username' => $program_user_receiver->first_name.' '. $program_user_receiver->last_name,
+                    'card_title' => $eCardDetails->card_title,
+                    'sendername' => $program_user_sender->first_name.' '. $program_user_sender->last_name,
+                    'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
+                    'image_message' => $eCardDetails->image_message,
+                    'color_code' => "#e6141a",
+                ];
+                try {
+
+                    Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                        $m->to($data["email"])->subject($data["card_title"].' Ecard!');
+                    });
+
+                } catch (\Exception $e) {
+                   
+                   return response()->json(['message'=> $e->getMessage(), 'status'=>'error']);
+                }
+
+                /****** End Send ecrad ***********/
+
+
+             }else{
             
 
-             /*   if($user_nomination->team_nomination == 1){
-                    $points = $user_nomination->points;
-                }else{
-                    // $points = optional($user_nomination->level)->points ?? $user_nomination->value;// $user_nomination->level->points;
-                    $points = $user_nomination->points;
-                }
-                $data['value']       = $points;
-                $data['description'] = '';
-                $data['user_nominations_id'] = $id;
-                $data['created_by_id'] = $request->approver_account_id;
-                $user = ProgramUsers::where('account_id',$user_nomination->user)->first(); // todo remind omda & mahmoud this is error
+                 /*   if($user_nomination->team_nomination == 1){
+                        $points = $user_nomination->points;
+                    }else{
+                        // $points = optional($user_nomination->level)->points ?? $user_nomination->value;// $user_nomination->level->points;
+                        $points = $user_nomination->points;
+                    }
+                    $data['value']       = $points;
+                    $data['description'] = '';
+                    $data['user_nominations_id'] = $id;
+                    $data['created_by_id'] = $request->approver_account_id;
+                    $user = ProgramUsers::where('account_id',$user_nomination->user)->first(); // todo remind omda & mahmoud this is error
 
-                // there is no error ya kenany
-                $this->point_service->store($user, $data);*/
+                    // there is no error ya kenany
+                    $this->point_service->store($user, $data);*/
 
-                // confirm nominator that nomination approve
-                $sender_email = $user_nomination->account->email;
-                $subject ="Kafu by AD Ports - Your nomination was approved!";
-                $message ="Your nomination has been approved. Thank you for your contribution.";
-                $this->nomination_service->sendmail($sender_email,$subject,$message);
+                    // confirm nominator that nomination approve
+                    $sender_email = $user_nomination->account->email;
+                    $subject ="Kafu by AD Ports - Your nomination was approved!";
+                    $message ="Your nomination has been approved. Thank you for your contribution.";
+                    $this->nomination_service->sendmail($sender_email,$subject,$message);
 
-                $sender_email = $user_nomination->user_relation->email;
-                $subject ="Kafu by AD Ports - Congratulations!";
-                $message ="Congratulations! You have been nominated. \n\r <br> Please check Kafu wall of heroes to see who nominated you ";
-                $message .="<a href='https://kafu.meritincentives.com/wall-of-heros'>Click here to check your nomination</a> ";
+                    $sender_email = $user_nomination->user_relation->email;
+                    $subject ="Kafu by AD Ports - Congratulations!";
+                    $message ="Congratulations! You have been nominated. \n\r <br> Please check Kafu wall of heroes to see who nominated you ";
+                    $message .="<a href='https://kafu.meritincentives.com/wall-of-heros'>Click here to check your nomination</a> ";
 
-                $this->nomination_service->sendmail($sender_email,$subject,$message);
-                if($user_nomination->team_nomination != 1){
-                    /*AccountBadges::create([
-                        'account_id' => $user_nomination->account_id, //todo account for nominated user
-                        'nomination_type_id' => $user_nomination->value
-                    ]);*/
+                    $this->nomination_service->sendmail($sender_email,$subject,$message);
+                    if($user_nomination->team_nomination != 1){
+                        /*AccountBadges::create([
+                            'account_id' => $user_nomination->account_id, //todo account for nominated user
+                            'nomination_type_id' => $user_nomination->value
+                        ]);*/
+                    }
+
                 }
             } else if ($request->level_2_approval == -1 ) {
                  
@@ -1013,10 +1116,12 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             $this->repository->update($nominationData, $id);
             DB::commit();
-            return response()->json(['Data Updated Successfully']);
+            return response()->json(['message'=> "Nomination has been approved successfully.", 'status'=>'success']);
+
         } catch (\Throwable $th) {
             DB::rollBack();
-            return response()->json([$th->getMessage()]);
+            return response()->json(['message'=> $th->getMessage(), 'status'=>'success']);
+
         }
 
     }
@@ -1028,14 +1133,17 @@ public function updateLevelOne(Request $request, $id): JsonResponse
      */
     public function getUsersBy($nomination_id, Account $account_id) {
         
-
-        
         $logged_user_id = $account_id->id;
         $user_group_data =  DB::table('users_group_list')
         ->where('account_id', $logged_user_id)
         ->where('status', '1')
         ->where('user_role_id', '2') // 2 for Level1
         ->get()->toArray(); 
+
+
+        /*$loggedProgramUserData =  ProgramUsers::select('id')->where('account_id',$logged_user_id)->first();
+
+        $loggedProgramUserId = $loggedProgramUserData->id;*/
 
         foreach ($user_group_data as $key => $value) {
             $groupid[$key] = $value->user_group_id;
@@ -1046,6 +1154,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             'level_1_approval' => 0,
         ])
             ->whereIn('group_id', $groupid)
+            ->where('account_id', '!=' , $logged_user_id)
             ->orderBY('id','desc')
             ->paginate(12);
 

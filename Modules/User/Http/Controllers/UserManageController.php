@@ -29,6 +29,7 @@ use Modules\Reward\Imports\CategoryImport;
 use Modules\User\Models\UsersPoint;
 use Modules\User\Transformers\UserCampaignTransformer;
 use DB;
+use Modules\User\Models\UsersGroupList;
 
 class UserManageController extends Controller
 {
@@ -85,93 +86,78 @@ class UserManageController extends Controller
     {
         //todo move uploaded file to a folder
         $file = $request->file('users');
-
         $request->validate([
             'program_id' => 'required|exists:programs,id',
             'users' => 'required|file',
         ]);
-
         $uploaded = $file->move(public_path('uploaded/'.$request->program_id.'/users/csv/'), $file->getClientOriginalName());
-
         $users = Excel::toCollection(new UserImport(), $uploaded->getRealPath());
-
         $users = $users[0]->toArray();
-
 //        chmod($uploaded->getRealPath(),0777);
-
-        $rules = [
-            '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
-            '*.username' => "required|unique:program_users,username|unique:accounts,email",
-            '*.communication_preference' => "in:email,sms",
-        ];
-
-        $validator = \Validator::make($users, $rules);
-
-        if ($validator->fails())
-            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
-
-
+        // $rules = [
+        //     '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
+        //     '*.username' => "required|unique:program_users,username|unique:accounts,email",
+        //     '*.communication_preference' => "in:email,sms",
+        // ];
+        // $validator = \Validator::make($users, $rules);
+        // if ($validator->fails())
+        //     return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
         foreach ($users as $user){
-            $password = Str::random(8);
-            $account = Account::create([
-                'email' => $user['email'],
-                'name' => $user['first_name'],
-                'password' => $user['password'] ?? $password,
-                'contact_number' => '',
-                'def_dept_id' => null,
-                'type' => 'user'
-            ]);
-
-            if (isset($user[17]))
-            {
-                if($user[17] != NULL)
-                {
-                    $role = Role::updateOrCreate([
-                        'name' => $user[17],
-                        'program_id' => $request->program_id,
-                        'guard_name' => 'api'
-                    ]);
-                    $account->assignRole($role);
-                }
-            }
-
             $email = $user['email'];
             $name = $user['first_name'] . ' ' . $user['last_name'];
-
-            $this->sendPasswordCodeToAccount($email,$name,$password);
-
-            $time = strtotime( $user['date_of_birth'] );
-
-            $newformat = date('Y-m-d',$time);
-
-            ProgramUsers::create([
-                'first_name' => $user['first_name'] ?? '',
-                'last_name' => $user['last_name'] ?? '',
-                'email' => $user['email'],
-                'username' => $user['username'],
-                'title' => $user['title'] ?? '',
-                'company'     => $user['company'] ?? '',
-                'job_title'     => $user['job_title'] ?? '',
-                'address_1'     => $user['address_1'] ?? '',
-                'address_2'     => $user['address_2'] ?? '',
-                'postcode'     => $user['postcode'] ?? '',
-                'country'     => $user['country'] ?? '',
-                'telephone'     => $user['telephone'] ?? '',
-                'mobile'     => $user['mobile'] ?? '',
-                'date_of_birth'     => $newformat   ,
-                'communication_preference' => $user['communication_preference'] ?? 'email',
-                'language'     => 'en',
-                'town'     =>  '',
-                'account_id' => $account->id,
-                'program_id' => $request->program_id,
-            ]);
+            $userExist = Account::where('email', $email)->first();
+            if(!$userExist){
+                $newformat = date('Y-m-d');
+                if($user['date_of_birth'] != ''){
+                    $time = strtotime( $user['date_of_birth'] );
+                    $newformat = date('Y-m-d',$time);
+                }
+                $password = Str::random(8);
+                $account = Account::updateOrCreate([
+                    'email' => $email,
+                    'name' => $name,
+                    'password' => $user['password'] ?? $password,
+                    'contact_number' => $user['mobile'] ?? '',
+                    'def_dept_id' => null,
+                    'type' => 'user'
+                ]);
+                //get user group id
+                $groupDetails = Role::where('name', $user['group_name'])->first();
+                $roleDetails = UserRoles::where('name', $user['role_name'])->first();
+                UsersGroupList::create([
+                    'account_id' => $account->id,
+                    'user_group_id' => $groupDetails['id'] ?? 1,
+                    'user_role_id' => $roleDetails['id'] ?? 1,
+                ]);
+                //$this->sendPasswordCodeToAccount($email,$name,$password);
+                ProgramUsers::create([
+                    'first_name' => $user['first_name'] ?? '',
+                    'last_name' => $user['last_name'] ?? '',
+                    'email' => $email,
+                    'username' => $user['username'],
+                    'title' => $user['title'] ?? '',
+                    'company'     => $user['company'] ?? '',
+                    'job_title'     => $user['job_title'] ?? '',
+                    'address_1'     => $user['address_1'] ?? '',
+                    'address_2'     => $user['address_2'] ?? '',
+                    'postcode'     => $user['postcode'] ?? '',
+                    'country'     => $user['country'] ?? '',
+                    'telephone'     => $user['telephone'] ?? '',
+                    'mobile'     => $user['mobile'] ?? '',
+                    'date_of_birth'     => $newformat   ,
+                    'communication_preference' => $user['communication_preference'] ?? 'email',
+                    'language'     => 'en',
+                    'town'     =>  '',
+                    'account_id' => $account->id,
+                    'program_id' => $request->program_id,
+                    'ripple_budget' => 0,
+                ]);
+            }
         }
-
         return response()->json([
             'uploaded_file' => url('uploaded/'.$request->program_id.'/users/csv/'.$uploaded->getFilename()),
             'message' => 'Data Imported Successfully'
         ]);
-
     }
 
 
@@ -308,7 +294,7 @@ class UserManageController extends Controller
                     'extension' => strtolower($file->getClientOriginalExtension()),
                 ],
                 [
-                    'budget_file'          => 'required',
+                    'budget_file'    => 'required',
                     'extension'      => 'required|in:csv,xlsx,xls,ods',
                 ]
             );
@@ -338,6 +324,7 @@ class UserManageController extends Controller
                     ///if($key === 0) continue;
                     $date = date('Y-m-d h:i:s');
                     $programUser = ProgramUsers::where('email', $budget[0])->first();
+                    
                     if(!empty($programUser)){
 
                         $get_lastUser = UsersPoint::where('user_id',$programUser->id)->latest('id')->first();
@@ -456,7 +443,7 @@ class UserManageController extends Controller
                     'email' => 'required|exists:program_users,email',
                     'points' => 'required|numeric|min:0',
                     'campaign_id' => 'required|exists:value_sets,id',
-                    'logged_user_id' => 'required|exists:program_users,id',
+                    //'logged_user_id' => 'required|exists:program_users,id',
                 ];
 
                 $validator = \Validator::make($request->all(), $rules);

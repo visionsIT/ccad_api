@@ -26,6 +26,16 @@ class ValueSet extends Model
         return $this->belongsTo(CampaignSettings::class, 'campaign_type_id','campaign_id');
     }
 
+    public function Campaign_setting()
+    {
+        return $this->belongsTo(CampaignSettings::class, 'id','campaign_id');
+    }
+
+    public function usernomination()
+    {
+        return $this->hasMany(UserNomination::class, 'campaign_id');
+    }
+
 
   
 }

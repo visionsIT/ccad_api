@@ -36,7 +36,13 @@ class ProductTransformer extends TransformerAbstract
             $maxValue = $_SESSION['maxValue'];
         }
 
-        //echo "<pre>"; print_r($product->category->name); die;
+        if(!empty($product->category)){
+            $category_id = $product->category->id;
+            $category_name = $product->category->name;
+        }else{ 
+            $category_id = '';
+            $category_name = '';
+        }
         return [
             'id'           => $product->id,
             'name'         => $product->name,
@@ -48,8 +54,8 @@ class ProductTransformer extends TransformerAbstract
             'min_age'      => $product->min_age,
             'sku'          => $product->sku,
             'catalog_id'   => $product->catalog_id,
-            'category_id'  => $product->category->id,
-            'category_name'  => $product->category->name,
+            'category_id'  => $category_id,
+            'category_name'  => $category_name,
             'catalog_name' => $product->catalog->name,
             'type' => $product->type,
             'description' => $product->description,

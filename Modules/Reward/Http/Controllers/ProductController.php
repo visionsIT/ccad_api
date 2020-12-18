@@ -189,16 +189,18 @@ class ProductController extends Controller
     }
 
     public function addProduct(Request $request, $id=null) {
+
+
         try {
             $rules = [
                 'name' => 'required',
                 'brand_name' => 'required',
                 'category' => 'required|integer|exists:product_catalogs,id',
-                'sub_category_id' => 'required|integer|exists:product_categories,id',
+                //'sub_category_id' => 'required|integer|exists:product_categories,id',
                 'type' => 'required',
-                'validity' => 'required',
+                //'validity' => 'required',
                 'description' => 'required',
-                'term_condition' => 'required',
+                //'term_condition' => 'required',
                 'image' => 'required|file||mimes:jpeg,png,jpg',
                 'action' => 'required'
             ];
@@ -259,8 +261,26 @@ class ProductController extends Controller
             }
             
             if($id !== null && $request->action === 'update') {
+
                 $this->service->update($productData, $id);
                 $denomi = explode(',', $request->denominations);
+
+                $productDenoData = ProductDenomination::where('product_id', $id)->get();
+                if($productDenoData){
+                    $productDenoDataf = $productDenoData->toArray();
+                    foreach ($productDenoDataf as $key => $value_d) {
+                        
+                        $denom_Value = $value_d['value'];
+
+                        if (!in_array($denom_Value, $denomi)){
+                            $deletedRows = ProductDenomination::where('id', $value_d['id'])->delete();
+                        }
+                        
+
+                    }
+
+                }
+              
                 foreach($denomi as $denoValue){
                     ProductDenomination::updateOrCreate([
                         'value' => $denoValue,

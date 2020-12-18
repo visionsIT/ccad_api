@@ -37,14 +37,15 @@ class SendMail extends Mailable
             'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
             'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
             'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];     
+        ];
+
         $this->view('emails.test')
             ->to($this->email)
             ->subject($this->subject)
             ->from(config('sendgrid.emails.no-reply-email'))
-            ->with([ 'mes' => $this->message, 'image_url' => $image_url ])
-            ->sendgrid([
-                'template_id' => config('sendgrid.templates._reset_password_code'),
-            ]);
+            ->with([ 'mes' => $this->message, 'image_url' => $image_url ]);
+            // ->sendgrid([
+            //     'template_id' => config('sendgrid.templates._reset_password_code'),
+            // ]);
     }
 }

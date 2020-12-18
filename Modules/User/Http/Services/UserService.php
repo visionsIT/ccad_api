@@ -36,9 +36,8 @@ class UserService
                     });
             }
 
-
             if($role_id == 1){
-                $userdata = $userdata->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20)->sortBy('account.name',SORT_NATURAL|SORT_FLAG_CASE);
+                $userdata = $userdata->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20);
         
             }else{
                 $userdata = $userdata->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->get()->sortBy('account.name',SORT_NATURAL|SORT_FLAG_CASE);
@@ -48,7 +47,7 @@ class UserService
         } else {
 
             if($role_id == 1){
-                $userdata = UsersGroupList::with(['account'])->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20)->sortBy('account.name',SORT_NATURAL|SORT_FLAG_CASE);
+                $userdata = UsersGroupList::with(['account'])->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20);
             }else{
                 $userdata = UsersGroupList::with(['account'])->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->get()->sortBy('account.name',SORT_NATURAL|SORT_FLAG_CASE);
             }

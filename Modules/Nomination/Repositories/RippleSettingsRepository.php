@@ -6,6 +6,8 @@ use Modules\Nomination\Models\ValueSet;
 use Modules\User\Models\ProgramUsers;
 use Modules\User\Models\UsersGroupList;
 use Modules\Account\Models\Account;
+use Modules\User\Models\UserCampaignsBudget;
+
 class RippleSettingsRepository extends Repository
 {
     protected $modeler = CampaignSettings::class;
@@ -32,9 +34,20 @@ class RippleSettingsRepository extends Repository
         return CampaignSettings::where('campaign_id', $campaignId)->first();
     }
 
-    public function getRippleBudget($email_address)
+    public function getRippleBudget($requestdata)
     {
-        return ProgramUsers::select('ripple_budget')->where('email', $email_address)->first();
+
+
+        $getCampaignData = $this->getCampaignIDBySLug($requestdata->camp_slug);
+        $campaign_id = $getCampaignData->id;
+
+        return UserCampaignsBudget::select('budget as ripple_budget')
+
+            ->where('program_user_id', $requestdata->program_user_id)
+            ->where('campaign_id', $campaign_id)
+            ->first();    
+
+        //return ProgramUsers::select('ripple_budget')->where('email', $email_address)->first();
     }
    
     public function getRippleBudgetBYProgramId($programId)

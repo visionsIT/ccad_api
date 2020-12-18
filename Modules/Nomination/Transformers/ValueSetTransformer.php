@@ -23,7 +23,7 @@ class ValueSetTransformer extends TransformerAbstract
             'values'                => $model->types->count(),
             'status'                => $model->status,
             'campaign_type_id'      => $model->campaign_type_id,
-            'campaign_name'         => $campain_type->campaign_type,
+            'campaign_name'         => $campain_type ? $campain_type->campaign_type : '',
             'anchor_status'         => $model->anchor_status
         ];
     }

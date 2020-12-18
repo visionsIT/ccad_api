@@ -3,6 +3,7 @@
 use Spatie\Permission\Models\Role;
 use Modules\Agency\Models\GroupLevels;
 use League\Fractal\TransformerAbstract;
+use Modules\User\Models\UsersGroupList;
 
 class RoleTransformer extends TransformerAbstract
 {
@@ -20,7 +21,8 @@ class RoleTransformer extends TransformerAbstract
             'is_default' => $role->is_default,
             'permissions' => $role->permissions,
             'permissions_count' => $role->permissions()->count(),
-            'users_cont' => $role->users()->count(),
+            //'users_cont' => $role->users()->count(),
+            'users_cont' => UsersGroupList::where('user_group_id', $role->id)->count(),
             'group_level_id' => GroupLevels::where('id', $role->group_level_id)->first(),
             'group_level_parent_id' => $role->group_level_parent_id?GroupLevels::where('id', $role->group_level_parent_id)->first():'',
             'nomination_approval_access' => $role->nomination_approval_access,

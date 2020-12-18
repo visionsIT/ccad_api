@@ -58,15 +58,29 @@ final class TokensService
         // Generate verification_token or code depends on user agent then update it in account table
         // $token = $this->generateVerificationToken();
 
-        $subject ="Kafu by AD Ports - Password Reset";
+        $subject ="Vodafone - Password Reset";
 
-        $message = 'Hi '.$account->user->first_name.', <br><br> Here are the new credentials to access the system:<br><b>Email: </b>'.$account->email.'<br><b>Password:</b> '.$password;
+        // $message = 'Hi '.$account->user->first_name.', <br><br> Here are the new credentials to access the system:<br><b>Email: </b>'.$account->email.'<br><b>Password:</b> '.$password;
+        $message = '<h2 style="font-size:20px;margin: 10px 0px 20px;">We heard you have forgotten your password for '. $account->user->username .'.</h2><p style="margin: 10px 0px; font-size: 16px;">Here are the new credentials to access the system: <br><b>Username:</b> '.$account->email.'<br><b>Password:</b> '.$password.'</p><p style="margin: 10px 0px; font-size: 16px;">If you continue to have problems logging into your account, please contact us at info@meriteincentives.com</p>';
+
         $email = $account->email;
         $token = $this->generateVerificationToken();
         Mail::send(new \Modules\Nomination\Mails\SendMail($email,$token,$message,$subject));
+
         // Mail::send(new \Modules\Account\Mails\ResetPassword($account, $password));
 
         // $this->tokens_repository->create([ 'account_id' => $account->id, 'token' => $token, 'type' => 0 ]);
+
+        // $image_url = [
+        //     'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
+        //     'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
+        //     'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
+        //     'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
+        // ];
+
+        // Mail::send('emails.test', [ 'mes' => $message, 'image_url' => $image_url ], function ($m) use($account) {
+        //     $m->to($account->email)->subject('Vodafone - Password Reset');
+        // });
     }
 
     public function findToken($token, $type)

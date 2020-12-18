@@ -17,7 +17,7 @@ use Modules\Program\Transformers\EcardsTransformer;
 use Modules\Program\Models\UsersEcards;
 use Modules\User\Models\ProgramUsers;
 use Illuminate\Support\Facades\Mail;
-
+use File;
 use Spatie\Fractal\Fractal;
 
 class ProgramController extends Controller
@@ -300,6 +300,7 @@ class ProgramController extends Controller
     }
 
     public function createEcards(Request $request) {
+
         try {
             $rules = [
                 'card_title'    => 'required|unique:ecards,card_title',
@@ -325,9 +326,9 @@ class ProgramController extends Controller
                 'card_image' => $imgName,
                 'allow_points' => $request->points_allowed
             ]);
-            return response()->json(['status' => true, 'message' => 'Occassion card created successfully.', 'data' => $newCard]);
+            return response()->json(['status' => 'true', 'message' => 'Occassion card created successfully.', 'data' => $newCard]);
         } catch (\Throwable $th) {
-            return response()->json(['status' => true, 'message'=>'Something went wrong! Please try after some time.']);
+            return response()->json(['status' => 'true', 'message'=>'Something went wrong! Please try after some time.']);
         }
     }
 
@@ -399,6 +400,7 @@ class ProgramController extends Controller
 
     public function sendEcard(Request $request)
     {
+        
         $rules = [
             'sender_id' => 'required|integer',
             'send_to_id' => 'required|integer',
@@ -429,22 +431,86 @@ class ProgramController extends Controller
                 'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
                 'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
             ];
+            
             $eCardDetails = Ecards::find($request->ecard_id);
             $sendToUser = ProgramUsers::find($request->send_to_id);
             $senderUser = ProgramUsers::find($request->sender_id);
+            
+            $path = public_path().'/uploaded/e_card_images/new';
+            if(!File::exists($path)) {
+                File::makeDirectory($path, $mode = 0777, true, true);
+            }
+            $randm = rand(100,1000000);
+            $newImage = $randm.time().'-'.$eCardDetails->card_image;
+            $file_path = "/uploaded/e_card_images/new";
+
+            $prev_img = '/uploaded/e_card_images/'.$eCardDetails->card_image;
+            $prev_img_path = url($prev_img);
+
+            $update = UsersEcards::where('id',$sent->id)->update(['new_image'=>$newImage,'image_path'=>$file_path]);
+
+            if($update === 1){
+                $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
+                $client = new \Pdfcrowd\HtmlToImageClient("visions5", "3d020236c9a48cf82c620797434b8803");
+                $client->setOutputFormat("png");
+                $output_stream = fopen($destinationPath, "wb");
+                //https://adportsapi.meritincentives.com/uploaded/e_card_images/ripple_e_cardVodafone_Congrats_ecards20.jpg
+                //'.$prev_img_path.'
+                $image = $client->convertStringToStream('<html>
+                    <head>
+                        <style>
+                          body {
+                            min-height: 350px;
+                          }
+                        </style>
+                    </head>
+                    <body>
+                        <table width="640" cellpadding="0" style="font-family: arial; color: #333333; border-collapse: collapse; margin: auto;">
+                            <tr>
+                                <td>
+                                    <table width="100%" style="border-collapse: collapse;">
+                                        <tr>
+                                            <td align="center">
+                                                <table width="100%" style="background-image: url('.$prev_img_path.');background-size: cover;background-repeat: no-repeat;background-position: center; border-collapse: collapse; height: 456px;">
+                                                    <tr>
+                                                        <td style="height: 100%; width: 100%; background-color: rgba(0,0,0,0); text-align: left;" valign="top">
+                                                            <h4 style="color: #000;font-size: 22px;max-width: 440px;margin: 135px auto 0;font-weight: normal;">'.$request->image_message.'</h4>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </body>
+                    </html>',$output_stream);
+                fclose($output_stream);
+            }
+
+            $new_img = '/uploaded/e_card_images/new/'.$newImage;
+            $new_img_path = url($new_img);
+
             $data = [
                 'email' => $sendToUser->email,
                 'username' => $sendToUser->first_name.' '. $sendToUser->last_name,
                 'card_title' => $eCardDetails->card_title,
                 'sendername' => $senderUser->first_name.' '. $senderUser->last_name,
-                'image' => $eCardDetails->image,
-                'image_message' => $request->image_message
+                'image' => $eCardDetails->card_image,
+                'image_message' => $request->image_message,
+                'new_image' => $newImage,
+                'file_path' => $file_path,
+                'full_img_path' => $new_img_path
             ];
+            
+
+        
             try {
                 // Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
                 //     $m->to($data["email"])->subject($data["card_title"].' Ecard!');
                 // });
-                return response()->json(['message'=>'Ecard sent successfully. ', 'status'=>'success']);
+                return response()->json(['message'=>'Ecard sent successfully. ', 'status'=>'success','data'=>$data]);
             } catch (\Exception $e) {
                 UsersEcards::where($sent->id)->delete();
                 return response()->json(['message'=>$e->getMessage(), 'status'=>'error']);

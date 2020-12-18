@@ -2,7 +2,7 @@
 
 return [
     'emails'    => [
-        'no-reply-email' => 'abdelrahman.haroun@meritincentives.com'//'kafu@meritincentives.com'
+        'no-reply-email' => 'noreply@meritincentives.com'//'vodafone'
     ],
     'templates' => [
         'reset_password_token' => 'd-35a4c11fbbd84276968aee71f4db5dff',

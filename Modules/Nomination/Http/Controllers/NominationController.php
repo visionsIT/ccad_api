@@ -7,6 +7,7 @@ use Modules\Account\Models\Account;
 use Modules\Account\Transformers\AccountTransformer;
 use Modules\Nomination\Transformers\UserNominationTransformer;
 use Modules\Nomination\Transformers\UserNominationTransformerNew;
+use Modules\Program\Transformers\UserEcardsTransformer;
 use Modules\User\Transformers\UserTransformer;
 use Spatie\Fractal\Fractal;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +19,9 @@ use Modules\Nomination\Repositories\NominationRepository;
 use Modules\Nomination\Http\Services\NominationService;
 use Modules\Nomination\Models\Nomination;
 use Modules\Nomination\Models\CampaignSettings;
+use Modules\Nomination\Models\ValueSet;
+use Modules\Nomination\Models\UserNomination;
+use DB;
 
 class NominationController extends Controller
 {
@@ -185,7 +189,6 @@ class NominationController extends Controller
         $queryString = \Illuminate\Support\Facades\Request::get('q');
 
         $nomination = $this->nomination_service->find($nomination_id);
-
         if ($nomination->approval_level === 'approval_level_1')
             $users = $this->nomination_service->getFirstLevelWallUsers($nomination, $queryString);
         else
@@ -193,6 +196,54 @@ class NominationController extends Controller
 
         return fractal($users , new UserNominationTransformerNew());
        
+    }
+
+    /*****************************
+    get nomination as per campaign
+    *****************************/
+    public function NominationCampaignWall(){
+
+        try{
+            $queryString = \Illuminate\Support\Facades\Request::get('q');
+            $user = $this->nomination_service->getCampaignUSerNomination($queryString);
+            return fractal($user , new UserNominationTransformerNew());
+            
+            /*$campaignSetting = ValueSet::with(['Campaign_setting'])->where(['id'=>$campaign_id,'status'=>'1'])->first();
+
+            if($campaignSetting->Campaign_setting->wall_settings == '1'){
+                #check_approval_Level1
+                if($campaignSetting->Campaign_setting->approval_request_status == '1'){
+                   if ($campaignSetting->Campaign_setting->level_1_approval == '1'){
+                    $users = $this->nomination_service->getCampaignFirstLevelWallUsers($campaignSetting, $queryString);
+                   }else{
+                    $users = $this->nomination_service->getCampaignSecondLevelWallUsers($campaignSetting, $queryString);
+                   }
+                    
+                        
+                } 
+            }
+            
+            return fractal($users , new UserNominationTransformerNew());*/
+
+        }catch (\Exception $e) {
+            return response()->json(['data'=>[],'meta'=>[],'message'=>$e->getMessage(), 'status'=>'success']);
+        }
+        
+
+    }/*********NominationCampaignWall ends here********/
+
+    /**********
+    Ecards data
+    **********/
+    public function NominationEcardWall(){
+        try{
+            $queryString = \Illuminate\Support\Facades\Request::get('q');
+            $user = $this->nomination_service->getCampaignEcards($queryString);
+            return fractal($user , new UserEcardsTransformer());
+            
+        }catch (\Exception $e) {
+            return response()->json(['data'=>[],'meta'=>[],'message'=>$e->getMessage(), 'status'=>'success']);
+        }
     }
 
     /**

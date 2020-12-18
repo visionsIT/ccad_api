@@ -71,6 +71,27 @@ class PointController extends Controller
         return fractal($current_balance, new CurrentBalanceTransformer());
     }
 
+
+    public function totalBalanceByProgramid($program_id) {
+
+
+        $current_budget_bal = UsersPoint::select('balance')->where('user_id',$program_id)->latest()->first();
+
+        if($current_budget_bal){
+            $budget_bal = $current_budget_bal->balance;
+        }else{
+            $budget_bal = 0;
+        }
+
+        try {
+            return response()->json(['data' => array("current_balance" => $budget_bal , "user_balance" => 0, "user_nominations" => 0 )], 200);
+
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+    }
+
     public function pointsHistoryListing() {
         try {
             $pointsHistory = $this->service->pointsHistory();
