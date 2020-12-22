@@ -170,7 +170,8 @@ class UserService
                 'language'                 => $request->language,
                 'account_id'               => $account->id,
                 'emp_number'               => $request->emp_number,
-                'vp_emp_number'            => $request->vp_emp_number
+                'vp_emp_number'            => $request->vp_emp_number,
+                'country_id'               => $request->country_id,
             ]);
             // if($request->emp_type == 'lead'){
             //     $programUser->vp_emp_number = $programUser->id;

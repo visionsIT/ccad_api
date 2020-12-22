@@ -113,7 +113,7 @@ class ProductController extends Controller
         return fractal($products, new ProductTransformer);
     }
 
-    public function searchAdvance(Request $request)
+      public function searchAdvance(Request $request)
     {
         $keyword = $request->query('keyword') ?? "";
         $categoryId = $request->query('categoryId') ?? 0;
@@ -134,6 +134,8 @@ class ProductController extends Controller
         //     $maxvalue = $eligibility/10;
         // }
 
+        $country_id = $request->query('country_id') ?? "";
+
         $_SESSION['minValue'] = $minValue;
         $_SESSION['maxValue'] = $maxvalue;
 
@@ -148,7 +150,7 @@ class ProductController extends Controller
             $brandIds = explode('_', $brandId);
         }
 
-        $products =  $this->repository->searchAdvance($keyword, $categoryId, $minValue, $maxvalue, $subcategoryId, $productIds, $brandIds, 'searchAd', $adminCall, $order, $col);
+        $products =  $this->repository->searchAdvance($keyword, $categoryId, $minValue, $maxvalue, $subcategoryId, $productIds, $brandIds, 'searchAd', $adminCall, $order, $col, $country_id);
         if($pid != '' && $pid == 1){
             $param = [
                 'search' => $keyword,
@@ -164,6 +166,7 @@ class ProductController extends Controller
                 'file_path' => url($responsePath),
             ]);
         } else {
+
             return fractal($products, new ProductTransformer);
         }
     }
@@ -189,7 +192,6 @@ class ProductController extends Controller
     }
 
     public function addProduct(Request $request, $id=null) {
-
 
         try {
             $rules = [
@@ -253,18 +255,26 @@ class ProductController extends Controller
                 'brand_id' => $brand->id,
             ];
 
-            $defaultCurrency = PointRateSettings::select('points')->where('default_currency','=','1')->first();
+            $defaultCurrency = PointRateSettings::select('points')->where('currency_id','=',$request->currency_id)->first();
             if(empty($defaultCurrency)){
                 $getCurrencyPoints = '10';
             }else{
                 $getCurrencyPoints = $defaultCurrency->points;
             }
             
+            // Currencies
+            
+
             if($id !== null && $request->action === 'update') {
 
                 $this->service->update($productData, $id);
-                $denomi = explode(',', $request->denominations);
 
+                DB::table('products')
+                    ->where('id', $id)
+                    ->update(['currency_id' => $request->currency_id]);
+
+                /*** Product denomination Update *****/
+                $denomi = explode(',', $request->denominations);
                 $productDenoData = ProductDenomination::where('product_id', $id)->get();
                 if($productDenoData){
                     $productDenoDataf = $productDenoData->toArray();
@@ -288,9 +298,40 @@ class ProductController extends Controller
                         'product_id' => $id,
                     ]);
                 }
+
+                /*** Product country Update *****/
+
+                $country_id = explode(',', $request->country_id);
+
+                $productCountriesData = ProductsCountries::where('product_id', $id)->get();
+                if($productCountriesData){
+                    $productCountriesDataf = $productCountriesData->toArray();
+                    foreach ($productCountriesDataf as $key => $value_c) {
+                        
+                        $country_id_data = $value_c['country_id'];
+                        $deletedRows = ProductsCountries::where('id', $value_c['id'])->delete();
+                        
+                    }
+
+                }
+              
+               if(!empty($country_id)){
+                    foreach($country_id as $countyid){
+                        
+                        ProductsCountries::create([
+                            'product_id'    => $id,
+                            'country_id'    => $countyid,
+                        ]);
+                    }
+                }
+
                 $str = "Product has been updated successfully.";
+
             } else if($id === null && $request->action === 'create') {
                 $product = $this->repository->create($productData);
+                DB::table('products')
+                    ->where('id', $product->id)
+                    ->update(['currency_id' => $request->currency_id]);
                 $denomi = explode(',', $request->denominations);
                 foreach($denomi as $denoValue){
                     ProductDenomination::updateOrCreate([
@@ -299,6 +340,20 @@ class ProductController extends Controller
                         'product_id' => $product->id,
                     ]);
                 }
+
+                /*** Add country ID[Multiple] ****/
+                
+                $country_id = explode(',', $request->country_id);
+                if(!empty($country_id)){
+                    foreach($country_id as $countyid){
+                       
+                        ProductsCountries::create([
+                            'product_id'    => $product->id,
+                            'country_id'    => $countyid,
+                        ]);
+                    }
+                }
+                
                 $str = "Product has been added successfully.";
             }
             return response()->json([ 'message' => $str ]);

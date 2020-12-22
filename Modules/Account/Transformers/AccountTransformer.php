@@ -5,7 +5,7 @@ use Modules\Account\Models\Account;
 use Spatie\Permission\Models\Role;
 use Modules\User\Models\UsersPoint;
 use Modules\Nomination\Models\CampaignSettings;
-
+use Modules\User\Models\ProgramUsers;
 use DB;
 
 
@@ -18,7 +18,8 @@ class AccountTransformer extends TransformerAbstract
      */
     public function transform(Account $account): array
     {
-
+        
+        $userCountry = ProgramUsers::select('country','country_id')->where('account_id',$account->id)->get()->toArray();
         return [
             'id'              => $account->id,
             'name'            => ucfirst($account->user->first_name).' '.ucfirst($account->user->last_name),
@@ -38,7 +39,11 @@ class AccountTransformer extends TransformerAbstract
             'user_type'       => ($account->user->id == $account->user->vp_emp_number)?'lead':'employee',
             'lead_permissions'=> DB::table('model_has_roles')->select('roles.*')->where(['model_id' => $account->id])->join('roles', 'roles.id', '=', 'model_has_roles.role_id')->get()->first(),
             'group_roles'     => DB::table('users_group_list')->where('account_id', $account->id)->get(),
-            'CampaignSettings' => $account->campaign($account->id),
+            'CampaignSettings'=> $account->campaign($account->id),
+            'user_country'    => $userCountry[0]['country'],
+            'user_country_id'    => $userCountry[0]['country_id']
+            
+
         ];
     }
 }

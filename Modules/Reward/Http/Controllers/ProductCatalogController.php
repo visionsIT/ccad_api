@@ -26,8 +26,13 @@ class ProductCatalogController extends Controller
      */
     public function index(): Fractal
     {
+        if(isset($_GET['country_id'])){
+            define('COUNTRY_CODE', $_GET['country_id']);
+        }else{
+            define('COUNTRY_CODE', '');
+        }
+        
         $Catalogs = $this->repository->get()->sortBy('name');
-
         return fractal($Catalogs, new ProductCatalogTransformer);
     }
 

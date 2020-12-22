@@ -15,7 +15,7 @@ class Product extends Model
 
     protected $presenter = ProgramPresenter::class;
 
-    protected $fillable = [ 'name', 'value', 'image', 'quantity', 'likes', 'model_number', 'min_age', 'sku', 'category_id', 'catalog_id', 'brand_id', 'base_price', 'type', 'validity', 'description', 'terms_conditions', 'status' ];
+    protected $fillable = [ 'name', 'value', 'image', 'quantity', 'likes', 'model_number', 'min_age', 'sku', 'category_id', 'catalog_id', 'brand_id', 'base_price', 'type', 'validity', 'description', 'terms_conditions', 'status' ,'currency_id'];
 
 
     /**

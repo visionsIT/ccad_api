@@ -2,7 +2,7 @@
 
 use League\Fractal\TransformerAbstract;
 use Modules\Reward\Models\Product;
-
+use DB;
 class ProductTransformer extends TransformerAbstract
 {
 
@@ -12,7 +12,7 @@ class ProductTransformer extends TransformerAbstract
      *
      * @return array
      */
-    public function transform(Product $product): array
+     public function transform(Product $product): array
     {
        /* if ($handle = opendir( public_path().'/storage/products_img/')) {
             while (false !== ($fileName = readdir($handle))) {
@@ -43,6 +43,9 @@ class ProductTransformer extends TransformerAbstract
             $category_id = '';
             $category_name = '';
         }
+
+        $country_data =  DB::table('products_countries')->select('countries.name', 'countries.id as country_id')->where(['products_countries.product_id' => $product->id])->join('countries', 'countries.id', '=', 'products_countries.country_id')->get();
+
         return [
             'id'           => $product->id,
             'name'         => $product->name,
@@ -68,6 +71,9 @@ class ProductTransformer extends TransformerAbstract
             'Sub'          => $product->sub()->select('id', 'name', 'value')->get()->all(),
             'seen'         => $product->product_seen ? $product->product_seen->account_id === 1 : FALSE,
             'status'  => $product->status,
+            //'country_id' => ProductsCountries::where('product_id',$product->id)->get(),
+            'country_id' => $country_data,
+            'currency_id' => $product->currency_id,
         ];
 
 

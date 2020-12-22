@@ -127,7 +127,7 @@ class ImportsController extends Controller
                     'brand_id' => $brand->id,
                 ]);
 
-                $defaultCurrency = PointRateSettings::select('points')->where('default_currency','=','1')->first();
+                $defaultCurrency = PointRateSettings::select('points')->where('currency_id','=',$product[11])->first();
                 if(empty($defaultCurrency)){
                     $getCurrencyPoints = '10';
                 }else{
