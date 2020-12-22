@@ -467,7 +467,7 @@ class ProgramController extends Controller
 
             $new_img = '/uploaded/e_card_images/new/'.$newImage;
             $new_img_path = url($new_img);
-
+echo $new_img_path;die;
             $data = [
                 'email' => $sendToUser->email,
                 'username' => $sendToUser->first_name.' '. $sendToUser->last_name,
