@@ -35,34 +35,42 @@ class ProductRepository extends Repository
         return $this->modeler->where("name", 'like', "%$keyword%")->get();
     }
 
-    public function searchAdvance($keyword, $categoryId,$minValue,$maxValue, $subcategoryId, $productIds=null, $brandIds=0, $searchAd = '', $adminCall = '', $order = '', $col = '')
+    public function searchAdvance($keyword, $categoryId,$minValue,$maxValue, $subcategoryId, $productIds=null, $brandIds=0, $searchAd = '', $adminCall = '', $order = '', $col = '', $country_id = '')
     {
-        $query = $this->modeler->where("name", 'like', '%'.$keyword.'%');
 
+
+        $query = $this->modeler->select('products.*', 'products_countries.id as p_countryId')->join('products_countries', 'products_countries.product_id', '=', 'products.id');
+
+        //$query = $this->modeler->where("name", 'like', '%'.$keyword.'%');
+        $query->where("products.name", 'like', '%'.$keyword.'%');
+
+        if($country_id){
+            $query->where("products_countries.country_id", $country_id);
+        }
+       
         if ($categoryId > 0) {
-            $query->where("catalog_id",'=', $categoryId);
+            $query->where("products.catalog_id",'=', $categoryId);
         }
 
         if ($subcategoryId > 0) {
-            $query->where("category_id",'=', $subcategoryId);
+            $query->where("products.category_id",'=', $subcategoryId);
         }
         if($searchAd != ''){
-            $query->whereIn('id', $productIds);
+            $query->whereIn('products.id', $productIds);
         }
         if($brandIds != ''){
-            $query->whereIn('brand_id', $brandIds);
+            $query->whereIn('products.brand_id', $brandIds);
         }
         if($adminCall == ''){
-            $query->where("status", "1");
+            $query->where("products.status", "1");
         }
         if($order !='' && $col !=''){
             $query->orderBy($col,$order);
         } else {
-            $query->orderByRaw("LENGTH(SUBSTRING_INDEX(value, '.', 1))", 'ASC')
-            ->orderBy('value','ASC');
+            $query->orderByRaw("LENGTH(SUBSTRING_INDEX(.products.value, '.', 1))", 'ASC')
+            ->orderBy('products.value','ASC');
         }
         $response = $query->paginate(12);
-
         return $response;
     }
     public function searchProductsByCategory($categoryId){
