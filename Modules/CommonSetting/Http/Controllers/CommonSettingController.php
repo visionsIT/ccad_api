@@ -5,6 +5,8 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Modules\Program\Models\Currency;
 use Modules\CommonSetting\Models\PointRateSettings;
+use Modules\Reward\Models\Product;
+use Modules\Reward\Models\ProductDenomination;
 use Validator;
 use Spatie\Permission\Models\Role;
 use DB;

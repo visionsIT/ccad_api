@@ -19,6 +19,7 @@ use Modules\User\Models\ProgramUsers;
 use Illuminate\Support\Facades\Mail;
 use File;
 use Spatie\Fractal\Fractal;
+use Spatie\Browsershot\Browsershot;
 
 class ProgramController extends Controller
 {
