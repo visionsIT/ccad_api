@@ -17,3 +17,7 @@ Route::get('/', function () {
 Route::get('/export-file/{program_id}/{file}', function ($program_id, $file) {
     return response()->download(storage_path('app/uploaded/'.$program_id.'/users/csv/exported/'.$file), $file);
 });
+
+Route::get('/newImage/{image}/{message}', function ($image, $message) {
+    return view('newImage', ["image"=>$image,"message"=>$message]);
+});
