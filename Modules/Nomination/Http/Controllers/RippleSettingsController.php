@@ -329,7 +329,7 @@ class RippleSettingsController extends Controller
             'ecard_id' => 'required|integer|exists:ecards,id',
             'send_type' => 'required',
             'send_to_id' => 'required',
-            'campaign_slug' => 'required'
+            'campaign_slug' => 'required|exists:value_sets,campaign_slug'
         ];
         $validator = \Validator::make($request->all(), $rules);
 
