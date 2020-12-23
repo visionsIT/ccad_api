@@ -125,6 +125,16 @@ class UserNominationController extends Controller
             $teamNomination = UserNomination::CLAIM_NOMINATION;
         }
 
+        $nominee_function = '';
+        if(isset($request->nominee_function)){
+            $nominee_function = $request->nominee_function;
+        }
+
+        $personal_message = '';
+        if(isset($request->personal_message)){
+            $personal_message = $request->personal_message;
+        }
+
         $user_nomination = $this->repository->create([
             'user' => $request->user,
             'account_id' => $request->account_id,
@@ -134,6 +144,8 @@ class UserNominationController extends Controller
             'points' => $request->points,
             'attachments' => $newname,
             'team_nomination' => $teamNomination,
+            'nominee_function' => $nominee_function,
+            'personal_message' => $personal_message,
         ]);
 
         $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
