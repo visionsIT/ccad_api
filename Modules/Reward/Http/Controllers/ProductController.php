@@ -19,6 +19,8 @@ use Modules\Reward\Models\ProductBrand;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Reward\Exports\RewardsExports;
 use Modules\CommonSetting\Models\PointRateSettings;
+use Modules\Reward\Models\ProductsCountries;
+use Modules\User\Models\ProgramUsers;
 use Throwable;
 use DB;
 class ProductController extends Controller
@@ -191,7 +193,7 @@ class ProductController extends Controller
         return response()->json($response);
     }
 
-    public function addProduct(Request $request, $id=null) {
+   public function addProduct(Request $request, $id=null) {
 
         try {
             $rules = [
@@ -277,7 +279,8 @@ class ProductController extends Controller
                 $denomi = explode(',', $request->denominations);
                 $productDenoData = ProductDenomination::where('product_id', $id)->get();
                 if($productDenoData){
-                    $productDenoDataf = $productDenoData->toArray();
+                    $deletedRows = ProductDenomination::where('product_id', $id)->delete();
+                    /*$productDenoDataf = $productDenoData->toArray();
                     foreach ($productDenoDataf as $key => $value_d) {
                         
                         $denom_Value = $value_d['value'];
@@ -287,16 +290,22 @@ class ProductController extends Controller
                         }
                         
 
-                    }
+                    }*/
 
                 }
-              
+                
                 foreach($denomi as $denoValue){
-                    ProductDenomination::updateOrCreate([
+                    /*ProductDenomination::updateOrCreate([
                         'value' => $denoValue,
-                        'points' => ((int)$denoValue*(int)$getCurrencyPoints),
+                        'points' => (int)$denoValue*(int)$getCurrencyPoints,
                         'product_id' => $id,
-                    ]);
+                    ]);*/
+
+                    ProductDenomination::create([
+                            'value' => $denoValue,
+                            'points' => (int)$denoValue*(int)$getCurrencyPoints,
+                            'product_id' => $id,
+                        ]);
                 }
 
                 /*** Product country Update *****/
