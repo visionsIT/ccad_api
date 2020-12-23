@@ -143,6 +143,7 @@ class UserNominationController extends Controller
                 'user' => (int)$value,
                 'account_id' => $request->account_id,
                 'nomination_id' => $request->nomination_id,
+                'campaign_id' => $request->campaign_id,
                 'reason' => $request->reason,
                 'value' => $request->value,
                 'points' => $request->points,
