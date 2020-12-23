@@ -143,6 +143,7 @@ class RippleSettingsController extends Controller
                 $fileInfo = pathinfo($file_name);
                 $filename = $fileInfo['filename'];
                 $imgName = 'ripple_e_card'.$filename.substr(strftime("%Y", time()),2).'.'.$file_ext;
+                $imgName = str_replace(" ","_",$imgName);
                 $destinationPath = public_path('uploaded/e_card_images/');
                 $file->move($destinationPath, $imgName);
             }
@@ -186,6 +187,7 @@ class RippleSettingsController extends Controller
                 $fileInfo = pathinfo($file_name);
                 $filename = $fileInfo['filename'];
                 $imgName = 'ripple_e_card'.$filename.substr(strftime("%Y", time()),2).'.'.$file_ext;
+                $imgName = str_replace(" ","_",$imgName);
                 $destinationPath = public_path('uploaded/e_card_images/');
                 $file->move($destinationPath, $imgName);
             }else{
@@ -329,7 +331,7 @@ class RippleSettingsController extends Controller
             'ecard_id' => 'required|integer|exists:ecards,id',
             'send_type' => 'required',
             'send_to_id' => 'required',
-            'campaign_slug' => 'required'
+            'campaign_slug' => 'required|exists:value_sets,campaign_slug'
         ];
         $validator = \Validator::make($request->all(), $rules);
 
