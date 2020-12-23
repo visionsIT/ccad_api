@@ -103,7 +103,7 @@ class UserNominationController extends Controller
      */
     public function store(UserNominationRequest $request): Fractal
     {
-        
+
         $newname = '';
         if ($request->hasFile('attachments')) {
             $file = $request->file('attachments');
@@ -135,18 +135,25 @@ class UserNominationController extends Controller
             $personal_message = $request->personal_message;
         }
 
-        $user_nomination = $this->repository->create([
-            'user' => $request->user,
-            'account_id' => $request->account_id,
-            'nomination_id' => $request->nomination_id,
-            'reason' => $request->reason,
-            'value' => $request->value,
-            'points' => $request->points,
-            'attachments' => $newname,
-            'team_nomination' => $teamNomination,
-            'nominee_function' => $nominee_function,
-            'personal_message' => $personal_message,
-        ]);
+        $account_ids = $request->account_id;
+        $account_id_array = explode(',',$account_ids);
+
+        foreach($account_id_array as $key=>$value){
+            $user_nomination = $this->repository->create([
+                'user' => $request->user,
+                'account_id' => $value,
+                'nomination_id' => $request->nomination_id,
+                'reason' => $request->reason,
+                'value' => $request->value,
+                'points' => $request->points,
+                'attachments' => $newname,
+                'team_nomination' => $teamNomination,
+                'nominee_function' => $nominee_function,
+                'personal_message' => $personal_message,
+            ]);
+        }
+
+        
 
         $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
 
