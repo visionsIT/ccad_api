@@ -19,6 +19,7 @@ use Modules\User\Models\ProgramUsers;
 use Illuminate\Support\Facades\Mail;
 use File;
 use Spatie\Fractal\Fractal;
+use Spatie\Browsershot\Browsershot;
 
 class ProgramController extends Controller
 {
@@ -405,7 +406,7 @@ class ProgramController extends Controller
             'sender_id' => 'required|integer',
             'send_to_id' => 'required|integer',
             'image_message' => 'required',
-            'ecard_id' => 'required',
+            'ecard_id' => 'required|integer|exists:ecards,id',
             'send_type' => 'required'
         ];
 
@@ -451,47 +452,22 @@ class ProgramController extends Controller
 
             if($update === 1){
                 $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
-                $client = new \Pdfcrowd\HtmlToImageClient("visions5", "3d020236c9a48cf82c620797434b8803");
-                $client->setOutputFormat("png");
-                $output_stream = fopen($destinationPath, "wb");
-                //https://adportsapi.meritincentives.com/uploaded/e_card_images/ripple_e_cardVodafone_Congrats_ecards20.jpg
-                //'.$prev_img_path.'
-                $image = $client->convertStringToStream('<html>
-                    <head>
-                        <style>
-                          body {
-                            min-height: 350px;
-                          }
-                        </style>
-                    </head>
-                    <body>
-                        <table width="640" cellpadding="0" style="font-family: arial; color: #333333; border-collapse: collapse; margin: auto;">
-                            <tr>
-                                <td>
-                                    <table width="100%" style="border-collapse: collapse;">
-                                        <tr>
-                                            <td align="center">
-                                                <table width="100%" style="background-image: url('.$prev_img_path.');background-size: cover;background-repeat: no-repeat;background-position: center; border-collapse: collapse; height: 456px;">
-                                                    <tr>
-                                                        <td style="height: 100%; width: 100%; background-color: rgba(0,0,0,0); text-align: left;" valign="top">
-                                                            <h4 style="color: #000;font-size: 22px;max-width: 440px;margin: 135px auto 0;font-weight: normal;">'.$request->image_message.'</h4>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </td>
-                            </tr>
-                        </table>
-                    </body>
-                    </html>',$output_stream);
-                fclose($output_stream);
+                
+                $image_mesaage = str_replace(" ","%20",$request->image_message);#bcs_send_in_url
+                $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
+                $conv = new \Anam\PhantomMagick\Converter();
+                $options = [
+                    'width' => 640,'quality' => 90
+                ];
+               // $imageNAme = 'ripple_e_cardVodafone_Congrats_ecards20.jpg';
+                $conv->addPage(url('/newImage/'.$eCardDetails->card_image.'/'.$image_mesaage))
+                    ->toPng($options)
+                    ->save($destinationPath);
             }
 
             $new_img = '/uploaded/e_card_images/new/'.$newImage;
             $new_img_path = url($new_img);
-
+            
             $data = [
                 'email' => $sendToUser->email,
                 'username' => $sendToUser->first_name.' '. $sendToUser->last_name,

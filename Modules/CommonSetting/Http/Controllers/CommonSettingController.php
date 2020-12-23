@@ -5,6 +5,8 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Modules\Program\Models\Currency;
 use Modules\CommonSetting\Models\PointRateSettings;
+use Modules\Reward\Models\Product;
+use Modules\Reward\Models\ProductDenomination;
 use Validator;
 use Spatie\Permission\Models\Role;
 use DB;
@@ -84,6 +86,7 @@ class CommonSettingController extends Controller
             if($id != null){
 
                 $rules = [
+                    'currency_id' => 'required|integer|exists:currencies,id',
                     'points' => 'required|integer||min:1',
                 ];
 
@@ -92,15 +95,38 @@ class CommonSettingController extends Controller
                 if ($validator->fails())
                     return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
+                $newPoints = $request->points;
                 if(isset($request->status) && $request->status != ''){
-                    $update_array = array('points'=>$request->points,'status'=>$request->status);
+                    $update_array = array('points'=>$newPoints,'status'=>$request->status);
                 }else{
-                    $update_array =  array('points'=>$request->points);
+                    $update_array =  array('points'=>$newPoints);
                 }
 
-                $update = PointRateSettings::where('id',$id)->update($update_array);
+                $update = PointRateSettings::where(['id'=>$id,'currency_id'=>$request->currency_id])->update($update_array);
 
                 if($update){
+                    $check_products = Product::where('currency_id',$request->currency_id)->get();
+                    
+                    DB::transaction(function ()  use ($check_products,$newPoints){
+                        if(!empty($check_products)){
+                            foreach($check_products as $key=>$val){
+                                #update_product_denomination
+                                $get_product_denomi = ProductDenomination::where('product_id',$val->id)->get();
+                                if(!empty($get_product_denomi)){
+                                    foreach($get_product_denomi as $key1=>$val1){
+                                        $get_denomi_val = ProductDenomination::where('id',$val1->id)->first();
+                                        if(!empty($get_denomi_val)){
+                                            $newCalculation = (((int)$get_denomi_val->value)*((int)$newPoints));
+                                            $update_denomi = array('points'=>$newCalculation);
+                                            ProductDenomination::where('id',$val1->id)->update($update_denomi);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    DB::commit();
+
                     return response()->json(['message'=>'Updated successfully.', 'status'=>'success']);exit;;
                 }else{
                     return response()->json(['message'=>"Check id and try again.", 'status'=>'error']);
