@@ -319,6 +319,7 @@ class ProgramController extends Controller
                 $fileInfo = pathinfo($file_name);
                 $filename = $fileInfo['filename'];
                 $imgName = 'e_card'.$filename.substr(strftime("%Y", time()),2).'.'.$file_ext;
+                $imgName = str_replace(" ","_",$imgName);
                 $destinationPath = public_path('uploaded/e_card_images/');
                 $file->move($destinationPath, $imgName);
             }
@@ -388,6 +389,7 @@ class ProgramController extends Controller
             $fileInfo = pathinfo($file_name);
             $filename = $fileInfo['filename'];
             $imgName = 'e_card'.$filename.substr(strftime("%Y", time()),2).'.'.$file_ext;
+            $imgName = str_replace(" ","_",$imgName);
             $destinationPath = public_path('uploaded/e_card_images/');
             $file->move($destinationPath, $imgName);
         }
