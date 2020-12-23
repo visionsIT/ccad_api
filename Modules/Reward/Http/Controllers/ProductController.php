@@ -20,7 +20,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Modules\Reward\Exports\RewardsExports;
 use Modules\CommonSetting\Models\PointRateSettings;
 use Throwable;
-
+use DB;
 class ProductController extends Controller
 {
     private $repository, $service;
