@@ -58,7 +58,7 @@ final class TokensService
         // Generate verification_token or code depends on user agent then update it in account table
         // $token = $this->generateVerificationToken();
 
-        $subject ="Vodafone - Password Reset";
+        $subject ="CCAD - Password Reset";
 
         // $message = 'Hi '.$account->user->first_name.', <br><br> Here are the new credentials to access the system:<br><b>Email: </b>'.$account->email.'<br><b>Password:</b> '.$password;
         $message = '<h2 style="font-size:20px;margin: 10px 0px 20px;">We heard you have forgotten your password for '. $account->user->username .'.</h2><p style="margin: 10px 0px; font-size: 16px;">Here are the new credentials to access the system: <br><b>Username:</b> '.$account->email.'<br><b>Password:</b> '.$password.'</p><p style="margin: 10px 0px; font-size: 16px;">If you continue to have problems logging into your account, please contact us at info@meriteincentives.com</p>';
@@ -79,7 +79,7 @@ final class TokensService
         // ];
 
         // Mail::send('emails.test', [ 'mes' => $message, 'image_url' => $image_url ], function ($m) use($account) {
-        //     $m->to($account->email)->subject('Vodafone - Password Reset');
+        //     $m->to($account->email)->subject('CCAD - Password Reset');
         // });
     }
 

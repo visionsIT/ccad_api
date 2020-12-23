@@ -591,7 +591,7 @@ class RippleSettingsController extends Controller
                             $options = [
                                 'width' => 640,'quality' => 90
                             ];
-                           // $imageNAme = 'ripple_e_cardVodafone_Congrats_ecards20.jpg';
+                           // $imageNAme = 'ripple_e_cardCcad_Congrats_ecards20.jpg';
                             $conv->addPage(url('/newImage/'.$eCardDetails->card_image.'/'.$image_mesaage))
                                 ->toPng($options)
                                 ->save($destinationPath);
@@ -616,7 +616,7 @@ class RippleSettingsController extends Controller
                         try {
 
                             Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                                $m->from('info@meritincentives.com','Vodafone Egypt');    
+                                $m->from('info@meritincentives.com','CCAD Egypt');    
                                 $m->to($data["email"])->subject($data["card_title"].' Ecard!');
                             });
 

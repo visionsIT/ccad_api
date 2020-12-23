@@ -2,7 +2,7 @@
 
 return [
     'emails'    => [
-        'no-reply-email' => 'noreply@meritincentives.com'//'vodafone'
+        'no-reply-email' => 'noreply@meritincentives.com'//'ccad'
     ],
     'templates' => [
         'reset_password_token' => 'd-35a4c11fbbd84276968aee71f4db5dff',

@@ -10,7 +10,7 @@
 			{!! $mes !!}
 			<p style="font-size: 16px;">Kind regards,</p>
 
-			<p style="font-size: 16px;"><span style="color: #ff0000;">SHABRA2A</span></p>
+			<p style="font-size: 16px;"><span style="color: #2C72EC;">Cleveland Clinic Abu Dhabi</span></p>
 		</td>
 	</tr>
 </table>
