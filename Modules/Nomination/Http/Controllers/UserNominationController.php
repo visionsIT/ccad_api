@@ -140,7 +140,7 @@ class UserNominationController extends Controller
 
         foreach($user_id_array as $key=>$value){
             $user_nomination = $this->repository->create([
-                'user' => $value,
+                'user' => (int)$value,
                 'account_id' => $request->account_id,
                 'nomination_id' => $request->nomination_id,
                 'reason' => $request->reason,
