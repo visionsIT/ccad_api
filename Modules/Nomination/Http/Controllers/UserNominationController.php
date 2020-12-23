@@ -135,13 +135,13 @@ class UserNominationController extends Controller
             $personal_message = $request->personal_message;
         }
 
-        $account_ids = $request->account_id;
-        $account_id_array = explode(',',$account_ids);
+        $user_ids = $request->user;
+        $user_id_array = explode(',',$user_ids);
 
-        foreach($account_id_array as $key=>$value){
+        foreach($user_id_array as $key=>$value){
             $user_nomination = $this->repository->create([
-                'user' => $request->user,
-                'account_id' => $value,
+                'user' => $value,
+                'account_id' => $request->account_id,
                 'nomination_id' => $request->nomination_id,
                 'reason' => $request->reason,
                 'value' => $request->value,
