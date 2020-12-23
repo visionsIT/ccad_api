@@ -17,7 +17,7 @@
 				<p style="margin: 22px 0px 24px; font-size: 16px;">You have received an E-Card from {{ $data['sendername'] }} ! <a href="{{ $data['link_to_ecard'] }}">Click here</a> to view your E-Card  </p>
 
 				<p style="font-size: 16px; margin-bottom: 0px;">Kind regards,</p>
-				<p style="font-size: 16px; margin-top: 0px;"><span style="color: #ff0000;">SHABRA2A</span></p>
+				<p style="font-size: 16px; margin-top: 0px;"><span style="color: #2C72EC;">Cleveland Clinic Abu Dhabi</span></p>
 			</td>
 		</tr>
 	</table>

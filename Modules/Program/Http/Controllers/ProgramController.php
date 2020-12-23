@@ -461,7 +461,7 @@ class ProgramController extends Controller
                 $options = [
                     'width' => 640,'quality' => 90
                 ];
-               // $imageNAme = 'ripple_e_cardVodafone_Congrats_ecards20.jpg';
+               // $imageNAme = 'ripple_e_cardCcad_Congrats_ecards20.jpg';
                 $conv->addPage(url('/newImage/'.$eCardDetails->card_image.'/'.$image_mesaage))
                     ->toPng($options)
                     ->save($destinationPath);
