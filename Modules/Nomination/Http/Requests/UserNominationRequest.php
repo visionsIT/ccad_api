@@ -12,7 +12,7 @@ class UserNominationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user'                => 'required|exists:accounts,id',
+            'user'                => 'required',
             'nomination_id'       => 'required|numeric|exists:nominations,id',
             'value'               => 'required|numeric',
             'points'              => 'required|numeric',
