@@ -103,7 +103,7 @@ class UserNominationController extends Controller
      */
     public function store(UserNominationRequest $request): Fractal
     {
-        
+
         $newname = '';
         if ($request->hasFile('attachments')) {
             $file = $request->file('attachments');
@@ -125,16 +125,36 @@ class UserNominationController extends Controller
             $teamNomination = UserNomination::CLAIM_NOMINATION;
         }
 
-        $user_nomination = $this->repository->create([
-            'user' => $request->user,
-            'account_id' => $request->account_id,
-            'nomination_id' => $request->nomination_id,
-            'reason' => $request->reason,
-            'value' => $request->value,
-            'points' => $request->points,
-            'attachments' => $newname,
-            'team_nomination' => $teamNomination,
-        ]);
+        $nominee_function = '';
+        if(isset($request->nominee_function)){
+            $nominee_function = $request->nominee_function;
+        }
+
+        $personal_message = '';
+        if(isset($request->personal_message)){
+            $personal_message = $request->personal_message;
+        }
+
+        $user_ids = $request->user;
+        $user_id_array = explode(',',$user_ids);
+
+        foreach($user_id_array as $key=>$value){
+            $user_nomination = $this->repository->create([
+                'user' => (int)$value,
+                'account_id' => $request->account_id,
+                'nomination_id' => $request->nomination_id,
+                'campaign_id' => $request->campaign_id,
+                'reason' => $request->reason,
+                'value' => $request->value,
+                'points' => $request->points,
+                'attachments' => $newname,
+                'team_nomination' => $teamNomination,
+                'nominee_function' => $nominee_function,
+                'personal_message' => $personal_message,
+            ]);
+        }
+
+        
 
         $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
 
@@ -230,6 +250,15 @@ class UserNominationController extends Controller
 
         $senderUser = ProgramUsers::find($request->sender_id);
         
+        $nominee_function = '';
+        if(isset($request->nominee_function)){
+            $nominee_function = $request->nominee_function;
+        }
+
+        $personal_message = '';
+        if(isset($request->personal_message)){
+            $personal_message = $request->personal_message;
+        }
 
 
         // Get Sender program id using account_id
@@ -302,6 +331,8 @@ class UserNominationController extends Controller
                             'points'  => $inputPoint,
                             'attachments' => $newname,
                             'team_nomination' => $teamNomination,
+                            'nominee_function' => $nominee_function,
+                            'personal_message' => $personal_message,
                         ]);
 
                         try {
