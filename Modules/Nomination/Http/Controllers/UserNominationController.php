@@ -1411,6 +1411,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             'nomination_id'     =>  $request->nomination_id,
             // 'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
             'account_id'        =>  $request->account_id,
+            'campaign_id'       =>  $request->campaign_id,
             'project_name'      =>  $request->project_name,
             'reason'            =>  $request->reason,
             'level_1_approval'  =>  0,
