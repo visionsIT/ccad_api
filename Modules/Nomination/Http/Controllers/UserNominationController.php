@@ -76,7 +76,7 @@ class UserNominationController extends Controller
 
         $input = $request->all();
 
-        if(  isset($input['filter']) && (int)$input['filter'] > 0 ) {
+        if( isset($input['filter']) && (int)$input['filter'] > 0 ) {
             $order = $this->repository->filterRecords($input);
         } else {
             $order = $this->repository->getDesc($input['campaignID']);
