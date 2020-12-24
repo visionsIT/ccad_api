@@ -250,6 +250,15 @@ class UserNominationController extends Controller
 
         $senderUser = ProgramUsers::find($request->sender_id);
         
+        $nominee_function = '';
+        if(isset($request->nominee_function)){
+            $nominee_function = $request->nominee_function;
+        }
+
+        $personal_message = '';
+        if(isset($request->personal_message)){
+            $personal_message = $request->personal_message;
+        }
 
 
         // Get Sender program id using account_id
@@ -322,6 +331,8 @@ class UserNominationController extends Controller
                             'points'  => $inputPoint,
                             'attachments' => $newname,
                             'team_nomination' => $teamNomination,
+                            'nominee_function' => $nominee_function,
+                            'personal_message' => $personal_message,
                         ]);
 
                         try {
