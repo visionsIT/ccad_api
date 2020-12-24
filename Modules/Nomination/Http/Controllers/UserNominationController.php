@@ -1382,16 +1382,6 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         $newname = '';
         $destinationPath = public_path('uploaded/user_nomination_files/');
 
-        $nominee_function = '';
-        if(isset($request->nominee_function)){
-            $nominee_function = $request->nominee_function;
-        }
-
-        $personal_message = '';
-        if(isset($request->personal_message)){
-            $personal_message = $request->personal_message;
-        }
-
         if ($request->hasFile('nomination_file')) {
             $file = $request->file('nomination_file');
             $request->validate([
@@ -1405,39 +1395,28 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $file->move($destinationPath, $newname);
         }
 
-        // $users = json_decode($request->get('users'), true);
-        $users = explode(',', $request->users);
+        $users = json_decode($request->get('users'), true);
         $data = [
-            'nomination_id'     =>  $request->nomination_id,
-            // 'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
-            'account_id'        =>  $request->account_id,
-            'campaign_id'       =>  $request->campaign_id,
-            'project_name'      =>  $request->project_name,
-            'reason'            =>  $request->reason,
-            'level_1_approval'  =>  2,
-            'level_2_approval'  =>  2,
+            'nomination_id'     =>  $request->get('nomination_id'),
+            'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
+            'project_name'      =>  $request->get('project_name'),
+            'reason'            =>  $request->get('reason'),
+            'level_1_approval'  =>  0,
+            'level_2_approval'  =>  0,
             'team_nomination'   =>  UserNomination::TEAM_NOMINATION,
             'attachments'        => ($newname!='')?$newname:'',
-            'nominee_function' => $nominee_function,
-            'personal_message' => $personal_message
         ];
 
-        // foreach ($users as $key => $value) {
-        //     $useracc = $this->account_service->show($value['accountid']);
-        //     if( $vpaccount->def_dept_id == $useracc->def_dept_id ) {
-        //         $data['points'] = $value['value'];
-        //         $data['value'] = $value['value'];
-        //         $data['user'] = $value['accountid'];
-        //         $user_nomination = $this->repository->create($data);
-        //             //if(!empty($user_nomination))
-        //             //$user_nomination->sendEmail($this->nomination_service); // NO need individual notification on request
-        //     }
-        // }
-        foreach ($users as $value) {
-            $data['points'] = $request->points;
-            $data['value'] = $request->value;
-            $data['user'] = $value;
-            $user_nomination = $this->repository->create($data);
+        foreach ($users as $key => $value) {
+            $useracc = $this->account_service->show($value['accountid']);
+            if( $vpaccount->def_dept_id == $useracc->def_dept_id ) {
+                $data['points'] = $value['value'];
+                $data['value'] = $value['value'];
+                $data['user'] = $value['accountid'];
+                $user_nomination = $this->repository->create($data);
+                    //if(!empty($user_nomination))
+                    //$user_nomination->sendEmail($this->nomination_service); // NO need individual notification on request
+            }
         }
         $status = true;
 
