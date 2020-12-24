@@ -1382,6 +1382,16 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         $newname = '';
         $destinationPath = public_path('uploaded/user_nomination_files/');
 
+        $nominee_function = '';
+        if(isset($request->nominee_function)){
+            $nominee_function = $request->nominee_function;
+        }
+
+        $personal_message = '';
+        if(isset($request->personal_message)){
+            $personal_message = $request->personal_message;
+        }
+
         if ($request->hasFile('nomination_file')) {
             $file = $request->file('nomination_file');
             $request->validate([
@@ -1398,14 +1408,17 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         // $users = json_decode($request->get('users'), true);
         $users = explode(',', $request->users);
         $data = [
-            'nomination_id'     =>  $request->get('nomination_id'),
-            'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
-            'project_name'      =>  $request->get('project_name'),
-            'reason'            =>  $request->get('reason'),
+            'nomination_id'     =>  $request->nomination_id,
+            // 'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
+            'account_id'        =>  $request->account_id,
+            'project_name'      =>  $request->project_name,
+            'reason'            =>  $request->reason,
             'level_1_approval'  =>  0,
             'level_2_approval'  =>  0,
             'team_nomination'   =>  UserNomination::TEAM_NOMINATION,
             'attachments'        => ($newname!='')?$newname:'',
+            'nominee_function' => $nominee_function,
+            'personal_message' => $personal_message
         ];
 
         // foreach ($users as $key => $value) {
