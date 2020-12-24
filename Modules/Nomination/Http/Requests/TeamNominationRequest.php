@@ -18,7 +18,7 @@ class TeamNominationRequest extends FormRequest
             'nomination_id'         =>  'required|numeric|exists:nominations,id',
             // 'value'                 =>  'required|numeric',
             // 'points'                =>  'required|numeric',
-            'reason'                =>  'required|min:3|max:255',
+            'reason'                =>  'required|min:3',
             // 'account_id'            =>  'required|numeric|exists:accounts,id',
             'project_name'          =>  'required|min:3|max:191',
             'users'                 =>  'required'
