@@ -1395,7 +1395,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $file->move($destinationPath, $newname);
         }
 
-        $users = json_decode($request->get('users'), true);
+        // $users = json_decode($request->get('users'), true);
+        $users = explode(',', $request->users);
         $data = [
             'nomination_id'     =>  $request->get('nomination_id'),
             'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
@@ -1407,16 +1408,22 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             'attachments'        => ($newname!='')?$newname:'',
         ];
 
-        foreach ($users as $key => $value) {
-            $useracc = $this->account_service->show($value['accountid']);
-            if( $vpaccount->def_dept_id == $useracc->def_dept_id ) {
-                $data['points'] = $value['value'];
-                $data['value'] = $value['value'];
-                $data['user'] = $value['accountid'];
-                $user_nomination = $this->repository->create($data);
-                    //if(!empty($user_nomination))
-                    //$user_nomination->sendEmail($this->nomination_service); // NO need individual notification on request
-            }
+        // foreach ($users as $key => $value) {
+        //     $useracc = $this->account_service->show($value['accountid']);
+        //     if( $vpaccount->def_dept_id == $useracc->def_dept_id ) {
+        //         $data['points'] = $value['value'];
+        //         $data['value'] = $value['value'];
+        //         $data['user'] = $value['accountid'];
+        //         $user_nomination = $this->repository->create($data);
+        //             //if(!empty($user_nomination))
+        //             //$user_nomination->sendEmail($this->nomination_service); // NO need individual notification on request
+        //     }
+        // }
+        foreach ($users as $value) {
+            $data['points'] = $request->points;
+            $data['value'] = $request->value;
+            $data['user'] = $value;
+            $user_nomination = $this->repository->create($data);
         }
         $status = true;
 
