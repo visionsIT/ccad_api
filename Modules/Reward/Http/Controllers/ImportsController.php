@@ -84,31 +84,23 @@ class ImportsController extends Controller
             $request->validate([
                 'product_file' => 'required|file',
             ]);
-
             $uploaded = $file->move(public_path('uploaded/product_import_file/'), $file->getClientOriginalName());
-
             $products = Excel::toCollection(new CategoryImport(), $uploaded->getRealPath());
-
             $products = $products[0]->toArray();
-
             foreach ($products as $key => $product){
                 if($key === 0) continue;
-                if ($product[0] === '' || $product[0] === null) continue;
-
+                //if ($product[0] === '' || $product[0] === null) continue;
                 $brand = ProductBrand::updateOrCreate([
                     'name' => $product[1],
                 ]);
-
                 $catalog = ProductCatalog::updateOrCreate([
                     'name' => $product[2],
                 ]);
-
                 $subCategory = ProductCategory::updateOrCreate([
                     'name' => $product[3],
                     'catalog' => $catalog->id,
                 ]);
-
-                $addedProduct = Product::updateOrCreate([
+                $addedProduct = Product::create([
                     'sku' => ($product[0]!="")?$product[0]:'',
                     'name' => ($product[4]!="")?$product[4]:'',
                     'image' => ($product[10]!="")?strtolower($product[10]):'no-image',
@@ -125,26 +117,29 @@ class ImportsController extends Controller
                     'catalog_id' => $catalog->id,
                     'category_id' => $subCategory->id,
                     'brand_id' => $brand->id,
+                    'currency_id' => $product[14],
                 ]);
-
-                $defaultCurrency = PointRateSettings::select('points')->where('currency_id','=',$product[11])->first();
+                ProductsCountries::create([
+                    'product_id' => $addedProduct->id,
+                    'country_id' => $product[13],
+                ]);
+                $defaultCurrency = PointRateSettings::select('points')->where('currency_id','=',$product[14])->first();
                 if(empty($defaultCurrency)){
                     $getCurrencyPoints = '10';
                 }else{
                     $getCurrencyPoints = $defaultCurrency->points;
                 }
-
                 if($product[5]!=""){
                     $denomi = explode(',', $product[5]);
                     foreach($denomi as $denoValue){
-                        ProductDenomination::updateOrCreate([
+                        ProductDenomination::create([
                             'value' => $denoValue,
                             'points' => ((int)$denoValue*(int)$getCurrencyPoints),
                             'product_id' => $addedProduct->id,
                         ]);
                     }
                 }
-            } 
+            }
             return response()->json([
                 'uploaded_file' => url('uploaded/product_import_file/'.$uploaded->getFilename()),
                 'message' => 'Data Imported Successfully'
@@ -300,7 +295,7 @@ class ImportsController extends Controller
 
         try{
             Mail::send('emails.UserWelcomeMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                $m->to($data["email"])->subject('Kafu by AD Ports - New Account');
+                $m->to($data["email"])->subject('Cleveland Clinic Abu Dhabi - New Account');
             });
         }catch(\Throwable $th){
             return response()->json([

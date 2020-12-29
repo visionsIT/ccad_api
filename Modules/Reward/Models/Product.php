@@ -6,6 +6,7 @@ namespace Modules\Reward\Models;
 use Illuminate\Database\Eloquent\Model;
 use Laracodes\Presenter\Traits\Presentable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Program\Models\Currency;
 
 
 class Product extends Model
@@ -24,6 +25,11 @@ class Product extends Model
     public function category(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(ProductCategory::class,'category_id');
+    }
+
+    public function currency(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Currency::class,'currency_id','id');
     }
 
 

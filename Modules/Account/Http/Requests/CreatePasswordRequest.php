@@ -14,7 +14,8 @@ class CreatePasswordRequest extends FormRequest
     {
         return [
             'token'    => 'required',
-            'password' => 'required|min:8|max:255|regex:/^(?=.*[A-Za-z])(?=.*\d).+$/|confirmed',
+            // 'password' => 'required|min:8|max:255|regex:/^(?=.*[A-Za-z])(?=.*\d).+$/|confirmed',
+            'password' => 'required|min:8|max:255',
         ];
     }
 

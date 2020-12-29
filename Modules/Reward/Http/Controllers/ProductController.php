@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Modules\Reward\Http\Requests\ProductRequest;
 use Modules\Reward\Transformers\ProductTransformer;
+use Modules\Reward\Transformers\ProductsTransformer;
 use Modules\Reward\Repositories\ProductRepository;
 use Illuminate\Database;
 use Modules\Reward\Transformers\BrandTransformer;
@@ -39,7 +40,8 @@ class ProductController extends Controller
      * @return \Spatie\Fractal\Fractal
      */
     public function index(): Fractal
-    {
+    {   
+       
         $products = $this->repository->paginate(12);
 
         return fractal($products, new ProductTransformer);
@@ -72,7 +74,7 @@ class ProductController extends Controller
 
         ProductsAccountsSeen::firstOrCreate([ 'account_id' => 1, 'product_id' => $product->id ]);
 
-        return fractal($product, new ProductTransformer);
+        return fractal($product, new ProductsTransformer);
     }
 
 
@@ -115,7 +117,7 @@ class ProductController extends Controller
         return fractal($products, new ProductTransformer);
     }
 
-      public function searchAdvance(Request $request)
+    public function searchAdvance(Request $request)
     {
         $keyword = $request->query('keyword') ?? "";
         $categoryId = $request->query('categoryId') ?? 0;
@@ -172,6 +174,61 @@ class ProductController extends Controller
             return fractal($products, new ProductTransformer);
         }
     }
+    public function searchAdvance1(Request $request)
+    {
+        $keyword = $request->query('keyword') ?? "";
+        $categoryId = $request->query('categoryId') ?? 0;
+        $subcategoryId = $request->query('subcategoryId') ?? 0;
+        $minValue = $request->query('minValue') ?? 0;
+        $maxvalue = $request->query('maxValue') ?? 999999999;
+        $brandId = $request->query('brandId') ?? '';
+        $eligibility = $request->query('eligibility') ?? 0;
+        $eligibilityChecked = $request->query('eligibilityChecked') ?? 0;
+        $adminCall = ($request->query('acc')==1)?$request->query('acc'):'';
+        $order = $request->query('order') ?? '';
+        $col = $request->query('col') ?? '';
+        $pid = $request->query('pid') ?? '';
+        if($eligibility>0){
+            $maxvalue = $eligibility;
+        }
+        // if($eligibilityChecked > 0 && $eligibilityChecked != ""){
+        //     $maxvalue = $eligibility/10;
+        // }
+
+        $_SESSION['minValue'] = $minValue;
+        $_SESSION['maxValue'] = $maxvalue;
+
+        $denominationsList = ProductDenomination::select('product_id')->whereRaw('CAST(points AS DECIMAL(10,2)) >= ' . $minValue)->whereRaw('CAST(points AS DECIMAL(10,2)) <= ' . $maxvalue)->groupBy('product_id')->get()->all();
+
+        $productIds = [];
+        foreach($denominationsList as $deno){
+            $productIds[] = $deno->product_id;
+        }
+        $brandIds = '';
+        if($brandId != ''){
+            $brandIds = explode('_', $brandId);
+        }
+
+        $products =  $this->repository->searchAdvance($keyword, $categoryId, $minValue, $maxvalue, $subcategoryId, $productIds, $brandIds, 'searchAd', $adminCall, $order, $col);
+        if($pid != '' && $pid == 1){
+            $param = [
+                'search' => $keyword,
+                'column' => ($col)?$col:'id',
+                'order' => ($order)?$order:'desc',
+            ];
+
+            $file = (Carbon::now())->toDateString().'-AllRewardsData.xlsx';
+            $path = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
+            $responsePath = "/export-file/{$pid}/{$file}";
+            Excel::store(new RewardsExports($param), $path);
+            return response()->json([
+                'file_path' => url($responsePath),
+            ]);
+        } else {
+            
+            return fractal($products, new ProductTransformer);
+        }
+    }
 
     public function getBrandsByCategory(Request $request){
         $categoryId = $request->query('categoryId') ?? 0;
@@ -206,7 +263,9 @@ class ProductController extends Controller
                 'description' => 'required',
                 //'term_condition' => 'required',
                 'image' => 'required|file||mimes:jpeg,png,jpg',
-                'action' => 'required'
+                'action' => 'required',
+                'currency_id' => 'required|integer|exists:currencies,id',
+                
             ];
 
             if($request->action && $request->action !== '') {
@@ -303,7 +362,7 @@ class ProductController extends Controller
 
                     ProductDenomination::create([
                             'value' => $denoValue,
-                            'points' => (int)$denoValue*(int)$getCurrencyPoints,
+                            'points' => (((int)$denoValue)*((int)$getCurrencyPoints)),
                             'product_id' => $id,
                         ]);
                 }
@@ -345,7 +404,7 @@ class ProductController extends Controller
                 foreach($denomi as $denoValue){
                     ProductDenomination::updateOrCreate([
                         'value' => $denoValue,
-                        'points' => ((int)$denoValue*(int)$getCurrencyPoints),
+                        'points' => (((int)$denoValue)*((int)$getCurrencyPoints)),
                         'product_id' => $product->id,
                     ]);
                 }

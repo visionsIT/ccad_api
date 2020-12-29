@@ -403,7 +403,7 @@ class ProgramController extends Controller
 
     public function sendEcard(Request $request)
     {
-        
+
         $rules = [
             'sender_id' => 'required|integer',
             'send_to_id' => 'required|integer',
@@ -462,14 +462,14 @@ class ProgramController extends Controller
                     'width' => 640,'quality' => 90
                 ];
                // $imageNAme = 'ripple_e_cardVodafone_Congrats_ecards20.jpg';
-                $conv->addPage(url('/newImage/'.$eCardDetails->card_image.'/'.$image_mesaage))
+                $conv->source(url('/newImage/'.$eCardDetails->card_image.'/'.$image_mesaage))
                     ->toPng($options)
                     ->save($destinationPath);
             }
 
             $new_img = '/uploaded/e_card_images/new/'.$newImage;
             $new_img_path = url($new_img);
-            
+
             $data = [
                 'email' => $sendToUser->email,
                 'username' => $sendToUser->first_name.' '. $sendToUser->last_name,

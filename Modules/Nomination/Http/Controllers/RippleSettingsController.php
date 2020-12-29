@@ -413,7 +413,7 @@ class RippleSettingsController extends Controller
                 try {
 
                     $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
-                    $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
+                    $campaign_budget_bal =  $campaign_budget && $campaign_budget->budget ? $campaign_budget->budget : 0;
 
                     /****** Point Deduction *******/
 
@@ -592,7 +592,7 @@ class RippleSettingsController extends Controller
                                 'width' => 640,'quality' => 90
                             ];
                            // $imageNAme = 'ripple_e_cardVodafone_Congrats_ecards20.jpg';
-                            $conv->addPage(url('/newImage/'.$eCardDetails->card_image.'/'.$image_mesaage))
+                            $conv->source(url('/newImage/'.$eCardDetails->card_image.'/'.$image_mesaage))
                                 ->toPng($options)
                                 ->save($destinationPath);
                         }
@@ -616,7 +616,7 @@ class RippleSettingsController extends Controller
                         try {
 
                             Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                                $m->from('info@meritincentives.com','Vodafone Egypt');    
+                                $m->from('info@meritincentives.com','CCAD');    
                                 $m->to($data["email"])->subject($data["card_title"].' Ecard!');
                             });
 

@@ -87,7 +87,7 @@ class CommonSettingController extends Controller
 
                 $rules = [
                     'currency_id' => 'required|integer|exists:currencies,id',
-                    'points' => 'required|integer||min:1',
+                    'points' => 'required|numeric||min:1',
                 ];
 
                 $validator = \Validator::make($request->all(), $rules);
@@ -135,7 +135,7 @@ class CommonSettingController extends Controller
 
                 $rules = [
                     'currency_id' => 'required|unique:point_rate_settings,currency_id|integer|exists:currencies,id',
-                    'points' => 'required|integer||min:1',
+                    'points' => 'required|numeric||min:1',
                 ];
 
                 $validator = \Validator::make($request->all(), $rules);

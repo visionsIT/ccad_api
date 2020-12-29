@@ -67,7 +67,7 @@ class ProductRepository extends Repository
         if($order !='' && $col !=''){
             $query->orderBy($col,$order);
         } else {
-            $query->orderByRaw("LENGTH(SUBSTRING_INDEX(.products.value, '.', 1))", 'ASC')
+            $query->orderByRaw("LENGTH(SUBSTRING_INDEX(products.value, '.', 1))", 'ASC')
             ->orderBy('products.value','ASC');
         }
         $response = $query->paginate(12);

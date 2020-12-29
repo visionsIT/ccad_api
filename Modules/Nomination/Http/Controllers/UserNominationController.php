@@ -76,7 +76,7 @@ class UserNominationController extends Controller
 
         $input = $request->all();
 
-        if(  isset($input['filter']) && (int)$input['filter'] > 0 ) {
+        if( isset($input['filter']) && (int)$input['filter'] > 0 ) {
             $order = $this->repository->filterRecords($input);
         } else {
             $order = $this->repository->getDesc($input['campaignID']);
@@ -125,16 +125,24 @@ class UserNominationController extends Controller
             $teamNomination = UserNomination::CLAIM_NOMINATION;
         }
 
-        $user_nomination = $this->repository->create([
-            'user' => $request->user,
-            'account_id' => $request->account_id,
-            'nomination_id' => $request->nomination_id,
-            'reason' => $request->reason,
-            'value' => $request->value,
-            'points' => $request->points,
-            'attachments' => $newname,
-            'team_nomination' => $teamNomination,
-        ]);
+        $user_ids = $request->user;
+        $user_id_array = explode(',',$user_ids);
+
+        foreach($user_id_array as $key=>$value){
+            $user_nomination = $this->repository->create([
+                'user' => (int)$value,
+                'account_id' => $request->account_id,
+                'campaign_id' => $request->campaign_id,
+                'nomination_id' => $request->nomination_id,
+                'reason' => $request->reason,
+                'value' => $request->value,
+                'points' => $request->points,
+                'attachments' => $newname,
+                'team_nomination' => $teamNomination,
+                'nominee_function' => $request->nominee_function,
+                'personal_message' => $request->personal_message
+            ]);
+        }
 
         $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
 
@@ -401,7 +409,7 @@ class UserNominationController extends Controller
 
         // confirm nominator
 
-        $subject ="Kafu by AD Ports - Nomination submitted ";
+        $subject ="Cleveland Clinic Abu Dhabi - Nomination submitted ";
 
         $message ="Thank you for your nomination! We will inform you if the nomination is approved.";
 
@@ -412,9 +420,9 @@ class UserNominationController extends Controller
 
         // $nominated_by_group_name= $user_nomination->nominated_user_group_name;
 
-        $subject = "Kafu by AD Ports - Nomination for approval";
+        $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
 
-        $link = "http://kafu.meritincentives.com/approvals/approve-level-1";
+        $link = "https://ccad.meritincentives.com/approvals/approve-level-1";
 
         $message = "Please approve {$user_name} nomination for the {$value} value which has been submitted by {$sender} for the following reason: {$reason} \n\r <br> \n\r <br>";
 
@@ -452,9 +460,9 @@ class UserNominationController extends Controller
         $reason=$user_nomination->reason;
         $user_name = $user_nomination->user_relation->first_name;
 
-        $subject="Kafu by AD Ports - Nomination submitted";
+        $subject="Cleveland Clinic Abu Dhabi - Nomination submitted";
 
-        $link = "http://kafu.meritincentives.com/approvals/approve-level-2";
+        $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
 
         //$nominated_by_group_name= $user_nomination->nominated_user_group_name;
 
@@ -675,7 +683,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             if($request->campaign_type == 4) {
 
                 $sender_email = $user_nomination->account->email;
-                $subject ="Kafu by AD Ports - Your nomination was approved !";
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been approved ";
                 $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
@@ -792,7 +800,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             //$user_nomination->account->email ="suruchi@visions.net.in";
             $sender_email = $user_nomination->account->email;
-            $subject ="Kafu by AD Ports - Your nomination was declined !";
+            $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
             $message = "Dear " . $user_nomination->account->name ;
             $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
             $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
@@ -822,7 +830,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
     public function testMail(): JsonResponse
     {
         $sender_email = "e.mahmoud124@gmail.com";
-        $subject ="Kafu by AD Ports - Your nomination was approved!";
+        $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
         $message ="Your nomination has been approved. Thank you for your contribution.";
         $this->nomination_service->sendmail($sender_email,$subject,$message);
         return response()->json(['Mail sent']);
@@ -1039,12 +1047,12 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     // confirm nominator that nomination approve
                     $sender_email = $user_nomination->account->email;
-                    $subject ="Kafu by AD Ports - Your nomination was approved!";
+                    $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
                     $message ="Your nomination has been approved. Thank you for your contribution.";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
 
                     $sender_email = $user_nomination->user_relation->email;
-                    $subject ="Kafu by AD Ports - Congratulations!";
+                    $subject ="Cleveland Clinic Abu Dhabi - Congratulations!";
                     $message ="Congratulations! You have been nominated. \n\r <br> Please check Kafu wall of heroes to see who nominated you ";
                     $message .="<a href='https://kafu.meritincentives.com/wall-of-heros'>Click here to check your nomination</a> ";
 
@@ -1107,7 +1115,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 }
                 $sender_email = $user_nomination->account->email;
-                $subject ="Kafu by AD Ports - Your nomination was declined !";
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
                 $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
@@ -1367,6 +1375,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         $users = json_decode($request->get('users'), true);
         $data = [
             'nomination_id'     =>  $request->get('nomination_id'),
+            'campaign_id'       =>  $request->get('campaign_id'),
             'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
             'project_name'      =>  $request->get('project_name'),
             'reason'            =>  $request->get('reason'),
@@ -1374,13 +1383,15 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             'level_2_approval'  =>  0,
             'team_nomination'   =>  UserNomination::TEAM_NOMINATION,
             'attachments'        => ($newname!='')?$newname:'',
+            'nominee_function' => $request->get('nominee_function'),
+            'personal_message' => $request->get('personal_message')
         ];
 
         foreach ($users as $key => $value) {
             $useracc = $this->account_service->show($value['accountid']);
             if( $vpaccount->def_dept_id == $useracc->def_dept_id ) {
                 $data['points'] = $value['value'];
-                $data['value'] = $value['value'];
+                $data['value'] = $request->get('value');
                 $data['user'] = $value['accountid'];
                 $user_nomination = $this->repository->create($data);
                     //if(!empty($user_nomination))
@@ -1391,7 +1402,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         // $sender_email = 'narinder@visions.net.in';//$user_nomination->account->email;
 
-        // $subject ="Kafu by AD Ports - New project nomination!";
+        // $subject ="Cleveland Clinic Abu Dhabi - New project nomination!";
         // $message = "Dear " . "VP of HR" .  "\n\r <br>";
         // $a = count($users);
         // $b = $user_nomination->project_name;
@@ -1488,7 +1499,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $sender_email = $user_nomination->account->email;
 
-                $subject ="Kafu by AD Ports - Your nomination was approved!";
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
                 $message = "Dear " . $user_nomination->account->name .  "\n\r <br>";
 
                 $message .="Your nomination  for the " . $user_nomination->project_name . " project has been successfully approved! As a result, " . $user_nomination->nominated_account->name . " has been successfully awarded with " . $user_nomination->value  . " to their Kafu account.";
@@ -1503,7 +1514,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $sender_email = $user_nomination->nominated_account->email;
 
-                $subject ="Kafu by AD Ports - Congratulations!";
+                $subject ="Cleveland Clinic Abu Dhabi - Congratulations!";
                 $message = "Dear " . $user_nomination->nominated_account->name ;
                 $message .="\n\r <br> Congratulations! \n\r <br> Your diligence and dedication towards the " . $user_nomination->project_name . " project, have played a tremendous role towards its success!";
                 $message .= "\n\r <br> As a sign of gratitude, you have been awarded with " . $user_nomination->value  . " to your Kafu account.";
@@ -1542,7 +1553,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $sender_email = $user_nomination->account->email;
 
-                $subject ="Kafu by AD Ports - Your nomination was declined !";
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
                 $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";

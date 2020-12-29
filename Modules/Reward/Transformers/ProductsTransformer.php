@@ -4,7 +4,7 @@ use League\Fractal\TransformerAbstract;
 use Modules\Reward\Models\Product;
 use Modules\Reward\Models\ProductsCountries;
 use DB;
-class ProductTransformer extends TransformerAbstract
+class ProductsTransformer extends TransformerAbstract
 {
 
 
@@ -14,8 +14,7 @@ class ProductTransformer extends TransformerAbstract
      * @return array
      */
     public function transform(Product $product): array
-    {
-        
+    {  
        /* if ($handle = opendir( public_path().'/storage/products_img/')) {
             while (false !== ($fileName = readdir($handle))) {
                 $newName = strtolower($fileName);

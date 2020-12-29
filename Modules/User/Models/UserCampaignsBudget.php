@@ -13,6 +13,6 @@ class UserCampaignsBudget extends Model
 
     public function user()
     {
-        return $this->belongsTo(ProgramUsers::class, 'program_user_id', 'id');
+        return $this->belongsTo(ProgramUsers::class, 'program_user_id');
     }
 }
