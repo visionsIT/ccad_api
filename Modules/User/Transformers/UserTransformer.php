@@ -30,7 +30,7 @@ class UserTransformer extends TransformerAbstract
             'username' => $User->username,
             'account_id' => $User->account_id,
             'user_groups' => optional($User->account)->getRoleNames(),
-            'user_group_id' => DB::table('users_group_list')->where('account_id', $User->account_id)->get(),
+            'user_group_id' => DB::table('users_group_list')->where('account_id', $User->account_id)->where('user_role_id', '1')->get(),
             'address' => $User->address_1 . ' ' . $User->address_2,
             //'user_points' => $User->point_balance,
             'user_points' => UsersPoint::select('balance')->where('user_id', $User->id)->orderBy('id', 'desc')->first(),

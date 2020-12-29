@@ -44,13 +44,14 @@ class UserController extends Controller
     fn to get all users
     *******************/
     public function getAllUsers($campaign_id = null){
-
         $param = '';
+
         if($campaign_id){
             $campaign_idv = $campaign_id;
         }else{
             $campaign_idv = '';
         }
+
         if(isset($request->order) || isset($request->col)){
             $param = [
                 'search' => ($request->search)?$request->search:'',
@@ -82,7 +83,7 @@ class UserController extends Controller
      * @return \Spatie\Fractal\Fractal
      */
     public function index(Request $request) {
-        
+
         $param = '';
         if(isset($request->order) || isset($request->col)){
             $param = [
@@ -121,6 +122,7 @@ class UserController extends Controller
     public function store(Program $program, ProgramUsersRequest $request): Fractal
     {
         $user = $this->service->store($program, $request);
+
         return fractal($user, new UserTransformer());
     }
 
