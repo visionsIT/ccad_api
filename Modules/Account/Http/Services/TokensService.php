@@ -59,7 +59,7 @@ final class TokensService
         // Generate verification_token or code depends on user agent then update it in account table
         // $token = $this->generateVerificationToken();
 
-        $subject ="Emerson - Password Reset";
+        $subject ="CCAD - Password Reset";
 
         // $message = 'Hi '.$account->user->first_name.', <br><br> Here are the new credentials to access the system:<br><b>Email: </b>'.$account->email.'<br><b>Password:</b> '.$password;
         $message = '<h2 style="font-size:20px;margin: 10px 0px 20px;">We heard you have forgotten your password for '. $account->user->username ? $account->user->username : $account->name .'.</h2><p style="margin: 10px 0px; font-size: 16px;">Here are the new credentials to access the system: <br><b>Username:</b> '.$account->email.'<br><b>Password:</b> '.$password.'</p><p style="margin: 10px 0px; font-size: 16px;">If you continue to have problems logging into your account, please contact us at info@meriteincentives.com</p>';
@@ -80,7 +80,7 @@ final class TokensService
         // ];
 
         // Mail::send('emails.test', [ 'mes' => $message, 'image_url' => $image_url ], function ($m) use($account) {
-        //     $m->to($account->email)->subject('Emerson - Password Reset');
+        //     $m->to($account->email)->subject('CCAD - Password Reset');
         // });
     }
 
@@ -90,9 +90,9 @@ final class TokensService
         $this->tokens_repository->create([ 'account_id' => $account->id, 'token' => $token, 'type' => 0 ]);
         $resetlink = env('frontendURL').'/reset-password/'.$token;
 
-        // $subject ="Emerson - Password Reset";$account->user->username
+        // $subject ="CCAD - Password Reset";$account->user->username
         $subject ="Reset Password!";
-        $message = '<p style="font-size:16px;margin: 10px 0px 20px;">Dear '.$account->user->first_name.' '.$account->user->last_name.',</p><p style="font-size:16px;margin: 10px 0px;">You can now reset your password for Emerson Rewards.</p><p style="margin: 10px 0px; font-size: 16px;">Please <a href="'.$resetlink.'">Click here to create a password</a> within the next 24 hours.</p><p style="margin: 10px 0px; font-size: 16px;">If you continue to have problems logging into your account, please contact us at info@meriteincentives.com.</p>';
+        $message = '<p style="font-size:16px;margin: 10px 0px 20px;">Dear '.$account->user->first_name.' '.$account->user->last_name.',</p><p style="font-size:16px;margin: 10px 0px;">You can now reset your password for CCADI.</p><p style="margin: 10px 0px; font-size: 16px;">Please <a href="'.$resetlink.'">Click here to create a password</a> within the next 24 hours.</p><p style="margin: 10px 0px; font-size: 16px;">If you continue to have problems logging into your account, please contact us at info@meriteincentives.com.</p>';
 
         $email = $account->email;
         Mail::send(new \Modules\Nomination\Mails\SendMail($email,$token,$message,$subject));
