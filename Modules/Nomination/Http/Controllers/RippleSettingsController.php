@@ -413,7 +413,7 @@ class RippleSettingsController extends Controller
                 try {
 
                     $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
-                    $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
+                    $campaign_budget_bal =  $campaign_budget && $campaign_budget->budget ? $campaign_budget->budget : 0;
 
                     /****** Point Deduction *******/
 
