@@ -18,6 +18,11 @@ class AccountTransformer extends TransformerAbstract
      */
     public function transform(Account $account): array
     {
+
+        date_default_timezone_set('Asia/Dubai');
+        $dubai_time = date('Y-m-d H:i:s');
+        #update_table_last_login_date_time
+        Account::where('id',$account->id)->update(['last_login'=>$dubai_time]);
         
         $userCountry = ProgramUsers::select('country','country_id')->where('account_id',$account->id)->get()->toArray();
         return [

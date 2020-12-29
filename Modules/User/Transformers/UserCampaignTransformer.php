@@ -15,6 +15,7 @@ class UserCampaignTransformer extends TransformerAbstract
      */
     public function transform(UserCampaignsBudget $data): array
     {
+        
         return [
             'id' => $data->id,
             'campaign_id' => $data->campaign_id,

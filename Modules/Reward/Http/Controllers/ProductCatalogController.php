@@ -25,7 +25,8 @@ class ProductCatalogController extends Controller
      * @return \Spatie\Fractal\Fractal
      */
     public function index(): Fractal
-    {
+    {   
+
         if(isset($_GET['country_id'])){
             define('COUNTRY_CODE', $_GET['country_id']);
         }else{

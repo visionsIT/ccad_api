@@ -33,10 +33,11 @@ class PasswordsService
     public function resetPassword($email): void
     {
         $account = $this->account_repository->findAccountByEmail($email);
-        $password = Str::random(8);
-        $account->password = $password;
-        $account->update();
-        $this->token_service->sendResetPasswordCodeToAccount($account,$password);
+        // $password = Str::random(8);
+        // $account->password = $password;
+        // $account->update();
+        // $this->token_service->sendResetPasswordCodeToAccount($account,$password);
+        $this->token_service->sendResetPasswordLink($account);
     }
 
     /**

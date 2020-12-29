@@ -568,7 +568,6 @@ class UserManageController extends Controller
                 ->where('user_campaigns_budget.campaign_id','=',$campaign_id)
                 ->orderBy('program_users.first_name','ASC')
                 ->paginate('10');
-                
                 return fractal($get_userBudget, new UserCampaignTransformer());
             }
             /*return response()->json([

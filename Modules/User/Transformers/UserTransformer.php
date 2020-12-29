@@ -16,6 +16,13 @@ class UserTransformer extends TransformerAbstract
     {
         $username = $User->first_name.' '.$User->last_name;
         $program_user_id = ProgramUsers::select('id')->where('account_id', $User->account_id)->first();
+
+        if($User->account->last_login != null || $User->account->last_login != ''){
+            $last_login = date('M d,Y g:i a', strtotime($User->account->last_login));
+        }else{
+            $last_login = null;
+        }
+        
         return [
             'id' => $User->id,
             'name' => $username,
@@ -47,6 +54,7 @@ class UserTransformer extends TransformerAbstract
             'emp_number' => $User->emp_number,
             'vp_emp_number' => $User->vp_emp_number,
             'program_id' => $program_user_id->id,
+            'last_login' => $last_login,
         ];
     }
 }

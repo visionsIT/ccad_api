@@ -173,64 +173,21 @@ class NominationService
         // return $users;
     }
 
-    // public function getCampaignUSerNomination($search = NULL){
-
-    //     if($search === NULL) {
-    //         return UserNomination::where(function($q){
-    //                 $q->where(function($query){
-    //                     $query->where('user_nominations.level_1_approval', '1')
-    //                     ->where('user_nominations.level_2_approval', '2');
-    //                 })
-    //                 ->orWhere(function($query){
-    //                         $query->where('user_nominations.level_1_approval', '2')
-    //                         ->where('user_nominations.level_2_approval', '1');
-    //                     })
-    //                 ->orWhere(function($query){
-    //                     $query->where('user_nominations.level_1_approval', '1')
-    //                     ->where('user_nominations.level_2_approval', '1');
-    //                 });
-    //             })
-    //             ->join('value_sets', 'user_nominations.campaign_id', '=', 'value_sets.id')
-    //             ->join('campaign_settings', 'user_nominations.campaign_id', '=', 'campaign_settings.campaign_id')
-    //             ->where('value_sets.status','1')
-    //             ->where('campaign_settings.wall_settings','1')
-    //             ->orderByDesc('user_nominations.id')->paginate(10);
-    //     }else{
-
-    //         return UserNomination::where(function($q){
-    //                 $q->where(function($query){
-    //                     $query->where('user_nominations.level_1_approval', '1')
-    //                     ->where('user_nominations.level_2_approval', '2');
-    //                 })
-    //                 ->orWhere(function($query){
-    //                         $query->where('user_nominations.level_1_approval', '2')
-    //                         ->where('user_nominations.level_2_approval', '1');
-    //                     })
-    //                 ->orWhere(function($query){
-    //                     $query->where('user_nominations.level_1_approval', '1')
-    //                     ->where('user_nominations.level_2_approval', '1');
-    //                 });
-    //             })
-    //             ->join('value_sets', 'user_nominations.campaign_id', '=', 'value_sets.id')
-    //             ->join('campaign_settings', 'user_nominations.campaign_id', '=', 'campaign_settings.campaign_id')
-    //             ->join('program_users', 'user_nominations.user', '=', 'program_users.account_id')
-    //             ->where('value_sets.status','1')
-    //             ->where('campaign_settings.wall_settings','1')
-    //             ->where('program_users.first_name', 'LIKE', "%{$search}%")
-    //             ->orWhere('program_users.last_name', 'LIKE', "%{$search}%")
-    //             ->orderByDesc('user_nominations.id')->paginate(10);
-
-    //     }
-        
-    // }
-
     public function getCampaignUSerNomination($search = NULL){
 
         if($search === NULL) {
             return UserNomination::where(function($q){
                     $q->where(function($query){
-                        $query->where('user_nominations.level_1_approval', '2')
+                        $query->where('user_nominations.level_1_approval', '1')
                         ->where('user_nominations.level_2_approval', '2');
+                    })
+                    ->orWhere(function($query){
+                            $query->where('user_nominations.level_1_approval', '2')
+                            ->where('user_nominations.level_2_approval', '1');
+                        })
+                    ->orWhere(function($query){
+                        $query->where('user_nominations.level_1_approval', '1')
+                        ->where('user_nominations.level_2_approval', '1');
                     });
                 })
                 ->join('value_sets', 'user_nominations.campaign_id', '=', 'value_sets.id')
@@ -242,8 +199,16 @@ class NominationService
 
             return UserNomination::where(function($q){
                     $q->where(function($query){
-                        $query->where('user_nominations.level_1_approval', '2')
+                        $query->where('user_nominations.level_1_approval', '1')
                         ->where('user_nominations.level_2_approval', '2');
+                    })
+                    ->orWhere(function($query){
+                            $query->where('user_nominations.level_1_approval', '2')
+                            ->where('user_nominations.level_2_approval', '1');
+                        })
+                    ->orWhere(function($query){
+                        $query->where('user_nominations.level_1_approval', '1')
+                        ->where('user_nominations.level_2_approval', '1');
                     });
                 })
                 ->join('value_sets', 'user_nominations.campaign_id', '=', 'value_sets.id')
