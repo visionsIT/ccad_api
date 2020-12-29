@@ -125,15 +125,16 @@ class UserNominationController extends Controller
             $teamNomination = UserNomination::CLAIM_NOMINATION;
         }
 
-        $user_ids = $request->user;
-        $user_id_array = explode(',',$user_ids);
+        // $user_ids = $request->user;
+        $user_id_array = json_decode($request->user, true);
+        // $user_id_array = explode(',',$user_ids);
 
         foreach($user_id_array as $key=>$value){
             $user_nomination = $this->repository->create([
-                'user' => (int)$value,
+                'user' => (int)$value['accountid'],
                 'account_id' => $request->account_id,
                 'campaign_id' => $request->campaign_id,
-                'group_id' => $request->group_id ? $request->group_id : 1,
+                'group_id' => $value['group_id'],
                 'nomination_id' => $request->nomination_id,
                 'reason' => $request->reason,
                 'value' => $request->value,
@@ -1378,7 +1379,6 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             'nomination_id'     =>  $request->get('nomination_id'),
             'campaign_id'       =>  $request->get('campaign_id'),
             'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
-            'group_id'          =>  $request->get('group_id') ? $request->get('group_id') : 1,
             'project_name'      =>  $request->get('project_name'),
             'reason'            =>  $request->get('reason'),
             'level_1_approval'  =>  0,
@@ -1395,6 +1395,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $data['points'] = $value['value'];
                 $data['value'] = $request->get('value');
                 $data['user'] = $value['accountid'];
+                $data['group_id'] = $value['group_id'];
                 $user_nomination = $this->repository->create($data);
                     //if(!empty($user_nomination))
                     //$user_nomination->sendEmail($this->nomination_service); // NO need individual notification on request
