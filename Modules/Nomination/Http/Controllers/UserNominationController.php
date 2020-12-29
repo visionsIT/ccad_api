@@ -133,6 +133,7 @@ class UserNominationController extends Controller
                 'user' => (int)$value,
                 'account_id' => $request->account_id,
                 'campaign_id' => $request->campaign_id,
+                'group_id' => $request->group_id ? $request->group_id : 1,
                 'nomination_id' => $request->nomination_id,
                 'reason' => $request->reason,
                 'value' => $request->value,
@@ -686,7 +687,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been approved ";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
             }
 
@@ -803,7 +804,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
             $message = "Dear " . $user_nomination->account->name ;
             $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-            $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
+            $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
 
 
             $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1054,7 +1055,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $sender_email = $user_nomination->user_relation->email;
                     $subject ="Cleveland Clinic Abu Dhabi - Congratulations!";
                     $message ="Congratulations! You have been nominated. \n\r <br> Please check Kafu wall of heroes to see who nominated you ";
-                    $message .="<a href='https://kafu.meritincentives.com/wall-of-heros'>Click here to check your nomination</a> ";
+                    $message .="<a href='https://ccad.meritincentives.com/wall-of-fame'>Click here to check your nomination</a> ";
 
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
                     if($user_nomination->team_nomination != 1){
@@ -1118,7 +1119,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
             }
 
@@ -1377,6 +1378,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             'nomination_id'     =>  $request->get('nomination_id'),
             'campaign_id'       =>  $request->get('campaign_id'),
             'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
+            'group_id'          =>  $request->get('group_id') ? $request->get('group_id') : 1,
             'project_name'      =>  $request->get('project_name'),
             'reason'            =>  $request->get('reason'),
             'level_1_approval'  =>  0,
@@ -1504,7 +1506,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $message .="Your nomination  for the " . $user_nomination->project_name . " project has been successfully approved! As a result, " . $user_nomination->nominated_account->name . " has been successfully awarded with " . $user_nomination->value  . " to their Kafu account.";
 
-                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
+                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
 
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1518,7 +1520,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $message = "Dear " . $user_nomination->nominated_account->name ;
                 $message .="\n\r <br> Congratulations! \n\r <br> Your diligence and dedication towards the " . $user_nomination->project_name . " project, have played a tremendous role towards its success!";
                 $message .= "\n\r <br> As a sign of gratitude, you have been awarded with " . $user_nomination->value  . " to your Kafu account.";
-                $message .= "\n\r <br>  *Click <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a> to view more details on why you have been awarded, and <a href='https://kafu.meritincentives.com/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
+                $message .= "\n\r <br>  *Click <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='https://ccad.meritincentives.com/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
                 $message .=" ";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1556,8 +1558,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
-                //$message .="To view this award on the Kafu wall of fame, please <a href='https://kafu.meritincentives.com/wall-of-heros'>Click here</a>.";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
+                //$message .="To view this award on the Kafu wall of fame, please <a href='https://ccad.meritincentives.com/wall-of-fame'>Click here</a>.";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
 
