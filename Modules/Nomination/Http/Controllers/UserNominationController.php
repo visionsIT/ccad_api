@@ -125,16 +125,24 @@ class UserNominationController extends Controller
             $teamNomination = UserNomination::CLAIM_NOMINATION;
         }
 
-        $user_nomination = $this->repository->create([
-            'user' => $request->user,
-            'account_id' => $request->account_id,
-            'nomination_id' => $request->nomination_id,
-            'reason' => $request->reason,
-            'value' => $request->value,
-            'points' => $request->points,
-            'attachments' => $newname,
-            'team_nomination' => $teamNomination,
-        ]);
+        $user_ids = $request->user;
+        $user_id_array = explode(',',$user_ids);
+
+        foreach($user_id_array as $key=>$value){
+            $user_nomination = $this->repository->create([
+                'user' => (int)$value,
+                'account_id' => $request->account_id,
+                'campaign_id' => $request->campaign_id,
+                'nomination_id' => $request->nomination_id,
+                'reason' => $request->reason,
+                'value' => $request->value,
+                'points' => $request->points,
+                'attachments' => $newname,
+                'team_nomination' => $teamNomination,
+                'nominee_function' => $request->nominee_function,
+                'personal_message' => $request->personal_message
+            ]);
+        }
 
         $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
 
