@@ -1391,7 +1391,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $useracc = $this->account_service->show($value['accountid']);
             if( $vpaccount->def_dept_id == $useracc->def_dept_id ) {
                 $data['points'] = $value['value'];
-                $data['value'] = $value['value'];
+                $data['value'] = $request->get('value');
                 $data['user'] = $value['accountid'];
                 $user_nomination = $this->repository->create($data);
                     //if(!empty($user_nomination))
