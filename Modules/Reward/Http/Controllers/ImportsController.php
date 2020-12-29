@@ -295,7 +295,7 @@ class ImportsController extends Controller
 
         try{
             Mail::send('emails.UserWelcomeMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                $m->to($data["email"])->subject('Kafu by AD Ports - New Account');
+                $m->to($data["email"])->subject('Cleveland Clinic Abu Dhabi - New Account');
             });
         }catch(\Throwable $th){
             return response()->json([

@@ -205,7 +205,7 @@ class UserManageController extends Controller
 
     public function sendPasswordCodeToAccount($email,$name,$password): void
     {
-        $subject ="Kafu by AD Ports - New Account";
+        $subject ="Cleveland Clinic Abu Dhabi - New Account";
 
         $message = 'Hi '.$name.', <br><br> Welcome to AD PORT, <br/>Here is your password <b>'.$password.'</b> to get access of system please go to site or Use Reset Password to get new password  ';
 

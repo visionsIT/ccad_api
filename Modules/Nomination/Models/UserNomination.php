@@ -128,14 +128,14 @@ catch (exception $e) {
 
         // confirm nominator
 
-        $subject ="Kafu by AD Ports - Nomination submitted ";
+        $subject ="Cleveland Clinic Abu Dhabi - Nomination submitted ";
 
         $message ="Thank you for your nomination! We will inform you if the nomination is approved.";
 
         $nomination_service->sendmail($sender_email,$subject,$message);
 
 
-        $subject = "Kafu by AD Ports - Nomination for approval";
+        $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
 
         $link = "javascript:void(0);";
 
