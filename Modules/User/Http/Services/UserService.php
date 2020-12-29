@@ -92,8 +92,8 @@ class UserService
 
            $get_campaign_setting = CampaignSettings::select('receiver_users','receiver_group_ids')->where('campaign_id', $campaign_id)->first()->toArray();
 
-           if($get_campaign_setting['receiver_users'] == 1){
-                $group_ids = $get_campaign_setting['receiver_group_ids'];
+        //    if($get_campaign_setting['receiver_users'] == 1){
+                $group_ids = $get_campaign_setting['receiver_users'] == 1 ? $get_campaign_setting['receiver_group_ids'] : [];
                 $group_ids = explode(',', $group_ids);
     
                 return ProgramUsers::join('users_group_list as t1', "t1.account_id","=","program_users.account_id")
@@ -102,7 +102,7 @@ class UserService
                 ->where('t1.status','1')
                 ->get();
 
-            }
+            // }
         }
       
 
