@@ -616,7 +616,7 @@ class RippleSettingsController extends Controller
                         try {
 
                             Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                                $m->from('info@meritincentives.com','Emerson Egypt');    
+                                $m->from('info@meritincentives.com','CCAD');    
                                 $m->to($data["email"])->subject($data["card_title"].' Ecard!');
                             });
 
