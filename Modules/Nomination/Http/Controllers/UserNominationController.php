@@ -1375,6 +1375,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         $users = json_decode($request->get('users'), true);
         $data = [
             'nomination_id'     =>  $request->get('nomination_id'),
+            'campaign_id'       =>  $request->get('campaign_id'),
             'account_id'        =>  $vpaccount->id,//$loggedin_user->id,//$request->get('account_id'),
             'project_name'      =>  $request->get('project_name'),
             'reason'            =>  $request->get('reason'),
@@ -1382,6 +1383,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             'level_2_approval'  =>  0,
             'team_nomination'   =>  UserNomination::TEAM_NOMINATION,
             'attachments'        => ($newname!='')?$newname:'',
+            'nominee_function' => $request->get('nominee_function'),
+            'personal_message' => $request->get('personal_message')
         ];
 
         foreach ($users as $key => $value) {
