@@ -98,7 +98,7 @@ class UserService
     
                 return ProgramUsers::join('users_group_list as t1', "t1.account_id","=","program_users.account_id")
                 ->whereIn('t1.user_group_id', $group_ids)
-                ->where('t1.user_role_id', 1)
+                ->where('t1.user_role_id','1')
                 ->where('t1.status','1')
                 ->get();
 
