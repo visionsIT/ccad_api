@@ -240,7 +240,7 @@ class UserNominationController extends Controller
 
         $senderUser = ProgramUsers::find($request->sender_id);
         
-
+        $failed = [];
 
         // Get Sender program id using account_id
 
@@ -318,48 +318,27 @@ class UserNominationController extends Controller
                             'personal_message' => $request->personal_message
                         ]);
 
-                        try {
-                            DB::commit();
-                        } catch (\Exception $e) {
-                        
-                        DB::rollBack();
-                        return response()->json(['message'=>$e->getMessage(), 'status'=>'success']);
-                        }
+                        DB::commit();
                         
                     }
-
-                    return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
                  
                 } catch (\Exception $e) {
                     
                     DB::rollBack();
-                    $user_nomination = array();
-                    return response()->json(['message'=> $e->getMessage(), 'status'=>'success']);
+                    array_push($failed, $e->getMessage());
 
                 }
             }  // end foreach
+
+            if(!empty($failed)) {
+                return response()->json(['message'=>'Nomination has not been sent for '.implode(", ",$failed).'. Please try again later.', 'status'=>'success']);
+            } else {
+                return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
+            }
            
         } else {
-             $user_nomination = array();
             return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
         }
-        /*$user_nomination = $this->repository->create([
-            'user' => $request->user,
-            'account_id' => $request->account_id,
-            'nomination_id' => $request->nomination_id,
-            'reason' => "zxcxzc",//$request->reason,
-            'value' => $request->value,
-            'points' => $request->points,
-            'attachments' => $newname,
-            'team_nomination' => $teamNomination,
-        ]);
-
-        $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
-
-        if( sizeof($approvals) > 0 )
-        {
-            $this->confirm_nomination($user_nomination, $approvals);
-        }*/
         
     }
     /**
