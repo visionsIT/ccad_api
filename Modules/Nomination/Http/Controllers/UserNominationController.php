@@ -270,8 +270,64 @@ class UserNominationController extends Controller
 
                     if( $approval_request == 0 && $points_allowed == 1){
 
-                       // Waiting response from client
-                       return response()->json(['message'=>"Invalid Campaign Settings.", 'status'=>'error']);
+                        if($budget_type == 1){ 
+
+                            // Campaign_Budget of current logged user
+        
+                            $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
+        
+                            if(!$campaign_budget){
+                                
+                                return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
+                                
+                            }else{
+        
+                                $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
+                                
+                                if($campaign_budget_bal < ($inputPoint)) {
+                                    return response()->json(['message'=>"You don't have enough balance to nominate", 'status'=>'error']);
+                                }
+                            }
+        
+                            // campaign Deduction
+        
+                            $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
+                            $campaign_budget_bal =  $campaign_budget->budget;
+        
+                            $currentBud = $campaign_budget_bal;
+                            $finalBud = $currentBud-$inputPoint;
+        
+                            $updateSenderBudget = UserCampaignsBudget::where('program_user_id', $request->sender_id)->where('campaign_id',$campaign_id)->update([
+                                        'budget' => $finalBud,
+                                    ]);
+        
+                            // Logs
+                            
+                            $createRippleLog = UserCampaignsBudgetLogs::create([
+                                'program_user_id' => $request->sender_id,
+                                'campaign_id' => $campaign_id,
+                                'budget' => $inputPoint,
+                                'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
+                                'description' => "direct nomination without approval",   
+                                'created_by_id' => $request->account_id,     
+                            ]);
+        
+        
+                        }
+
+                        //update receiver budget
+                        $currentBud = UsersPoint::select('balance')->where('user_id',$receiverid)->latest()->first();
+                        
+                        $currentBud = $currentBud ? $currentBud->balance : 0;
+                        $finalPoints = $currentBud+$points_update;
+                        $updateReciverBudget = UsersPoint::create([
+                            'value'    => $points_update, // +/- point
+                            'user_id'    => $receiverid, // Receiver
+                            'transaction_type_id'    => 10,  // For Ripple
+                            'description' => '',
+                            'balance'    => $finalPoints, // After +/- final balnce
+                            'created_by_id' => $request->sender_id // Who send
+                        ]);
 
                     }
 
@@ -617,34 +673,34 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     // Check current loged user Overall balance
 
-                    $current_budget_bal = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
+                    // $current_budget_bal = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
 
-                    $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
+                    // $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
                     
-                    if(!$current_budget_bal) {
-                        //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
-                        return response()->json(['message'=>"Balance is not allocated", 'status'=>'error']);
-                    }
-                    if($current_budget_bal < ($points_update)) {
-                        //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
-                        return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
-                    }
+                    // if(!$current_budget_bal) {
+                    //     //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
+                    //     return response()->json(['message'=>"Balance is not allocated", 'status'=>'error']);
+                    // }
+                    // if($current_budget_bal < ($points_update)) {
+                    //     //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
+                    //     return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
+                    // }
 
 
                     // Overall balance deduction
 
-                    $currentBud = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
-                    $currentBud = $currentBud ? $currentBud->balance : 0;
-                    $finalPoints = $currentBud-$points_update;
+                    // $currentBud = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
+                    // $currentBud = $currentBud ? $currentBud->balance : 0;
+                    // $finalPoints = $currentBud-$points_update;
                 
-                    $updateReciverBudget = UsersPoint::create([
-                        'value'    => -$points_update, // +/- point
-                        'user_id'    => $approver_program_id, // Approval program id
-                        'transaction_type_id'    => 10,  // For Ripple
-                        'description' => 'Deduction after approval',
-                        'balance'    => $finalPoints, // After +/- final balnce
-                        'created_by_id' =>$request->approver_account_id // Who send
-                    ]);
+                    // $updateReciverBudget = UsersPoint::create([
+                    //     'value'    => -$points_update, // +/- point
+                    //     'user_id'    => $approver_program_id, // Approval program id
+                    //     'transaction_type_id'    => 10,  // For Ripple
+                    //     'description' => 'Deduction after approval',
+                    //     'balance'    => $finalPoints, // After +/- final balnce
+                    //     'created_by_id' =>$request->approver_account_id // Who send
+                    // ]);
                 } 
                        
             } // Close Campiagn type condition
@@ -924,34 +980,34 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     // Check current loged user Overall balance
 
-                    $current_budget_bal = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
+                    // $current_budget_bal = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
 
-                    $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
+                    // $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
                     
-                    if(!$current_budget_bal) {
-                        //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
-                        return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
-                    }
-                    if($current_budget_bal < ($points_update)) {
-                        //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
-                        return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
-                    }
+                    // if(!$current_budget_bal) {
+                    //     //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
+                    //     return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
+                    // }
+                    // if($current_budget_bal < ($points_update)) {
+                    //     //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
+                    //     return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
+                    // }
 
 
                     // Overall balance deduction
 
-                    $currentBud = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
-                    $currentBud = $currentBud ? $currentBud->balance : 0;
-                    $finalPoints = $currentBud-$points_update;
+                    // $currentBud = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
+                    // $currentBud = $currentBud ? $currentBud->balance : 0;
+                    // $finalPoints = $currentBud-$points_update;
                 
-                    $updateReciverBudget = UsersPoint::create([
-                        'value'    => -$points_update, // +/- point
-                        'user_id'    => $approver_program_id, // Approval program id
-                        'transaction_type_id'    => 10,  // For Ripple
-                        'description' => 'Deduction after approval',
-                        'balance'    => $finalPoints, // After +/- final balnce
-                        'created_by_id' =>$request->approver_account_id // Who send
-                    ]);
+                    // $updateReciverBudget = UsersPoint::create([
+                    //     'value'    => -$points_update, // +/- point
+                    //     'user_id'    => $approver_program_id, // Approval program id
+                    //     'transaction_type_id'    => 10,  // For Ripple
+                    //     'description' => 'Deduction after approval',
+                    //     'balance'    => $finalPoints, // After +/- final balnce
+                    //     'created_by_id' =>$request->approver_account_id // Who send
+                    // ]);
                 } 
                        
             } // Close Campiagn type condition
