@@ -313,6 +313,25 @@ class UserNominationController extends Controller
                             ]);
         
         
+                        } else {
+                            UserNomination::create([
+                                'user'   => $sendToUser->account_id, // Receiver
+                                'account_id' => $request->account_id, // Sender
+                                'group_id' => $groupId,
+                                'campaign_id' => $campaign_id,
+                                'nomination_id' => $request->nomination_id,
+                                'level_1_approval' => 2,
+                                'level_2_approval' => 2,
+                                'point_type' => $budget_type,
+                                'reason' => $request->reason,
+                                'value' => $request->value,
+                                'points'  => $inputPoint,
+                                'attachments' => $newname,
+                                'project_name' => $request->project_name ? $request->project_name : '',
+                                'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+                                'nominee_function' => $request->nominee_function,
+                                'personal_message' => $request->personal_message
+                            ]);
                         }
 
                         //update receiver budget
@@ -328,6 +347,8 @@ class UserNominationController extends Controller
                             'balance'    => $finalPoints, // After +/- final balnce
                             'created_by_id' => $request->sender_id // Who send
                         ]);
+
+                        DB::commit();
 
                     }
 
