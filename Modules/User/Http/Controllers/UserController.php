@@ -208,9 +208,10 @@ class UserController extends Controller
 
             $date = date('Y-m-d h:i:s');
 
-            $check_data = UsersGroupList::where(['account_id'=>$request->account_id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->first();
+            // $check_data = UsersGroupList::where(['account_id'=>$request->account_id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->first();
+            $check_data = UsersGroupList::where(['account_id'=>$request->account_id,'user_role_id'=>$request->role_id])->first();
             if(!empty($check_data)){
-                return response()->json(['message'=>'Record already exists.', 'status'=>'error']);exit;
+                return response()->json(['message'=>'Selected user already exists in another group with same role. Please select other role to add selected user in this group.', 'status'=>'error']);exit;
             }else{
                 $UsersGroupList = new UsersGroupList;
                 $UsersGroupList->account_id = $request->account_id;
