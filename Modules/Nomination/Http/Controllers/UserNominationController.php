@@ -314,6 +314,10 @@ class UserNominationController extends Controller
         
         
                         } else {
+                            $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+                            // Get lowest role of receiver
+                            $groupId  = $groupData['user_group_id'];
+                            
                             UserNomination::create([
                                 'user'   => $sendToUser->account_id, // Receiver
                                 'account_id' => $request->account_id, // Sender
