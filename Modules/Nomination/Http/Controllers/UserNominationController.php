@@ -271,6 +271,7 @@ class UserNominationController extends Controller
                     if( $approval_request == 0 && $points_allowed == 1){
 
                        // Waiting response from client
+                       return response()->json(['message'=>"Invalid Campaign Settings.", 'status'=>'error']);
 
                     }
 
