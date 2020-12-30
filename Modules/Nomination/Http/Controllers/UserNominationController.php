@@ -304,6 +304,7 @@ class UserNominationController extends Controller
                             'account_id' => $request->account_id, // Sender
                             'group_id' => $groupId,
                             'campaign_id' => $campaign_id,
+                            'nomination_id' => $request->nomination_id,
                             'level_1_approval' => $update_vale_l1,
                             'level_2_approval' => $update_vale_l2,
                             'point_type' => $budget_type,
@@ -312,6 +313,8 @@ class UserNominationController extends Controller
                             'points'  => $inputPoint,
                             'attachments' => $newname,
                             'team_nomination' => $teamNomination,
+                            'nominee_function' => $request->nominee_function,
+                            'personal_message' => $request->personal_message
                         ]);
 
                         try {
