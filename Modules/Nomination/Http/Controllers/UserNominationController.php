@@ -409,7 +409,7 @@ class UserNominationController extends Controller
             }  // end foreach
 
             if(!empty($failed)) {
-                return response()->json(['message'=>'Nomination has not been sent for '.implode(", ",$failed).'. Please try again later.', 'status'=>'success']);
+                return response()->json(['message'=>'Nomination has not been sent for '.implode(", ",$failed).'. Please try again later.', 'status'=>'error']);
             } else {
                 return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
             }
