@@ -312,7 +312,8 @@ class UserNominationController extends Controller
                             'value' => $request->value,
                             'points'  => $inputPoint,
                             'attachments' => $newname,
-                            'team_nomination' => $teamNomination,
+                            'project_name' => $request->project_name ? $request->project_name : '',
+                            'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
                             'nominee_function' => $request->nominee_function,
                             'personal_message' => $request->personal_message
                         ]);
