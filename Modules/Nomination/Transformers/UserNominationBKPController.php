@@ -159,7 +159,7 @@ class UserNominationBKPController extends Controller
 
         // confirm nominator
 
-        $subject ="Kafu by AD Ports - Nomination submitted ";
+        $subject ="Cleveland Clinic Abu Dhabi - Nomination submitted ";
 
         $message ="Thank you for your nomination! We will inform you if the nomination is approved.";
 
@@ -170,9 +170,9 @@ class UserNominationBKPController extends Controller
 
         // $nominated_by_group_name= $user_nomination->nominated_user_group_name;
 
-        $subject = "Kafu by AD Ports - Nomination for approval";
+        $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
 
-        $link = "http://kafu.meritincentives.com/approvals/approve-level-1";
+        $link = "https://ccad.meritincentives.com/approvals/approve-level-1";
 
         $message = "Please approve {$user_name} nomination for the {$value} value which has been submitted by {$sender} for the following reason: {$reason} \n\r <br> \n\r <br>";
 
@@ -208,9 +208,9 @@ class UserNominationBKPController extends Controller
         $reason=$user_nomination->reason;
         $user_name = $user_nomination->user_relation->first_name;
 
-        $subject="Kafu by AD Ports - Nomination submitted";
+        $subject="Cleveland Clinic Abu Dhabi - Nomination submitted";
 
-        $link = "http://kafu.meritincentives.com/approvals/approve-level-2";
+        $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
 
         //$nominated_by_group_name= $user_nomination->nominated_user_group_name;
 
@@ -302,7 +302,7 @@ class UserNominationBKPController extends Controller
 
                 $sender_email = $user_nomination->account->email;
 
-                $subject ="Kafu by AD Ports - Your nomination was approved!";
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
 
                 $message ="Your nomination has been approved. Thank you for your contribution.";
 
@@ -313,11 +313,11 @@ class UserNominationBKPController extends Controller
 
                 $sender_email = $user_nomination->user_relation->email;
 
-                $subject ="Kafu by AD Ports - Congratulations!";
+                $subject ="Cleveland Clinic Abu Dhabi - Congratulations!";
 
                 $message ="Congratulations! You have been nominated. \n\r <br>  Please check Kafu wall of heroes to see who nominated you ";
 
-                $message .="<a href='https://kafu.meritincentives.com/wall-of-heros'>Click here to check your nomination</a> ";
+                $message .="<a href='https://ccad.meritincentives.com/wall-of-fame'>Click here to check your nomination</a> ";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
 
@@ -348,7 +348,7 @@ class UserNominationBKPController extends Controller
     public function testMail(): JsonResponse
     {
         $sender_email = "e.mahmoud124@gmail.com";
-        $subject ="Kafu by AD Ports - Your nomination was approved!";
+        $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
         $message ="Your nomination has been approved. Thank you for your contribution.";
         $this->nomination_service->sendmail($sender_email,$subject,$message);
         return response()->json(['Mail sent']);
@@ -384,7 +384,7 @@ class UserNominationBKPController extends Controller
             // confirm nominator that nomination approve
             $sender_email = $user_nomination->account->email;
 
-            $subject ="Kafu by AD Ports - Your nomination was approved!";
+            $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
 
             $message ="Your nomination has been approved. Thank you for your contribution.";
 
@@ -395,11 +395,11 @@ class UserNominationBKPController extends Controller
 
             $sender_email = $user_nomination->user_relation->email;
 
-            $subject ="Kafu by AD Ports - Congratulations!";
+            $subject ="Cleveland Clinic Abu Dhabi - Congratulations!";
 
             $message ="Congratulations! You have been nominated. \n\r <br> Please check Kafu wall of heroes to see who nominated you ";
 
-            $message .="<a href='https://kafu.meritincentives.com/wall-of-heros'>Click here to check your nomination</a> ";
+            $message .="<a href='https://ccad.meritincentives.com/wall-of-fame'>Click here to check your nomination</a> ";
 
             $this->nomination_service->sendmail($sender_email,$subject,$message);
 
@@ -663,7 +663,7 @@ class UserNominationBKPController extends Controller
 
             $sender_email = 'Maitha.almurar@visions.net.in';//$user_nomination->account->email;
 
-            $subject ="Kafu by AD Ports - New project nomination!";
+            $subject ="Cleveland Clinic Abu Dhabi - New project nomination!";
             $message = "Dear " . "VP of HR" .  "\n\r <br>";
             $a = count($users);
             $b = $user_nomination->project_name;
@@ -777,12 +777,12 @@ class UserNominationBKPController extends Controller
 
                 $sender_email = $user_nomination->account->email;
 
-                $subject ="Kafu by AD Ports - Your nomination was approved!";
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
                 $message = "Dear " . $user_nomination->account->name .  "\n\r <br>";
 
                 $message .="Your nomination  for the " . $user_nomination->project_name . " project has been successfully approved! As a result, " . $user_nomination->nominated_account->name . " has been successfully awarded with " . $user_nomination->value  . " to their Kafu account.";
 
-                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
+                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
 
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -792,11 +792,11 @@ class UserNominationBKPController extends Controller
 
                 $sender_email = $user_nomination->nominated_account->email;
 
-                $subject ="Kafu by AD Ports - Congratulations!";
+                $subject ="Cleveland Clinic Abu Dhabi - Congratulations!";
                 $message = "Dear " . $user_nomination->nominated_account->name ;
                 $message .="\n\r <br> Congratulations! \n\r <br> Your diligence and dedication towards the " . $user_nomination->project_name . " project, have played a tremendous role towards its success!";
                 $message .= "\n\r <br> As a sign of gratitude, you have been awarded with " . $user_nomination->value  . " to your Kafu account.";
-                $message .= "\n\r <br>  *Click <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a> to view more details on why you have been awarded, and <a href='https://kafu.meritincentives.com/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
+                $message .= "\n\r <br>  *Click <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='https://ccad.meritincentives.com/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
                 $message .=" ";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -831,11 +831,11 @@ class UserNominationBKPController extends Controller
 
                 $sender_email = $user_nomination->account->email;
 
-                $subject ="Kafu by AD Ports - Your nomination was declined !";
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
-                //$message .="To view this award on the Kafu wall of fame, please <a href='https://kafu.meritincentives.com/wall-of-heros'>Click here</a>.";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
+                //$message .="To view this award on the Kafu wall of fame, please <a href='https://ccad.meritincentives.com/wall-of-fame'>Click here</a>.";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
 

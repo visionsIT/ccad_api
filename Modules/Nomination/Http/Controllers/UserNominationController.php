@@ -44,6 +44,7 @@ use Modules\User\Models\UserCampaignsBudget;
 use Modules\User\Models\UserCampaignsBudgetLogs;
 use Modules\Program\Models\UsersEcards;
 use Illuminate\Support\Facades\Mail;
+use Modules\User\Models\UsersGroupList;
 use DB;
 class UserNominationController extends Controller
 {
@@ -125,14 +126,16 @@ class UserNominationController extends Controller
             $teamNomination = UserNomination::CLAIM_NOMINATION;
         }
 
-        $user_ids = $request->user;
-        $user_id_array = explode(',',$user_ids);
+        // $user_ids = $request->user;
+        $user_id_array = json_decode($request->user, true);
+        // $user_id_array = explode(',',$user_ids);
 
         foreach($user_id_array as $key=>$value){
             $user_nomination = $this->repository->create([
-                'user' => (int)$value,
+                'user' => (int)$value['accountid'],
                 'account_id' => $request->account_id,
                 'campaign_id' => $request->campaign_id,
+                'group_id' => $value['group_id'],
                 'nomination_id' => $request->nomination_id,
                 'reason' => $request->reason,
                 'value' => $request->value,
@@ -144,12 +147,12 @@ class UserNominationController extends Controller
             ]);
         }
 
-        $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
+        // $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
 
-        if( sizeof($approvals) > 0 )
-        {
-            $this->confirm_nomination($user_nomination, $approvals);
-        }
+        // if( sizeof($approvals) > 0 )
+        // {
+        //     $this->confirm_nomination($user_nomination, $approvals);
+        // }
 
         return fractal($user_nomination, new UserNominationTransformer);
     }
@@ -238,7 +241,7 @@ class UserNominationController extends Controller
 
         $senderUser = ProgramUsers::find($request->sender_id);
         
-
+        $failed = [];
 
         // Get Sender program id using account_id
 
@@ -268,8 +271,124 @@ class UserNominationController extends Controller
 
                     if( $approval_request == 0 && $points_allowed == 1){
 
-                       // Waiting response from client
+                        if($budget_type == 1){ 
 
+                            // Campaign_Budget of current logged user
+        
+                            $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
+        
+                            if(!$campaign_budget){
+                                
+                                return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
+                                
+                            }else{
+        
+                                $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
+                                
+                                if($campaign_budget_bal < ($inputPoint)) {
+                                    return response()->json(['message'=>"You don't have enough balance to nominate", 'status'=>'error']);
+                                }
+                            }
+        
+                            // campaign Deduction
+        
+                            $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
+                            $campaign_budget_bal =  $campaign_budget->budget;
+        
+                            $currentBud = $campaign_budget_bal;
+                            $finalBud = $currentBud-$inputPoint;
+        
+                            $updateSenderBudget = UserCampaignsBudget::where('program_user_id', $request->sender_id)->where('campaign_id',$campaign_id)->update([
+                                        'budget' => $finalBud,
+                                    ]);
+        
+                            // Logs
+                            
+                            $createRippleLog = UserCampaignsBudgetLogs::create([
+                                'program_user_id' => $request->sender_id,
+                                'campaign_id' => $campaign_id,
+                                'budget' => $inputPoint,
+                                'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
+                                'description' => "direct nomination without approval",   
+                                'created_by_id' => $request->account_id,     
+                            ]);
+
+                            $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+                            // Get lowest role of receiver
+                            $groupId  = $groupData['user_group_id'];
+
+                            $user_nomination = UserNomination::create([
+                                'user'   => $sendToUser->account_id, // Receiver
+                                'account_id' => $request->account_id, // Sender
+                                'group_id' => $groupId,
+                                'campaign_id' => $campaign_id,
+                                'nomination_id' => $request->nomination_id,
+                                'level_1_approval' => 2,
+                                'level_2_approval' => 2,
+                                'point_type' => $budget_type,
+                                'reason' => $request->reason,
+                                'value' => $request->value,
+                                'points'  => $inputPoint,
+                                'attachments' => $newname,
+                                'project_name' => $request->project_name ? $request->project_name : '',
+                                'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+                                'nominee_function' => $request->nominee_function,
+                                'personal_message' => $request->personal_message
+                            ]);
+        
+        
+                        } else {
+                            $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+                            // Get lowest role of receiver
+                            $groupId  = $groupData['user_group_id'];
+
+                            $user_nomination = UserNomination::create([
+                                'user'   => $sendToUser->account_id, // Receiver
+                                'account_id' => $request->account_id, // Sender
+                                'group_id' => $groupId,
+                                'campaign_id' => $campaign_id,
+                                'nomination_id' => $request->nomination_id,
+                                'level_1_approval' => 2,
+                                'level_2_approval' => 2,
+                                'point_type' => $budget_type,
+                                'reason' => $request->reason,
+                                'value' => $request->value,
+                                'points'  => $inputPoint,
+                                'attachments' => $newname,
+                                'project_name' => $request->project_name ? $request->project_name : '',
+                                'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+                                'nominee_function' => $request->nominee_function,
+                                'personal_message' => $request->personal_message
+                            ]);
+                        }
+
+                        //update receiver budget
+                        $currentBud = UsersPoint::select('balance')->where('user_id',$receiverid)->latest()->first();
+                        
+                        $currentBud = $currentBud ? $currentBud->balance : 0;
+                        $finalPoints = $currentBud+$inputPoint;
+                        $updateReciverBudget = UsersPoint::create([
+                            'value'    => $inputPoint, // +/- point
+                            'user_id'    => $receiverid, // Receiver
+                            'transaction_type_id'    => 10,  // For Ripple
+                            'description' => '',
+                            'balance'    => $finalPoints, // After +/- final balnce
+                            'created_by_id' => $request->sender_id // Who send
+                        ]);
+
+                        
+                        $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
+                        
+                        $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                        
+                        $message = "<p>Great news {$sendToUser->first_name},</p>";
+                        $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
+                        
+                        $message .= "<p>Keep up the good work.</p>";
+                        
+                        $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
+                        
+                        DB::commit();
                     }
 
                     /********************* If Approval Required ***************************/
@@ -297,11 +416,12 @@ class UserNominationController extends Controller
 
                         // Update User Nomination table so that L1 or L2 can approve
         
-                        UserNomination::create([
+                        $user_nomination = UserNomination::create([
                             'user'   => $sendToUser->account_id, // Receiver
                             'account_id' => $request->account_id, // Sender
                             'group_id' => $groupId,
                             'campaign_id' => $campaign_id,
+                            'nomination_id' => $request->nomination_id,
                             'level_1_approval' => $update_vale_l1,
                             'level_2_approval' => $update_vale_l2,
                             'point_type' => $budget_type,
@@ -309,51 +429,99 @@ class UserNominationController extends Controller
                             'value' => $request->value,
                             'points'  => $inputPoint,
                             'attachments' => $newname,
-                            'team_nomination' => $teamNomination,
+                            'project_name' => $request->project_name ? $request->project_name : '',
+                            'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+                            'nominee_function' => $request->nominee_function,
+                            'personal_message' => $request->personal_message
                         ]);
 
-                        try {
-                            DB::commit();
-                        } catch (\Exception $e) {
-                        
-                        DB::rollBack();
-                        return response()->json(['message'=>$e->getMessage(), 'status'=>'success']);
+
+                        if($level_1_approval == 0){
+                            $accounts = UsersGroupList::where('user_group_id', $groupId)
+                                ->where('user_role_id', '3')
+                                ->where('status', '1')
+                                ->get();
+
+                            $l2User = $accounts->map(function ($account){
+                                    return $account->programUserData;
+                                })->filter();
+
+                            $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
+                
+                            $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
+                            $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                            $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+                    
+                            $message = "<p>You have a nomination waiting for approval.</p>";
+                            $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+                            $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+                            $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+                            $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+                            $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
+                            $message .= "<strong>Reason: </strong>{$request->reason}<br>";
+                    
+                            $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+                    
+                    
+                            foreach ($l2User as $account)
+                            {
+                                $this->nomination_service->sendmail($account->email,$subject,$message);
+                            }
+                            
+                        } else {
+                            $accounts = UsersGroupList::where('user_group_id', $groupId)
+                                ->where('user_role_id', '2')
+                                ->where('status', '1')
+                                ->get();
+
+                            $l1User = $accounts->map(function ($account){
+                                    return $account->programUserData;
+                                })->filter();
+                    
+                            $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
+                    
+                            $link = "https://ccad.meritincentives.com/approvals/approve-level-1";
+                            $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                            $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+                    
+                            $message = "<p>You have a nomination waiting for approval.</p>";
+                            $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+                            $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+                            $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+                            $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+                            $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
+                            $message .= "<strong>Reason: </strong>{$request->reason}<br>";
+                    
+                            $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+                    
+                    
+                            foreach ($l1User as $account)
+                            {
+                                $this->nomination_service->sendmail($account->email,$subject,$message);
+                            }
                         }
+
+                        DB::commit();
                         
                     }
-
-                    return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
                  
                 } catch (\Exception $e) {
                     
                     DB::rollBack();
-                    $user_nomination = array();
-                    return response()->json(['message'=> $e->getMessage(), 'status'=>'success']);
+                    array_push($failed, $e->getMessage());
 
                 }
             }  // end foreach
+
+            if(!empty($failed)) {
+                return response()->json(['message'=>'Nomination has not been sent for '.implode(", ",$failed).'. Please try again later.', 'status'=>'error']);
+            } else {
+                return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
+            }
            
         } else {
-             $user_nomination = array();
             return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
         }
-        /*$user_nomination = $this->repository->create([
-            'user' => $request->user,
-            'account_id' => $request->account_id,
-            'nomination_id' => $request->nomination_id,
-            'reason' => "zxcxzc",//$request->reason,
-            'value' => $request->value,
-            'points' => $request->points,
-            'attachments' => $newname,
-            'team_nomination' => $teamNomination,
-        ]);
-
-        $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
-
-        if( sizeof($approvals) > 0 )
-        {
-            $this->confirm_nomination($user_nomination, $approvals);
-        }*/
         
     }
     /**
@@ -409,7 +577,7 @@ class UserNominationController extends Controller
 
         // confirm nominator
 
-        $subject ="Kafu by AD Ports - Nomination submitted ";
+        $subject ="Cleveland Clinic Abu Dhabi - Nomination submitted ";
 
         $message ="Thank you for your nomination! We will inform you if the nomination is approved.";
 
@@ -420,9 +588,9 @@ class UserNominationController extends Controller
 
         // $nominated_by_group_name= $user_nomination->nominated_user_group_name;
 
-        $subject = "Kafu by AD Ports - Nomination for approval";
+        $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
 
-        $link = "http://kafu.meritincentives.com/approvals/approve-level-1";
+        $link = "https://ccad.meritincentives.com/approvals/approve-level-1";
 
         $message = "Please approve {$user_name} nomination for the {$value} value which has been submitted by {$sender} for the following reason: {$reason} \n\r <br> \n\r <br>";
 
@@ -460,9 +628,9 @@ class UserNominationController extends Controller
         $reason=$user_nomination->reason;
         $user_name = $user_nomination->user_relation->first_name;
 
-        $subject="Kafu by AD Ports - Nomination submitted";
+        $subject="Cleveland Clinic Abu Dhabi - Nomination submitted";
 
-        $link = "http://kafu.meritincentives.com/approvals/approve-level-2";
+        $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
 
         //$nominated_by_group_name= $user_nomination->nominated_user_group_name;
 
@@ -631,34 +799,34 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     // Check current loged user Overall balance
 
-                    $current_budget_bal = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
+                    // $current_budget_bal = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
 
-                    $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
+                    // $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
                     
-                    if(!$current_budget_bal) {
-                        //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
-                        return response()->json(['message'=>"Balance is not allocated", 'status'=>'error']);
-                    }
-                    if($current_budget_bal < ($points_update)) {
-                        //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
-                        return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
-                    }
+                    // if(!$current_budget_bal) {
+                    //     //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
+                    //     return response()->json(['message'=>"Balance is not allocated", 'status'=>'error']);
+                    // }
+                    // if($current_budget_bal < ($points_update)) {
+                    //     //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
+                    //     return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
+                    // }
 
 
                     // Overall balance deduction
 
-                    $currentBud = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
-                    $currentBud = $currentBud ? $currentBud->balance : 0;
-                    $finalPoints = $currentBud-$points_update;
+                    // $currentBud = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
+                    // $currentBud = $currentBud ? $currentBud->balance : 0;
+                    // $finalPoints = $currentBud-$points_update;
                 
-                    $updateReciverBudget = UsersPoint::create([
-                        'value'    => -$points_update, // +/- point
-                        'user_id'    => $approver_program_id, // Approval program id
-                        'transaction_type_id'    => 10,  // For Ripple
-                        'description' => 'Deduction after approval',
-                        'balance'    => $finalPoints, // After +/- final balnce
-                        'created_by_id' =>$request->approver_account_id // Who send
-                    ]);
+                    // $updateReciverBudget = UsersPoint::create([
+                    //     'value'    => -$points_update, // +/- point
+                    //     'user_id'    => $approver_program_id, // Approval program id
+                    //     'transaction_type_id'    => 10,  // For Ripple
+                    //     'description' => 'Deduction after approval',
+                    //     'balance'    => $finalPoints, // After +/- final balnce
+                    //     'created_by_id' =>$request->approver_account_id // Who send
+                    // ]);
                 } 
                        
             } // Close Campiagn type condition
@@ -682,12 +850,66 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             if($request->campaign_type == 4) {
 
-                $sender_email = $user_nomination->account->email;
-                $subject ="Kafu by AD Ports - Your nomination was approved !";
-                $message = "Dear " . $user_nomination->account->name ;
-                $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been approved ";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
-                $this->nomination_service->sendmail($sender_email,$subject,$message);
+                $accounts = UsersGroupList::where('user_group_id', $user_nomination->group_id)
+                                ->where('user_role_id', '3')
+                                ->where('status', '1')
+                                ->get();
+
+                $l2User = $accounts->map(function ($account){
+                        return $account->programUserData;
+                    })->filter();
+
+                $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
+    
+                $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
+                $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
+                $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
+        
+                $message = "<p>You have a nomination waiting for approval.</p>";
+                $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+                $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+                $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+                $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+                $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
+                $message .= "<strong>Reason: </strong>{$user_nomination->reason}<br>";
+        
+                $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+        
+        
+                foreach ($l2User as $account)
+                {
+                    $this->nomination_service->sendmail($account->email,$subject,$message);
+                }
+
+                if($level2_v == 2) {
+
+                     // confirm nominator that nomination approve
+                     $sender_email = $program_user_sender->email;
+                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
+                     $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
+                     $message = "<p>Your nomination has been approved!.</p>";
+                     $message .= "<strong>Nominee </strong>{$nominee}<br>";
+                     $message .= "<strong>Value </strong>{$user_nomination->type->name}<br>";
+                     $message .= "<strong>Level </strong>{$user_nomination->campaignid->name}<br>";
+                     $message .= "<strong>Points </strong>{$user_nomination->points}<br>";
+                     $message .= "<strong>Reason </strong>{$user_nomination->reason}<br>";
+             
+                     $message .= "<p>{$nominee} will be able to spend their points on the rewards catalogue immediately.</p>";
+                     $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
+                     $this->nomination_service->sendmail($sender_email,$subject,$message);
+ 
+
+                    $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
+                
+                    $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
+            
+                    $message = "<p>Great news {$program_user_receiver->first_name},</p>";
+                    $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+            
+                    $message .= "<p>Keep up the good work.</p>";
+            
+                    $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
+                }
             }
 
 
@@ -797,16 +1019,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             }
 
+            if($request->campaign_type == 4) {
+                $sender_email = $program_user_sender->email;
+                $subject ="Cleveland Clinic Abu Dhabi - Notification of nomination decline";
+                $message = "<p>Dear {$program_user_sender->first_name},</p>";
+                $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
+                $this->nomination_service->sendmail($sender_email,$subject,$message);
+            }
 
-            //$user_nomination->account->email ="suruchi@visions.net.in";
-            $sender_email = $user_nomination->account->email;
-            $subject ="Kafu by AD Ports - Your nomination was declined !";
-            $message = "Dear " . $user_nomination->account->name ;
-            $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-            $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
-
-
-            $this->nomination_service->sendmail($sender_email,$subject,$message);
             $msgResponse ="Nomination has been declined successfully.";
            
         }
@@ -830,7 +1050,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
     public function testMail(): JsonResponse
     {
         $sender_email = "e.mahmoud124@gmail.com";
-        $subject ="Kafu by AD Ports - Your nomination was approved!";
+        $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
         $message ="Your nomination has been approved. Thank you for your contribution.";
         $this->nomination_service->sendmail($sender_email,$subject,$message);
         return response()->json(['Mail sent']);
@@ -938,34 +1158,34 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     // Check current loged user Overall balance
 
-                    $current_budget_bal = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
+                    // $current_budget_bal = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
 
-                    $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
+                    // $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
                     
-                    if(!$current_budget_bal) {
-                        //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
-                        return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
-                    }
-                    if($current_budget_bal < ($points_update)) {
-                        //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
-                        return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
-                    }
+                    // if(!$current_budget_bal) {
+                    //     //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
+                    //     return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
+                    // }
+                    // if($current_budget_bal < ($points_update)) {
+                    //     //return response()->json(['message'=>"Points should be less then or equal to budget points.", 'status'=>'error']);
+                    //     return response()->json(['message'=>"You don't have enough overall balance to nominate", 'status'=>'error']);
+                    // }
 
 
                     // Overall balance deduction
 
-                    $currentBud = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
-                    $currentBud = $currentBud ? $currentBud->balance : 0;
-                    $finalPoints = $currentBud-$points_update;
+                    // $currentBud = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
+                    // $currentBud = $currentBud ? $currentBud->balance : 0;
+                    // $finalPoints = $currentBud-$points_update;
                 
-                    $updateReciverBudget = UsersPoint::create([
-                        'value'    => -$points_update, // +/- point
-                        'user_id'    => $approver_program_id, // Approval program id
-                        'transaction_type_id'    => 10,  // For Ripple
-                        'description' => 'Deduction after approval',
-                        'balance'    => $finalPoints, // After +/- final balnce
-                        'created_by_id' =>$request->approver_account_id // Who send
-                    ]);
+                    // $updateReciverBudget = UsersPoint::create([
+                    //     'value'    => -$points_update, // +/- point
+                    //     'user_id'    => $approver_program_id, // Approval program id
+                    //     'transaction_type_id'    => 10,  // For Ripple
+                    //     'description' => 'Deduction after approval',
+                    //     'balance'    => $finalPoints, // After +/- final balnce
+                    //     'created_by_id' =>$request->approver_account_id // Who send
+                    // ]);
                 } 
                        
             } // Close Campiagn type condition
@@ -1028,41 +1248,33 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
 
              }else{
-            
-
-                 /*   if($user_nomination->team_nomination == 1){
-                        $points = $user_nomination->points;
-                    }else{
-                        // $points = optional($user_nomination->level)->points ?? $user_nomination->value;// $user_nomination->level->points;
-                        $points = $user_nomination->points;
-                    }
-                    $data['value']       = $points;
-                    $data['description'] = '';
-                    $data['user_nominations_id'] = $id;
-                    $data['created_by_id'] = $request->approver_account_id;
-                    $user = ProgramUsers::where('account_id',$user_nomination->user)->first(); // todo remind omda & mahmoud this is error
-
-                    // there is no error ya kenany
-                    $this->point_service->store($user, $data);*/
 
                     // confirm nominator that nomination approve
-                    $sender_email = $user_nomination->account->email;
-                    $subject ="Kafu by AD Ports - Your nomination was approved!";
-                    $message ="Your nomination has been approved. Thank you for your contribution.";
+                    $sender_email = $program_user_sender->email;
+                    $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
+                    $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
+                    $message = "<p>Your nomination has been approved!.</p>";
+                    $message .= "<strong>Nominee </strong>{$nominee}<br>";
+                    $message .= "<strong>Value </strong>{$user_nomination->type->name}<br>";
+                    $message .= "<strong>Level </strong>{$user_nomination->campaignid->name}<br>";
+                    $message .= "<strong>Points </strong>{$user_nomination->points}<br>";
+                    $message .= "<strong>Reason </strong>{$user_nomination->reason}<br>";
+            
+                    $message .= "<p>{$nominee} will be able to spend their points on the rewards catalogue immediately.</p>";
+                    $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
 
-                    $sender_email = $user_nomination->user_relation->email;
-                    $subject ="Kafu by AD Ports - Congratulations!";
-                    $message ="Congratulations! You have been nominated. \n\r <br> Please check Kafu wall of heroes to see who nominated you ";
-                    $message .="<a href='https://kafu.meritincentives.com/wall-of-heros'>Click here to check your nomination</a> ";
-
-                    $this->nomination_service->sendmail($sender_email,$subject,$message);
-                    if($user_nomination->team_nomination != 1){
-                        /*AccountBadges::create([
-                            'account_id' => $user_nomination->account_id, //todo account for nominated user
-                            'nomination_type_id' => $user_nomination->value
-                        ]);*/
-                    }
+                   
+                    $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
+                
+                    $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
+            
+                    $message = "<p>Great news {$program_user_receiver->first_name},</p>";
+                    $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+            
+                    $message .= "<p>Keep up the good work.</p>";
+            
+                    $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
 
                 }
             } else if ($request->level_2_approval == -1 ) {
@@ -1114,12 +1326,13 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }
 
                 }
-                $sender_email = $user_nomination->account->email;
-                $subject ="Kafu by AD Ports - Your nomination was declined !";
-                $message = "Dear " . $user_nomination->account->name ;
-                $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
-                $this->nomination_service->sendmail($sender_email,$subject,$message);
+                if($request->campaign_type == 4) {
+                    $sender_email = $program_user_sender->email;
+                    $subject ="Cleveland Clinic Abu Dhabi - Notification of nomination decline";
+                    $message = "<p>Dear {$program_user_sender->first_name},</p>";
+                    $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
+                    $this->nomination_service->sendmail($sender_email,$subject,$message);
+                }
             }
 
             $this->repository->update($nominationData, $id);
@@ -1423,8 +1636,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $useracc = $this->account_service->show($value['accountid']);
             if( $vpaccount->def_dept_id == $useracc->def_dept_id ) {
                 $data['points'] = $value['value'];
-                $data['value'] = $value['value'];
+                $data['value'] = $request->get('value');
                 $data['user'] = $value['accountid'];
+                $data['group_id'] = $value['group_id'];
                 $user_nomination = $this->repository->create($data);
                     //if(!empty($user_nomination))
                     //$user_nomination->sendEmail($this->nomination_service); // NO need individual notification on request
@@ -1434,7 +1648,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         // $sender_email = 'narinder@visions.net.in';//$user_nomination->account->email;
 
-        // $subject ="Kafu by AD Ports - New project nomination!";
+        // $subject ="Cleveland Clinic Abu Dhabi - New project nomination!";
         // $message = "Dear " . "VP of HR" .  "\n\r <br>";
         // $a = count($users);
         // $b = $user_nomination->project_name;
@@ -1531,12 +1745,12 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $sender_email = $user_nomination->account->email;
 
-                $subject ="Kafu by AD Ports - Your nomination was approved!";
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
                 $message = "Dear " . $user_nomination->account->name .  "\n\r <br>";
 
                 $message .="Your nomination  for the " . $user_nomination->project_name . " project has been successfully approved! As a result, " . $user_nomination->nominated_account->name . " has been successfully awarded with " . $user_nomination->value  . " to their Kafu account.";
 
-                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
+                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
 
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1546,11 +1760,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $sender_email = $user_nomination->nominated_account->email;
 
-                $subject ="Kafu by AD Ports - Congratulations!";
+                $subject ="Cleveland Clinic Abu Dhabi - Congratulations!";
                 $message = "Dear " . $user_nomination->nominated_account->name ;
                 $message .="\n\r <br> Congratulations! \n\r <br> Your diligence and dedication towards the " . $user_nomination->project_name . " project, have played a tremendous role towards its success!";
                 $message .= "\n\r <br> As a sign of gratitude, you have been awarded with " . $user_nomination->value  . " to your Kafu account.";
-                $message .= "\n\r <br>  *Click <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a> to view more details on why you have been awarded, and <a href='https://kafu.meritincentives.com/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
+                $message .= "\n\r <br>  *Click <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='https://ccad.meritincentives.com/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
                 $message .=" ";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1585,11 +1799,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $sender_email = $user_nomination->account->email;
 
-                $subject ="Kafu by AD Ports - Your nomination was declined !";
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://kafu.meritincentives.com/wall-of-heros'>here</a>.";
-                //$message .="To view this award on the Kafu wall of fame, please <a href='https://kafu.meritincentives.com/wall-of-heros'>Click here</a>.";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
+                //$message .="To view this award on the Kafu wall of fame, please <a href='https://ccad.meritincentives.com/wall-of-fame'>Click here</a>.";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
 

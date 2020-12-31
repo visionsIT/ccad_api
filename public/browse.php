@@ -78,7 +78,7 @@
                     document.getElementById("images_box").innerHTML = imgDiv;
                 }
             };
-            xhttp.open("GET", "https://adportsapi.meritincentives.com/api/browser/browse", true);
+            xhttp.open("GET", "https://ccadapi.meritincentives.com/api/browser/browse", true);
             xhttp.send();
         }
         function copyURL(index) {

@@ -44,13 +44,14 @@ class UserController extends Controller
     fn to get all users
     *******************/
     public function getAllUsers($campaign_id = null){
-
         $param = '';
+
         if($campaign_id){
             $campaign_idv = $campaign_id;
         }else{
             $campaign_idv = '';
         }
+
         if(isset($request->order) || isset($request->col)){
             $param = [
                 'search' => ($request->search)?$request->search:'',
@@ -82,7 +83,7 @@ class UserController extends Controller
      * @return \Spatie\Fractal\Fractal
      */
     public function index(Request $request) {
-        
+
         $param = '';
         if(isset($request->order) || isset($request->col)){
             $param = [
@@ -121,6 +122,7 @@ class UserController extends Controller
     public function store(Program $program, ProgramUsersRequest $request): Fractal
     {
         $user = $this->service->store($program, $request);
+
         return fractal($user, new UserTransformer());
     }
 
@@ -206,9 +208,10 @@ class UserController extends Controller
 
             $date = date('Y-m-d h:i:s');
 
-            $check_data = UsersGroupList::where(['account_id'=>$request->account_id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->first();
+            // $check_data = UsersGroupList::where(['account_id'=>$request->account_id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->first();
+            $check_data = UsersGroupList::where(['account_id'=>$request->account_id,'user_role_id'=>$request->role_id])->first();
             if(!empty($check_data)){
-                return response()->json(['message'=>'Record already exists.', 'status'=>'error']);exit;
+                return response()->json(['message'=>'Selected user already exists in another group with same role. Please select other role to add selected user in this group.', 'status'=>'error']);exit;
             }else{
                 $UsersGroupList = new UsersGroupList;
                 $UsersGroupList->account_id = $request->account_id;
