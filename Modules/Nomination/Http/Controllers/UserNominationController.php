@@ -355,6 +355,17 @@ class UserNominationController extends Controller
 
                         DB::commit();
 
+                        $subject = "Cleveland Clinic Abu Dhabi - Congratulations!";
+                
+                        $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                
+                        $message = "<p>Great news {$sendToUser->first_name},</p>";
+                        $message .= "<p>You have been nominated by {$nominator} for the {$inputPoint}. They nominated you for {$request->reason}.</p>";
+                
+                        $message .= "<p>Keep up the good work.</p>";
+                
+                        $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
+
                     }
 
                     /********************* If Approval Required ***************************/
@@ -422,8 +433,9 @@ class UserNominationController extends Controller
                             $message = "<p>You have a nomination waiting for approval.</p>";
                             $message .= "<strong>Nominee: </strong>{$nominee}<br>";
                             $message .= "<strong>Nominator: </strong>{$nominator}<br>";
-                            $message .= "<strong>Value: </strong>{$inputPoint}<br>";
-                            $message .= "<strong>Level: </strong>{$user_nomination->type->name}<br>";
+                            $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+                            $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+                            $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
                             $message .= "<strong>Reason: </strong>{$request->reason}<br>";
                     
                             $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
@@ -453,8 +465,9 @@ class UserNominationController extends Controller
                             $message = "<p>You have a nomination waiting for approval.</p>";
                             $message .= "<strong>Nominee: </strong>{$nominee}<br>";
                             $message .= "<strong>Nominator: </strong>{$nominator}<br>";
-                            $message .= "<strong>Value: </strong>{$inputPoint}<br>";
-                            $message .= "<strong>Level: </strong>{$user_nomination->type->name}<br>";
+                            $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+                            $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+                            $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
                             $message .= "<strong>Reason: </strong>{$request->reason}<br>";
                     
                             $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
@@ -465,6 +478,17 @@ class UserNominationController extends Controller
                                 $this->nomination_service->sendmail($account->email,$subject,$message);
                             }
                         }
+
+                        $subject = "Cleveland Clinic Abu Dhabi - Congratulations!";
+                
+                        $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                
+                        $message = "<p>Great news {$sendToUser->first_name},</p>";
+                        $message .= "<p>You have been nominated by {$nominator} for the {$inputPoint}. They nominated you for {$request->reason}.</p>";
+                
+                        $message .= "<p>Keep up the good work.</p>";
+                
+                        $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
                         
                     }
                  
@@ -813,12 +837,36 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             if($request->campaign_type == 4) {
 
-                $sender_email = $user_nomination->account->email;
-                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved !";
-                $message = "Dear " . $user_nomination->account->name ;
-                $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been approved ";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
-                $this->nomination_service->sendmail($sender_email,$subject,$message);
+                $accounts = UsersGroupList::where('user_group_id', $user_nomination->group_id)
+                                ->where('user_role_id', '3')
+                                ->where('status', '1')
+                                ->get();
+
+                $l2User = $accounts->map(function ($account){
+                        return $account->programUserData;
+                    })->filter();
+
+                $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
+    
+                $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
+                $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
+                $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
+        
+                $message = "<p>You have a nomination waiting for approval.</p>";
+                $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+                $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+                $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+                $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+                $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
+                $message .= "<strong>Reason: </strong>{$user_nomination->reason}<br>";
+        
+                $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+        
+        
+                foreach ($l2User as $account)
+                {
+                    $this->nomination_service->sendmail($account->email,$subject,$message);
+                }
             }
 
 
@@ -928,16 +976,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             }
 
+            if($request->campaign_type == 4) {
+                $sender_email = $program_user_sender->email;
+                $subject ="Cleveland Clinic Abu Dhabi - Your nomination is declined !";
+                $message = "<p>Dear {$program_user_sender->first_name},</p>";
+                $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
+                $this->nomination_service->sendmail($sender_email,$subject,$message);
+            }
 
-            //$user_nomination->account->email ="suruchi@visions.net.in";
-            $sender_email = $user_nomination->account->email;
-            $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
-            $message = "Dear " . $user_nomination->account->name ;
-            $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-            $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
-
-
-            $this->nomination_service->sendmail($sender_email,$subject,$message);
             $msgResponse ="Nomination has been declined successfully.";
            
         }
@@ -1159,41 +1205,21 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
 
              }else{
-            
-
-                 /*   if($user_nomination->team_nomination == 1){
-                        $points = $user_nomination->points;
-                    }else{
-                        // $points = optional($user_nomination->level)->points ?? $user_nomination->value;// $user_nomination->level->points;
-                        $points = $user_nomination->points;
-                    }
-                    $data['value']       = $points;
-                    $data['description'] = '';
-                    $data['user_nominations_id'] = $id;
-                    $data['created_by_id'] = $request->approver_account_id;
-                    $user = ProgramUsers::where('account_id',$user_nomination->user)->first(); // todo remind omda & mahmoud this is error
-
-                    // there is no error ya kenany
-                    $this->point_service->store($user, $data);*/
 
                     // confirm nominator that nomination approve
-                    $sender_email = $user_nomination->account->email;
-                    $subject ="Cleveland Clinic Abu Dhabi - Your nomination was approved!";
-                    $message ="Your nomination has been approved. Thank you for your contribution.";
+                    $sender_email = $program_user_sender->email;
+                    $subject = "Cleveland Clinic Abu Dhabi - Your nomination is approved !";
+                    $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
+                    $message = "<p>Your nomination has been approved!.</p>";
+                    $message .= "<strong>Nominee </strong>{$nominee}<br>";
+                    $message .= "<strong>Value </strong>{$user_nomination->type->name}<br>";
+                    $message .= "<strong>Level </strong>{$user_nomination->campaignid->name}<br>";
+                    $message .= "<strong>Points </strong>{$user_nomination->points}<br>";
+                    $message .= "<strong>Reason </strong>{$user_nomination->reason}<br>";
+            
+                    $message .= "<p>{$nominee} will be able to spend their points on the rewards catalogue immediately.</p>";
+                    $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
-
-                    $sender_email = $user_nomination->user_relation->email;
-                    $subject ="Cleveland Clinic Abu Dhabi - Congratulations!";
-                    $message ="Congratulations! You have been nominated. \n\r <br> Please check Kafu wall of heroes to see who nominated you ";
-                    $message .="<a href='https://ccad.meritincentives.com/wall-of-fame'>Click here to check your nomination</a> ";
-
-                    $this->nomination_service->sendmail($sender_email,$subject,$message);
-                    if($user_nomination->team_nomination != 1){
-                        /*AccountBadges::create([
-                            'account_id' => $user_nomination->account_id, //todo account for nominated user
-                            'nomination_type_id' => $user_nomination->value
-                        ]);*/
-                    }
 
                 }
             } else if ($request->level_2_approval == -1 ) {
@@ -1245,12 +1271,13 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }
 
                 }
-                $sender_email = $user_nomination->account->email;
-                $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
-                $message = "Dear " . $user_nomination->account->name ;
-                $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
-                $this->nomination_service->sendmail($sender_email,$subject,$message);
+                if($request->campaign_type == 4) {
+                    $sender_email = $program_user_sender->email;
+                    $subject ="Cleveland Clinic Abu Dhabi - Your nomination is declined !";
+                    $message = "<p>Dear {$program_user_sender->first_name},</p>";
+                    $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
+                    $this->nomination_service->sendmail($sender_email,$subject,$message);
+                }
             }
 
             $this->repository->update($nominationData, $id);
