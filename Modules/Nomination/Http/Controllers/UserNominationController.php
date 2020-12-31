@@ -376,19 +376,19 @@ class UserNominationController extends Controller
                             'created_by_id' => $request->sender_id // Who send
                         ]);
 
-                        DB::commit();
-
+                        
                         $subject = "Cleveland Clinic Abu Dhabi - Congratulations!";
-                
+                        
                         $nominator = $senderUser->first_name.' '.$senderUser->last_name;
-                
+                        
                         $message = "<p>Great news {$sendToUser->first_name},</p>";
                         $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
-                
+                        
                         $message .= "<p>Keep up the good work.</p>";
-                
+                        
                         $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
-
+                        
+                        DB::commit();
                     }
 
                     /********************* If Approval Required ***************************/
@@ -435,7 +435,6 @@ class UserNominationController extends Controller
                             'personal_message' => $request->personal_message
                         ]);
 
-                        DB::commit();
 
                         if($level_1_approval == 0){
                             $accounts = UsersGroupList::where('user_group_id', $groupId)
@@ -512,6 +511,8 @@ class UserNominationController extends Controller
                         $message .= "<p>Keep up the good work.</p>";
                 
                         $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
+                        
+                        DB::commit();
                         
                     }
                  
