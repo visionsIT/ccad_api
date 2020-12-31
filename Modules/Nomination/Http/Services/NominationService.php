@@ -186,6 +186,10 @@ class NominationService
                             ->where('user_nominations.level_2_approval', '1');
                         })
                     ->orWhere(function($query){
+                            $query->where('user_nominations.level_1_approval', '2')
+                            ->where('user_nominations.level_2_approval', '2');
+                        })
+                    ->orWhere(function($query){
                         $query->where('user_nominations.level_1_approval', '1')
                         ->where('user_nominations.level_2_approval', '1');
                     });
@@ -205,6 +209,10 @@ class NominationService
                     ->orWhere(function($query){
                             $query->where('user_nominations.level_1_approval', '2')
                             ->where('user_nominations.level_2_approval', '1');
+                        })
+                    ->orWhere(function($query){
+                            $query->where('user_nominations.level_1_approval', '2')
+                            ->where('user_nominations.level_2_approval', '2');
                         })
                     ->orWhere(function($query){
                         $query->where('user_nominations.level_1_approval', '1')
