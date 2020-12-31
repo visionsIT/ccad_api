@@ -1139,8 +1139,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
      * @param Account $account_id
      * @return Fractal
      */
-    public function getUsersBy($nomination_id, Account $account_id) {
-        
+    public function getUsersBy($nomination_id, Account $account_id,$status = null) {
         $logged_user_id = $account_id->id;
         $user_group_data =  DB::table('users_group_list')
         ->where('account_id', $logged_user_id)
@@ -1156,15 +1155,47 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         foreach ($user_group_data as $key => $value) {
             $groupid[$key] = $value->user_group_id;
         }
-       
-        $approved = UserNomination::where([
-           // 'campaign_id' => $nomination_id,
-            'level_1_approval' => 0,
-        ])
-            ->whereIn('group_id', $groupid)
-            ->where('account_id', '!=' , $logged_user_id)
-            ->orderBY('id','desc')
-            ->paginate(12);
+        
+        if($status == 1){
+
+            $approved = UserNomination::where(function($q){
+                    $q->where(function($query){
+                        $query->where('level_1_approval', '1')
+                        ->where('level_2_approval', '2');
+                    })
+                    ->orWhere(function($query){
+                            $query->where('level_1_approval', '2')
+                            ->where('level_2_approval', '1');
+                        })
+                    ->orWhere(function($query){
+                        $query->where('level_1_approval', '1')
+                        ->where('level_2_approval', '1');
+                    })
+                    ->orWhere(function($query){
+                        $query->where('level_1_approval', '-1')
+                        ->where('rajecter_account_id','!=', NULL);
+                    })
+                    ->orWhere(function($query){
+                        $query->where('level_2_approval', '-1')
+                        ->where('rajecter_account_id','!=', NULL);
+                    });
+                })
+                ->whereIn('group_id', $groupid)
+                ->where('account_id', '!=' , $logged_user_id)
+                ->orderBY('id','desc')
+                ->paginate(12);
+            
+        }else{
+            $approved = UserNomination::where([
+               // 'campaign_id' => $nomination_id,
+                'level_1_approval' => 0,
+            ])
+                ->whereIn('group_id', $groupid)
+                ->where('account_id', '!=' , $logged_user_id)
+                ->orderBY('id','desc')
+                ->paginate(12);
+        }
+        
 
         //get the user group
         //$role_name = $account_id->getRoleNames()[0];
@@ -1176,6 +1207,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         return fractal($approved, new UserNominationTransformer());
     }
+
 
     /**
      * @param $nomination_id
