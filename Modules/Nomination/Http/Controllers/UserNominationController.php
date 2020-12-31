@@ -319,7 +319,7 @@ class UserNominationController extends Controller
                             // Get lowest role of receiver
                             $groupId  = $groupData['user_group_id'];
 
-                            UserNomination::create([
+                            $user_nomination = UserNomination::create([
                                 'user'   => $sendToUser->account_id, // Receiver
                                 'account_id' => $request->account_id, // Sender
                                 'group_id' => $groupId,
@@ -360,7 +360,7 @@ class UserNominationController extends Controller
                         $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                 
                         $message = "<p>Great news {$sendToUser->first_name},</p>";
-                        $message .= "<p>You have been nominated by {$nominator} for the {$inputPoint}. They nominated you for {$request->reason}.</p>";
+                        $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for {$request->reason}.</p>";
                 
                         $message .= "<p>Keep up the good work.</p>";
                 
@@ -484,7 +484,7 @@ class UserNominationController extends Controller
                         $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                 
                         $message = "<p>Great news {$sendToUser->first_name},</p>";
-                        $message .= "<p>You have been nominated by {$nominator} for the {$inputPoint}. They nominated you for {$request->reason}.</p>";
+                        $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for {$request->reason}.</p>";
                 
                         $message .= "<p>Keep up the good work.</p>";
                 
