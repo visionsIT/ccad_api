@@ -377,7 +377,7 @@ class UserNominationController extends Controller
                         ]);
 
                         
-                        $subject = "Cleveland Clinic Abu Dhabi - Congratulations!";
+                        $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
                         
                         $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                         
@@ -446,7 +446,7 @@ class UserNominationController extends Controller
                                     return $account->programUserData;
                                 })->filter();
 
-                            $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
+                            $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
                 
                             $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
                             $nominator = $senderUser->first_name.' '.$senderUser->last_name;
@@ -478,7 +478,7 @@ class UserNominationController extends Controller
                                     return $account->programUserData;
                                 })->filter();
                     
-                            $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
+                            $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
                     
                             $link = "https://ccad.meritincentives.com/approvals/approve-level-1";
                             $nominator = $senderUser->first_name.' '.$senderUser->last_name;
@@ -501,17 +501,6 @@ class UserNominationController extends Controller
                             }
                         }
 
-                        $subject = "Cleveland Clinic Abu Dhabi - Congratulations!";
-                
-                        $nominator = $senderUser->first_name.' '.$senderUser->last_name;
-                
-                        $message = "<p>Great news {$sendToUser->first_name},</p>";
-                        $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
-                
-                        $message .= "<p>Keep up the good work.</p>";
-                
-                        $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
-                        
                         DB::commit();
                         
                     }
@@ -870,7 +859,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         return $account->programUserData;
                     })->filter();
 
-                $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
+                $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
     
                 $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
                 $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
@@ -890,6 +879,36 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 foreach ($l2User as $account)
                 {
                     $this->nomination_service->sendmail($account->email,$subject,$message);
+                }
+
+                if($level2_v == 2) {
+
+                     // confirm nominator that nomination approve
+                     $sender_email = $program_user_sender->email;
+                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
+                     $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
+                     $message = "<p>Your nomination has been approved!.</p>";
+                     $message .= "<strong>Nominee </strong>{$nominee}<br>";
+                     $message .= "<strong>Value </strong>{$user_nomination->type->name}<br>";
+                     $message .= "<strong>Level </strong>{$user_nomination->campaignid->name}<br>";
+                     $message .= "<strong>Points </strong>{$user_nomination->points}<br>";
+                     $message .= "<strong>Reason </strong>{$user_nomination->reason}<br>";
+             
+                     $message .= "<p>{$nominee} will be able to spend their points on the rewards catalogue immediately.</p>";
+                     $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
+                     $this->nomination_service->sendmail($sender_email,$subject,$message);
+ 
+
+                    $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
+                
+                    $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
+            
+                    $message = "<p>Great news {$program_user_receiver->first_name},</p>";
+                    $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+            
+                    $message .= "<p>Keep up the good work.</p>";
+            
+                    $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
                 }
             }
 
@@ -1002,7 +1021,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             if($request->campaign_type == 4) {
                 $sender_email = $program_user_sender->email;
-                $subject ="Cleveland Clinic Abu Dhabi - Your nomination is declined !";
+                $subject ="Cleveland Clinic Abu Dhabi - Notification of nomination decline";
                 $message = "<p>Dear {$program_user_sender->first_name},</p>";
                 $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1232,7 +1251,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     // confirm nominator that nomination approve
                     $sender_email = $program_user_sender->email;
-                    $subject = "Cleveland Clinic Abu Dhabi - Your nomination is approved !";
+                    $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
                     $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
                     $message = "<p>Your nomination has been approved!.</p>";
                     $message .= "<strong>Nominee </strong>{$nominee}<br>";
@@ -1244,6 +1263,18 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $message .= "<p>{$nominee} will be able to spend their points on the rewards catalogue immediately.</p>";
                     $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
+
+                   
+                    $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
+                
+                    $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
+            
+                    $message = "<p>Great news {$program_user_receiver->first_name},</p>";
+                    $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+            
+                    $message .= "<p>Keep up the good work.</p>";
+            
+                    $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
 
                 }
             } else if ($request->level_2_approval == -1 ) {
@@ -1297,7 +1328,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 }
                 if($request->campaign_type == 4) {
                     $sender_email = $program_user_sender->email;
-                    $subject ="Cleveland Clinic Abu Dhabi - Your nomination is declined !";
+                    $subject ="Cleveland Clinic Abu Dhabi - Notification of nomination decline";
                     $message = "<p>Dear {$program_user_sender->first_name},</p>";
                     $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
