@@ -44,6 +44,7 @@ use Modules\User\Models\UserCampaignsBudget;
 use Modules\User\Models\UserCampaignsBudgetLogs;
 use Modules\Program\Models\UsersEcards;
 use Illuminate\Support\Facades\Mail;
+use Modules\User\Models\UsersGroupList;
 use DB;
 class UserNominationController extends Controller
 {
@@ -146,12 +147,12 @@ class UserNominationController extends Controller
             ]);
         }
 
-        $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
+        // $approvals = $this->nomination_service->getApprovalAdmin($user_nomination);
 
-        if( sizeof($approvals) > 0 )
-        {
-            $this->confirm_nomination($user_nomination, $approvals);
-        }
+        // if( sizeof($approvals) > 0 )
+        // {
+        //     $this->confirm_nomination($user_nomination, $approvals);
+        // }
 
         return fractal($user_nomination, new UserNominationTransformer);
     }
@@ -381,7 +382,7 @@ class UserNominationController extends Controller
 
                         // Update User Nomination table so that L1 or L2 can approve
         
-                        UserNomination::create([
+                        $user_nomination = UserNomination::create([
                             'user'   => $sendToUser->account_id, // Receiver
                             'account_id' => $request->account_id, // Sender
                             'group_id' => $groupId,
@@ -401,6 +402,69 @@ class UserNominationController extends Controller
                         ]);
 
                         DB::commit();
+
+                        if($level_1_approval == 0){
+                            $accounts = UsersGroupList::where('user_group_id', $groupId)
+                                ->where('user_role_id', '3')
+                                ->where('status', '1')
+                                ->get();
+
+                            $l2User = $accounts->map(function ($account){
+                                    return $account->programUserData;
+                                })->filter();
+
+                            $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
+                
+                            $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
+                            $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                            $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+                    
+                            $message = "<p>You have a nomination waiting for approval.</p>";
+                            $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+                            $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+                            $message .= "<strong>Value: </strong>{$inputPoint}<br>";
+                            $message .= "<strong>Level: </strong>{$user_nomination->type->name}<br>";
+                            $message .= "<strong>Reason: </strong>{$request->reason}<br>";
+                    
+                            $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+                    
+                    
+                            foreach ($l2User as $account)
+                            {
+                                $this->nomination_service->sendmail($account->email,$subject,$message);
+                            }
+                            
+                        } else {
+                            $accounts = UsersGroupList::where('user_group_id', $groupId)
+                                ->where('user_role_id', '2')
+                                ->where('status', '1')
+                                ->get();
+
+                            $l1User = $accounts->map(function ($account){
+                                    return $account->programUserData;
+                                })->filter();
+                    
+                            $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
+                    
+                            $link = "https://ccad.meritincentives.com/approvals/approve-level-1";
+                            $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                            $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+                    
+                            $message = "<p>You have a nomination waiting for approval.</p>";
+                            $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+                            $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+                            $message .= "<strong>Value: </strong>{$inputPoint}<br>";
+                            $message .= "<strong>Level: </strong>{$user_nomination->type->name}<br>";
+                            $message .= "<strong>Reason: </strong>{$request->reason}<br>";
+                    
+                            $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+                    
+                    
+                            foreach ($l1User as $account)
+                            {
+                                $this->nomination_service->sendmail($account->email,$subject,$message);
+                            }
+                        }
                         
                     }
                  
