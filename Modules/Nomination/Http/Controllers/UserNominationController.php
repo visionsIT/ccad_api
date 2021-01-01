@@ -1309,49 +1309,30 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $groupid[$key] = $value->user_group_id;
         }
         
-        if($status == 1){      // approved and declined records
+        if($status == 1){      // approved or decline
 
             $approved = UserNomination::where(function($q){
-                $q->where(function($query){
-                    $query->where('level_1_approval', '1');
+                    $q->where(function($query){
+                        $query->where('level_1_approval', '1');
+                    })
+                    ->orWhere(function($query){
+                        $query->where('level_1_approval', '-1');
+                    });
                 })
-                ->orWhere(function($query){
-                    $query->where('level_1_approval', '-1');
-                });
-            })
-            ->whereIn('group_id', $groupid)
-            ->where('account_id', '!=' , $logged_user_id)
-            ->orderBY('id','desc')
-            ->paginate(12);
+                ->whereIn('group_id', $groupid)
+                ->where('account_id', '!=' , $logged_user_id)
+                ->orderBY('id','desc')
+                ->paginate(12);
             
-        } else if($status == 2){  // approved records
-            $approved = UserNomination::where(function($q){
-                $q->where(function($query){
-                    $query->where('level_1_approval', '1');
-                });
-            })
-            ->whereIn('group_id', $groupid)
-            ->where('account_id', '!=' , $logged_user_id)
-            ->orderBY('id','desc')
-            ->paginate(12);
-        } else if($status == 3){  // declined records
-            $approved = UserNomination::where(function($q){
-                $q->where(function($query){
-                    $query->where('level_1_approval', '-1');
-                });
-            })
-            ->whereIn('group_id', $groupid)
-            ->where('account_id', '!=' , $logged_user_id)
-            ->orderBY('id','desc')
-            ->paginate(12);
-        } else{                    // pending records
+        }else{                     // pending
             $approved = UserNomination::where([
+               // 'campaign_id' => $nomination_id,
                 'level_1_approval' => 0,
             ])
-            ->whereIn('group_id', $groupid)
-            ->where('account_id', '!=' , $logged_user_id)
-            ->orderBY('id','desc')
-            ->paginate(12);
+                ->whereIn('group_id', $groupid)
+                ->where('account_id', '!=' , $logged_user_id)
+                ->orderBY('id','desc')
+                ->paginate(12);
         }
         
 
@@ -1889,7 +1870,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         if(!empty($groupid)){
 
-            if($status == 1){      // approved and declined records
+            if($status == 1){    // approved or declined
 
                 $approved = UserNomination::where(function($q){
                     $q->where(function($query){
@@ -1903,29 +1884,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->orderBY('id','desc')
                 ->paginate(12);
                 
-            } else if($status == 2){  // approved records
-
-                $approved = UserNomination::where(function($q){
-                    $q->where(function($query){
-                        $query->where('level_2_approval', '1');
-                    });
-                })
-                ->whereIn('group_id', $groupid)
-                ->orderBY('id','desc')
-                ->paginate(12);
-                
-            } else if($status == 3){  // declined records
-
-                $approved = UserNomination::where(function($q){
-                    $q->where(function($query){
-                        $query->where('level_2_approval', '-1');
-                    });
-                })
-                ->whereIn('group_id', $groupid)
-                ->orderBY('id','desc')
-                ->paginate(12);
-                
-            } else {                    // pending records
+            }else{                // pending
                 $approved = UserNomination::where([
                     'level_2_approval' => 0,
                 ])
