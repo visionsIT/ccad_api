@@ -729,10 +729,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         } else {
 
-            $get_campaign_setting = CampaignSettings::select('level_1_approval','level_2_approval')->where('campaign_id', $campaign_id)->first();
-
-            $level1_v = $get_campaign_setting->level_1_approval;
-            $level2_v = $get_campaign_setting->level_2_approval;
+            $level1_v = $user_nomination->level_1_approval;
+            $level2_v = $user_nomination->level_2_approval;
 
             if($level2_v == 2){ // l2 approval not required
 
