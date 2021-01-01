@@ -1313,24 +1313,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             $approved = UserNomination::where(function($q){
                     $q->where(function($query){
-                        $query->where('level_1_approval', '1')
-                        ->where('level_2_approval', '2');
+                        $query->where('level_1_approval', '1');
                     })
                     ->orWhere(function($query){
-                            $query->where('level_1_approval', '2')
-                            ->where('level_2_approval', '1');
-                        })
-                    ->orWhere(function($query){
-                        $query->where('level_1_approval', '1')
-                        ->where('level_2_approval', '1');
-                    })
-                    ->orWhere(function($query){
-                        $query->where('level_1_approval', '-1')
-                        ->where('rajecter_account_id','!=', NULL);
-                    })
-                    ->orWhere(function($query){
-                        $query->where('level_2_approval', '-1')
-                        ->where('rajecter_account_id','!=', NULL);
+                        $query->where('level_1_approval', '-1');
                     });
                 })
                 ->whereIn('group_id', $groupid)
@@ -1868,7 +1854,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
          return response()->json(['message'=>'Claim declined successfully.','status'=>200]);
      }
 
-    public function getL2NominatinsList($nomination_id, Account $account_id) {
+    public function getL2NominatinsList($nomination_id, Account $account_id, $status = Null) {
 
         $texto='';
         $logged_user_id = $account_id->id;
@@ -1884,17 +1870,32 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         if(!empty($groupid)){
 
-            $approved = UserNomination::where([
-            'level_2_approval' => 0,
-            ])
-            ->whereIn('group_id', $groupid)
-            ->where(function ($query) use ($texto){
+            if($status == 1){
 
-                $query->where('level_1_approval', '1')
-                ->orWhere('level_1_approval', '2');
-            })
-            ->orderBY('id','desc')
-            ->paginate(12);
+                $approved = UserNomination::where(function($q){
+                    $q->where(function($query){
+                        $query->where('level_2_approval', '1');
+                    })
+                    ->orWhere(function($query){
+                        $query->where('level_2_approval', '-1');
+                    });
+                })
+                ->whereIn('group_id', $groupid)
+                ->orderBY('id','desc')
+                ->paginate(12);
+                
+            }else{
+                $approved = UserNomination::where([
+                    'level_2_approval' => 0,
+                ])
+                ->whereIn('group_id', $groupid)
+                ->where(function ($query) use ($texto){
+                    $query->where('level_1_approval', '1')
+                    ->orWhere('level_1_approval', '2');
+                })
+                ->orderBY('id','desc')
+                ->paginate(12);
+            }
 
         }else{
             $approved = array();
