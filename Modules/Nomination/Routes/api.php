@@ -23,7 +23,7 @@ Route::resource('nominations/{id}/type', 'NominationTypeController');
 Route::resource('user_nominations', 'UserNominationController');
 Route::get('user_Ethankyou', 'UserNominationController@user_EthankyouRecords');
 Route::post('send_nomination', 'UserNominationController@sendNomination');
-Route::get('user_nomination/{id}/{account_id}', 'UserNominationController@getUsersBy');
+Route::get('user_nomination/{id}/{account_id}/{status?}', 'UserNominationController@getUsersBy');
 Route::get('user_l2_nomination/{id}/{account_id}', 'UserNominationController@getL2NominatinsList');
 
 Route::get('user_nominations/{nomination_id}/approved_level_one/{account_id}', 'UserNominationController@getApprovedUsersLevelOne');
