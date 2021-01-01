@@ -66,7 +66,7 @@ class UserNominationRepository extends Repository
         $query = UserNomination::join('program_users as t1', "t1.account_id","=","user_nominations.account_id")
             ->join('program_users as t2', "t2.account_id","=","user_nominations.user")
             ->select("user_nominations.*");
-            
+
 
         if(isset($search)) {
             $query->where(function($query1) use ($search){
@@ -80,7 +80,7 @@ class UserNominationRepository extends Repository
         if(isset($from) && isset($to)) {
             $query->whereBetween('user_nominations.created_at', [$from, $to]);
         }
-        
+
         if(isset($col)) {
             if($col == 'nomination_name') {
                 $query->orderBy('t2.first_name',$orderBy);

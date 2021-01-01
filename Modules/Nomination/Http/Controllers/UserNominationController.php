@@ -73,7 +73,7 @@ class UserNominationController extends Controller
      * @return \Spatie\Fractal\Fractal
      */
     public function index(Request $request): Fractal
-    {   
+    {
 
         $input = $request->all();
 
@@ -82,7 +82,7 @@ class UserNominationController extends Controller
         } else {
             $order = $this->repository->getDesc($input['campaignID']);
         }
-      
+
         return fractal($order, new UserNominationTransformer);
     }
 
@@ -104,7 +104,7 @@ class UserNominationController extends Controller
      */
     public function store(UserNominationRequest $request): Fractal
     {
-        
+
         $newname = '';
         if ($request->hasFile('attachments')) {
             $file = $request->file('attachments');
@@ -157,7 +157,7 @@ class UserNominationController extends Controller
         return fractal($user_nomination, new UserNominationTransformer);
     }
 
-    public function user_EthankyouRecords(Request $request) 
+    public function user_EthankyouRecords(Request $request)
     {
         try{
             $input = $request->all();
@@ -173,12 +173,12 @@ class UserNominationController extends Controller
             unset($data['data']);
             $meta = array(
                 'pagination' => array(
-                    "current_page" => $data['current_page'], 
-                    "total" => $data['total'], 
-                    "per_page" => $data['per_page'], 
+                    "current_page" => $data['current_page'],
+                    "total" => $data['total'],
+                    "per_page" => $data['per_page'],
                     "links" => array(
                         "next" => $data['next_page_url']
-                    ), 
+                    ),
                     "total_pages" => $data['last_page']
                 )
             );
@@ -188,7 +188,7 @@ class UserNominationController extends Controller
         }
     }
 
-    
+
     public function sendNomination(Request $request)
     {
 
@@ -240,12 +240,12 @@ class UserNominationController extends Controller
         $recevrCount = count($receiverIds);
 
         $senderUser = ProgramUsers::find($request->sender_id);
-        
+
         $failed = [];
 
         // Get Sender program id using account_id
 
-        $sender_account_id = $request->account_id; 
+        $sender_account_id = $request->account_id;
         $program_user_receiver = ProgramUsers::select('id')->where('account_id', $sender_account_id)->first();
         $sender_program_id = $program_user_receiver->id;
 
@@ -258,9 +258,9 @@ class UserNominationController extends Controller
 
                 $program_user_receiver = ProgramUsers::select('id')->where('account_id', $receiverid_v)->first();
                 $receiverid = $program_user_receiver->id;
-               
+
                 $sendToUser = ProgramUsers::find($receiverid);
-                    
+
                 DB::beginTransaction();
 
                 try {
@@ -271,46 +271,46 @@ class UserNominationController extends Controller
 
                     if( $approval_request == 0 && $points_allowed == 1){
 
-                        if($budget_type == 1){ 
+                        if($budget_type == 1){
 
                             // Campaign_Budget of current logged user
-        
+
                             $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
-        
+
                             if(!$campaign_budget){
-                                
+
                                 return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
-                                
+
                             }else{
-        
+
                                 $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
-                                
+
                                 if($campaign_budget_bal < ($inputPoint)) {
                                     return response()->json(['message'=>"You don't have enough balance to nominate", 'status'=>'error']);
                                 }
                             }
-        
+
                             // campaign Deduction
-        
+
                             $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
                             $campaign_budget_bal =  $campaign_budget->budget;
-        
+
                             $currentBud = $campaign_budget_bal;
                             $finalBud = $currentBud-$inputPoint;
-        
+
                             $updateSenderBudget = UserCampaignsBudget::where('program_user_id', $request->sender_id)->where('campaign_id',$campaign_id)->update([
                                         'budget' => $finalBud,
                                     ]);
-        
+
                             // Logs
-                            
+
                             $createRippleLog = UserCampaignsBudgetLogs::create([
                                 'program_user_id' => $request->sender_id,
                                 'campaign_id' => $campaign_id,
                                 'budget' => $inputPoint,
                                 'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
-                                'description' => "direct nomination without approval",   
-                                'created_by_id' => $request->account_id,     
+                                'description' => "direct nomination without approval",
+                                'created_by_id' => $request->account_id,
                             ]);
 
                             $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
@@ -335,8 +335,8 @@ class UserNominationController extends Controller
                                 'nominee_function' => $request->nominee_function,
                                 'personal_message' => $request->personal_message
                             ]);
-        
-        
+
+
                         } else {
                             $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
                             // Get lowest role of receiver
@@ -364,7 +364,7 @@ class UserNominationController extends Controller
 
                         //update receiver budget
                         $currentBud = UsersPoint::select('balance')->where('user_id',$receiverid)->latest()->first();
-                        
+
                         $currentBud = $currentBud ? $currentBud->balance : 0;
                         $finalPoints = $currentBud+$inputPoint;
                         $updateReciverBudget = UsersPoint::create([
@@ -376,24 +376,24 @@ class UserNominationController extends Controller
                             'created_by_id' => $request->sender_id // Who send
                         ]);
 
-                        
+
                         $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
-                        
+
                         $nominator = $senderUser->first_name.' '.$senderUser->last_name;
-                        
+
                         $message = "<p>Great news {$sendToUser->first_name},</p>";
                         $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
-                        
+
                         $message .= "<p>Keep up the good work.</p>";
-                        
+
                         $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
-                        
+
                         DB::commit();
                     }
 
                     /********************* If Approval Required ***************************/
-                  
-                    if($approval_request == 1 && $points_allowed == 1){ 
+
+                    if($approval_request == 1 && $points_allowed == 1){
 
                         $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
 
@@ -401,7 +401,7 @@ class UserNominationController extends Controller
                         // Get lowest role of receiver
                         $groupId  = $groupData['user_group_id'];
 
-                        
+
                         if($level_1_approval == 0){
                             $update_vale_l1 = 2;
                          }else{
@@ -415,7 +415,7 @@ class UserNominationController extends Controller
                          }
 
                         // Update User Nomination table so that L1 or L2 can approve
-        
+
                         $user_nomination = UserNomination::create([
                             'user'   => $sendToUser->account_id, // Receiver
                             'account_id' => $request->account_id, // Sender
@@ -447,11 +447,11 @@ class UserNominationController extends Controller
                                 })->filter();
 
                             $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
-                
+
                             $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
                             $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                             $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
-                    
+
                             $message = "<p>You have a nomination waiting for approval.</p>";
                             $message .= "<strong>Nominee: </strong>{$nominee}<br>";
                             $message .= "<strong>Nominator: </strong>{$nominator}<br>";
@@ -459,15 +459,15 @@ class UserNominationController extends Controller
                             $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
                             $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
                             $message .= "<strong>Reason: </strong>{$request->reason}<br>";
-                    
+
                             $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
-                    
-                    
+
+
                             foreach ($l2User as $account)
                             {
                                 $this->nomination_service->sendmail($account->email,$subject,$message);
                             }
-                            
+
                         } else {
                             $accounts = UsersGroupList::where('user_group_id', $groupId)
                                 ->where('user_role_id', '2')
@@ -477,13 +477,13 @@ class UserNominationController extends Controller
                             $l1User = $accounts->map(function ($account){
                                     return $account->programUserData;
                                 })->filter();
-                    
+
                             $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
-                    
+
                             $link = "https://ccad.meritincentives.com/approvals/approve-level-1";
                             $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                             $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
-                    
+
                             $message = "<p>You have a nomination waiting for approval.</p>";
                             $message .= "<strong>Nominee: </strong>{$nominee}<br>";
                             $message .= "<strong>Nominator: </strong>{$nominator}<br>";
@@ -491,10 +491,10 @@ class UserNominationController extends Controller
                             $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
                             $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
                             $message .= "<strong>Reason: </strong>{$request->reason}<br>";
-                    
+
                             $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
-                    
-                    
+
+
                             foreach ($l1User as $account)
                             {
                                 $this->nomination_service->sendmail($account->email,$subject,$message);
@@ -502,11 +502,11 @@ class UserNominationController extends Controller
                         }
 
                         DB::commit();
-                        
+
                     }
-                 
+
                 } catch (\Exception $e) {
-                    
+
                     DB::rollBack();
                     array_push($failed, $e->getMessage());
 
@@ -518,11 +518,11 @@ class UserNominationController extends Controller
             } else {
                 return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
             }
-           
+
         } else {
             return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
         }
-        
+
     }
     /**
      * Show the specified resource.
@@ -696,7 +696,7 @@ class UserNominationController extends Controller
 
 public function updateLevelOne(Request $request, $id): JsonResponse
 {
-  
+
     DB::beginTransaction();
     try {
         $user_nomination = $this->user_nomination_service->find($id);
@@ -705,16 +705,16 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
 
         // Get receiver program user id
-        $receiver_account_id = $user_nomination->user; 
+        $receiver_account_id = $user_nomination->user;
         $program_user_receiver = ProgramUsers::select('*')->where('account_id', $receiver_account_id)->first();
         $receiver_program_id = $program_user_receiver->id;
 
         // Get Sender program user id
         $program_user_sender = ProgramUsers::select('*')->where('account_id', $user_nomination->account_id)->first();
         $sender_program_id = $program_user_sender->id;
-        
+
         // Points Need to add
-        $points_update = $user_nomination->points; 
+        $points_update = $user_nomination->points;
 
         $nominationData = [
             'level_1_approval' => $request->level_1_approval,
@@ -738,23 +738,23 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $approver_program_data = ProgramUsers::select('id')->where('account_id', $request->approver_account_id)->first();
                 $approver_program_id = $approver_program_data->id;
 
-                
+
                 // Only for Nomination Type
 
                 if($request->campaign_type == 4) {
-            
-                    if($budget_type == 1){ 
+
+                    if($budget_type == 1){
 
                         $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$approver_program_id)->where('campaign_id',$campaign_id)->latest()->first();
-                    
+
                         if(!$campaign_budget){
-                        
+
                             return response()->json(['message'=>"Budget is not allocated yet", 'status'=>'error']);
 
                         }else{
 
                             $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
-                            
+
                             if($campaign_budget_bal < ($points_update)) {
                                 return response()->json(['message'=>"You don't have enough balance to nominate", 'status'=>'error']);
                             }
@@ -773,20 +773,20 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                 ]);
 
                         // Logs
-                        
+
                         $createRippleLog = UserCampaignsBudgetLogs::create([
                             'program_user_id' => $approver_program_id,
                             'campaign_id' => $campaign_id,
                             'budget' => $points_update,
                             'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
-                            'description' => "deduction after approval",   
-                            'created_by_id' => $request->approver_account_id,     
+                            'description' => "deduction after approval",
+                            'created_by_id' => $request->approver_account_id,
                         ]);
-                    }    
+                    }
 
                     //update receiver budget
                     $currentBud = UsersPoint::select('balance')->where('user_id',$receiver_program_id)->latest()->first();
-                    
+
                     $currentBud = $currentBud ? $currentBud->balance : 0;
                     $finalPoints = $currentBud+$points_update;
                     $updateReciverBudget = UsersPoint::create([
@@ -808,29 +808,29 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $message .= "<strong>Level </strong>{$user_nomination->campaignid->name}<br>";
                     $message .= "<strong>Points </strong>{$user_nomination->points}<br>";
                     $message .= "<strong>Reason </strong>{$user_nomination->reason}<br>";
-            
+
                     $message .= "<p>{$nominee} will be able to spend their points on the rewards catalogue immediately.</p>";
                     $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
 
 
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
-                
+
                     $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
-            
+
                     $message = "<p>Great news {$program_user_receiver->first_name},</p>";
                     $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
-            
+
                     $message .= "<p>Keep up the good work.</p>";
-            
+
                     $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
-                
+
                 } // Close Campiagn type condition
 
                 if($request->campaign_type == 2) {
 
                     /****** Start Send ecrad ***********/
-                    
+
                     $image_url = [
                                 'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
                             ];
@@ -862,7 +862,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
 
                     } catch (\Exception $e) {
-                    
+
                     return response()->json(['message'=>$e->getMessage(), 'status'=>'error']);
                     }
 
@@ -881,11 +881,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         })->filter();
 
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
-        
+
                     $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
                     $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
                     $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
-            
+
                     $message = "<p>You have a nomination waiting for approval.</p>";
                     $message .= "<strong>Nominee: </strong>{$nominee}<br>";
                     $message .= "<strong>Nominator: </strong>{$nominator}<br>";
@@ -893,10 +893,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
                     $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
                     $message .= "<strong>Reason: </strong>{$user_nomination->reason}<br>";
-            
+
                     $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
-            
-            
+
+
                     foreach ($l2User as $account)
                     {
                         $this->nomination_service->sendmail($account->email,$subject,$message);
@@ -908,7 +908,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $msgResponse ="Nomination has been approved successfully.";
         }
 
-    
+
         if ($request->level_1_approval == -1 ) {
 
 
@@ -916,7 +916,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 // Revert Back the points
 
-                if($budget_type == 1){ 
+                if($budget_type == 1){
 
                     // campaign budget refund
 
@@ -937,8 +937,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         'campaign_id' => $campaign_id,
                         'budget' => $points_update,
                         'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
-                        'description' => "Budget refund by e thank you",   
-                        'created_by_id' => $request->approver_account_id,     
+                        'description' => "Budget refund by e thank you",
+                        'created_by_id' => $request->approver_account_id,
                     ]);
 
 
@@ -970,7 +970,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             }
 
             $msgResponse ="Nomination has been declined successfully.";
-           
+
         }
 
         $this->repository->update($nominationData, $id);
@@ -978,7 +978,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         return response()->json(['message'=>$msgResponse, 'status'=>'success']);
 
     }catch (\Exception $e) {
-                       
+
         DB::rollBack();
         return response()->json(['message'=>$e->getMessage(), 'status'=>'error']);
     }
@@ -1016,14 +1016,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $nominationData['reject_reason'] = $request->decline_reason;
                 $nominationData['l2_approver_account_id'] = $request->approver_account_id;
             }
-           
+
             // Nomination Data
             $user_nomination = $this->user_nomination_service->find($id);
             $campaign_id = $user_nomination->campaign_id;
 
 
             // Get receiver program user id
-            $receiver_account_id = $user_nomination->user; 
+            $receiver_account_id = $user_nomination->user;
             $program_user_receiver = ProgramUsers::select('*')->where('account_id', $receiver_account_id)->first();
             $receiver_program_id = $program_user_receiver->id;
 
@@ -1032,7 +1032,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $sender_program_id = $program_user_sender->id;
 
             // Points Need to add
-            $points_update = $user_nomination->points; 
+            $points_update = $user_nomination->points;
 
 
              // Get Sender program user id
@@ -1050,7 +1050,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             if($request->campaign_type == 4) {
 
-                if($budget_type == 1){ 
+                if($budget_type == 1){
 
 
                     // Campaign_Budget of current logged user
@@ -1058,13 +1058,13 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$approver_program_id)->where('campaign_id',$campaign_id)->latest()->first();
 
                     if(!$campaign_budget){
-                        
+
                         return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
-                        
+
                     }else{
 
                         $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
-                        
+
                         if($campaign_budget_bal < ($points_update)) {
                             return response()->json(['message'=>"You don't have enough balance to nominate", 'status'=>'error']);
                         }
@@ -1083,14 +1083,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                             ]);
 
                     // Logs
-                    
+
                     $createRippleLog = UserCampaignsBudgetLogs::create([
                                     'program_user_id' => $approver_program_id,
                                     'campaign_id' => $campaign_id,
                                     'budget' => $points_update,
                                     'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
-                                    'description' => "deduction after approval",   
-                                    'created_by_id' => $request->approver_account_id,     
+                                    'description' => "deduction after approval",
+                                    'created_by_id' => $request->approver_account_id,
                                 ]);
 
 
@@ -1101,7 +1101,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     // $current_budget_bal = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
 
                     // $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
-                    
+
                     // if(!$current_budget_bal) {
                     //     //return response()->json(['message'=>"Overall Budget empty.", 'status'=>'error']);
                     //     return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
@@ -1117,7 +1117,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     // $currentBud = UsersPoint::select('balance')->where('user_id',$approver_program_id)->latest()->first();
                     // $currentBud = $currentBud ? $currentBud->balance : 0;
                     // $finalPoints = $currentBud-$points_update;
-                
+
                     // $updateReciverBudget = UsersPoint::create([
                     //     'value'    => -$points_update, // +/- point
                     //     'user_id'    => $approver_program_id, // Approval program id
@@ -1126,11 +1126,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     //     'balance'    => $finalPoints, // After +/- final balnce
                     //     'created_by_id' =>$request->approver_account_id // Who send
                     // ]);
-                } 
-                       
+                }
+
             } // Close Campiagn type condition
 
-           
+
             //update receiver budget
             $currentBud = UsersPoint::select('balance')->where('user_id',$receiver_program_id)->latest()->first();
 
@@ -1144,13 +1144,13 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 'balance'    => $finalPoints, // After +/- final balnce
                 'created_by_id' => $sender_program_id // Who send
             ]);
-            
+
 
              if($request->campaign_type == 2) {
 
 
                 /****** Start Send ecrad ***********/
-                
+
                 $image_url = [
                                 'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
                                 'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
@@ -1180,7 +1180,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     });
 
                 } catch (\Exception $e) {
-                   
+
                    return response()->json(['message'=> $e->getMessage(), 'status'=>'error']);
                 }
 
@@ -1199,30 +1199,30 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $message .= "<strong>Level </strong>{$user_nomination->campaignid->name}<br>";
                     $message .= "<strong>Points </strong>{$user_nomination->points}<br>";
                     $message .= "<strong>Reason </strong>{$user_nomination->reason}<br>";
-            
+
                     $message .= "<p>{$nominee} will be able to spend their points on the rewards catalogue immediately.</p>";
                     $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
 
-                   
+
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
-                
+
                     $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
-            
+
                     $message = "<p>Great news {$program_user_receiver->first_name},</p>";
                     $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
-            
+
                     $message .= "<p>Keep up the good work.</p>";
-            
+
                     $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
 
                 }
             } else if ($request->level_2_approval == -1 ) {
-                 
+
                  // Revert Back the points
 
                 if($request->campaign_type != 4) { // Ethank you refund as sender points gt deducted when card being sent but in nomination type, approval points get deducted so no refund in nomination
-                    if($budget_type == 1){ 
+                    if($budget_type == 1){
 
 
                         // campaign budget refund
@@ -1238,14 +1238,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                 ]);
 
                         // Logs
-                        
+
                         $createRippleLog = UserCampaignsBudgetLogs::create([
                                         'program_user_id' => $sender_program_id,
                                         'campaign_id' => $campaign_id,
                                         'budget' => $points_update,
                                         'current_balance' => $campaign_budget_bal ? $campaign_budget_balt : 0,
-                                        'description' => "Budget refund by e thank you",   
-                                        'created_by_id' => $request->approver_account_id,     
+                                        'description' => "Budget refund by e thank you",
+                                        'created_by_id' => $request->approver_account_id,
                                     ]);
 
 
@@ -1298,7 +1298,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         ->where('account_id', $logged_user_id)
         ->where('status', '1')
         ->where('user_role_id', '2') // 2 for Level1
-        ->get()->toArray(); 
+        ->get()->toArray();
 
 
         /*$loggedProgramUserData =  ProgramUsers::select('id')->where('account_id',$logged_user_id)->first();
@@ -1308,7 +1308,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         foreach ($user_group_data as $key => $value) {
             $groupid[$key] = $value->user_group_id;
         }
-        
+
         if($status == 1){
 
             $approved = UserNomination::where(function($q){
@@ -1323,7 +1323,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->where('account_id', '!=' , $logged_user_id)
                 ->orderBY('id','desc')
                 ->paginate(12);
-            
+
         }else{
             $approved = UserNomination::where([
                // 'campaign_id' => $nomination_id,
@@ -1334,7 +1334,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->orderBY('id','desc')
                 ->paginate(12);
         }
-        
+
 
         //get the user group
         //$role_name = $account_id->getRoleNames()[0];
@@ -1862,8 +1862,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         ->where('account_id', $logged_user_id)
         ->where('status', '1')
         ->where('user_role_id', '3') // 3 for Level2
-        ->get()->toArray(); 
-   
+        ->get()->toArray();
+
         foreach ($user_group_data as $key => $value) {
             $groupid[$key] = $value->user_group_id;
         }
@@ -1883,7 +1883,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->whereIn('group_id', $groupid)
                 ->orderBY('id','desc')
                 ->paginate(12);
-                
+
             }else{
                 $approved = UserNomination::where([
                     'level_2_approval' => 0,
@@ -1909,5 +1909,45 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         //     return $approve->nominated_account->def_dept_id >  0;
         // })->values();
         return fractal($approved, new UserNominationTransformer());
+    }
+
+    public function getCampaignReport(Request $request)
+    {
+        try {
+            $rules = [
+                'account_id' => 'required|integer|exists:accounts,id',
+                'campaign_id' => 'required|integer|exists:campaign_types,id',
+                'role_type' => 'required|integer|in:2,3',
+            ];
+
+            $validator = \Validator::make($request->all(), $rules);
+
+            if ($validator->fails()){
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            } else {
+                $logged_user_id = $request->account_id;
+                $role_type = $request->role_type;
+                $user_group_data =  DB::table('users_group_list')
+                ->where('account_id', $logged_user_id)
+                ->where('status', '1')
+                ->where('user_role_id', $role_type)
+                ->get()->toArray();
+
+                if(!empty($user_group_data)){
+                    foreach ($user_group_data as $key => $value) {
+                        echo $groupid[$key] = $value->user_group_id;
+                    }
+                    die('asdfasd');
+                    return response()->json([
+                        //'totalNumberOfOrders' => $totalNumberOfOrders,
+                        //'awardedPoints' => $awardPoints->awarded_points
+                        ]);
+                } else {
+                    return response()->json(['message' => 'You are not associated with this campaign.'], 200);
+                }
+            }
+        } catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()]);
+        }
     }
 }
