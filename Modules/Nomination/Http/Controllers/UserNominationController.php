@@ -1944,7 +1944,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         try {
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
-                'campaign_id' => 'required|integer|exists:campaign_types,id',
+                 'campaign_id' => 'required|integer|exists:value_sets,id',
                 //'role_type' => 'required|integer|in:2,3',
             ];
 
@@ -1993,57 +1993,68 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->where('campaign_id', $campaign_id)
                     ->get();
 
+                    
+                    
                     if($approved){
-
+                       
                         $appr_arr = $approved->toArray();
-                        foreach ($appr_arr as $key => $value) {
-                        
-                            $role_type = $groupids_role[$value['group_id']];  /*** 2 for L1 and 3 for L2 ****/
 
-                            if( ($role_type == 2 || $role_type == 3) && $role_type ){
+                        if(!empty($appr_arr)){
 
-                                if( 
-                                    ( (( $value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) &&  ($value['level_2_approval'] == 0)) )
-                                     || 
+                            foreach ($appr_arr as $key => $value) {
+                            
+                                $role_type = $groupids_role[$value['group_id']];  /*** 2 for L1 and 3 for L2 ****/
+
+                                if( ($role_type == 2 || $role_type == 3) && $role_type ){
+
+                                    if( 
+                                        ( (( $value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) &&  ($value['level_2_approval'] == 0)) )
+                                         || 
 
 
-                                     ($value['level_1_approval'] == 0) 
+                                         ($value['level_1_approval'] == 0) 
 
-                                     || 
+                                         || 
 
-                                     ($value['rajecter_account_id'] == $logged_user_id ) 
+                                         ($value['rajecter_account_id'] == $logged_user_id ) 
 
-                                     || 
+                                         || 
 
-                                     ($value['approver_account_id'] == $logged_user_id ) 
+                                         ($value['approver_account_id'] == $logged_user_id ) 
 
-                                     || 
+                                         || 
 
-                                     $value['l2_approver_account_id'] == $logged_user_id)
-                                {
+                                         $value['l2_approver_account_id'] == $logged_user_id)
+                                    {
 
-                                        $received_nomination[$key] = $value['id'];
+                                            $received_nomination[$key] = $value['id'];
 
+                                    }
+
+                                    if($value['approver_account_id'] == $logged_user_id || $value['l2_approver_account_id'] == $logged_user_id){
+
+                                        $approved_nomination[$key] = $value['id'];
+                                        $points_approved[$key] =  $value['points'];
+
+                                    }
+                                }else{
+                                    return response()->json(['message' => 'You are not associated with this campaign.'], 200);
                                 }
-
-                                if($value['approver_account_id'] == $logged_user_id || $value['l2_approver_account_id'] == $logged_user_id){
-
-                                    $approved_nomination[$key] = $value['id'];
-                                    $points_approved[$key] =  $value['points'];
-
-                                }
-                               
-
-                            }else{
-                                return response()->json(['message' => 'You are not associated with this campaign.'], 200);
                             }
+                        }else{
+                            
+                            $received_nomination = array();
+                            $approved_nomination = array();
+                            $points_approved = array();
                         }
+
                     }else{
+                        
                         $received_nomination = array();
                         $approved_nomination = array();
                         $points_approved = array();
                     }
-                     
+                    
                     $totalAwardedPoints = array_sum($points_approved);
                     $conversionData = PointRateSettings::where(['currency_id'=>1])->get()->first();
                     $conversion_rate = $conversionData->points;
@@ -2060,7 +2071,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->get()
                     ->first();
 
-                    if($logged_Budget_data->budget){
+                    if($logged_Budget_data){
                         $logged_budget = $logged_Budget_data->budget;
                     }else{
                         $logged_budget = 0;
@@ -2090,7 +2101,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         try {
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
-                //'campaign_id' => 'required|integer|exists:campaign_types,id',
+                //'campaign_id' => 'required|integer|exists:value_sets,id',
                 //'role_type' => 'required|integer|in:2,3',
             ];
 
@@ -2100,8 +2111,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
             } else {
 
-                $group_id = '2,3';
-                $group_arr =  explode(',', $group_id);
+                $role_id = '2,3'; // role id
+                $role_arr =  explode(',', $role_id);
                 
                 $logged_user_id = $request->account_id;
                 $campaign_id = $request->campaign_id;
@@ -2110,7 +2121,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $user_group_data =  DB::table('users_group_list')
                 ->where('account_id', $logged_user_id)
                 ->where('status', '1')
-                ->whereIn('user_role_id', $group_arr)
+                ->whereIn('user_role_id', $role_arr)
                 ->get()->toArray();
                 
                 if(!empty($user_group_data)){
