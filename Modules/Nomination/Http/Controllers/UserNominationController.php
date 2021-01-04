@@ -2045,7 +2045,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         try {
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
-                'campaign_id' => 'required|integer|exists:campaign_types,id',
+                //'campaign_id' => 'required|integer|exists:campaign_types,id',
                 //'role_type' => 'required|integer|in:2,3',
             ];
 
@@ -2079,47 +2079,77 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }
                     
                     
-                    $approved = UserNomination::whereIn('group_id', $groupids)
+                    /*$approved = UserNomination::whereIn('group_id', $groupids)
                     ->where('account_id', '!=' , $logged_user_id)
                     //->where('campaign_id', $campaign_id)
                     ->get();
+*/
 
-
-
-                    $logged_Budget_data = UserNomination::select('user_nominations.*')
+                    $approved = UserNomination::select('user_nominations.*','value_sets.name as campaign_name')
                     ->leftJoin('value_sets', 'value_sets.id', '=', 'user_nominations.campaign_id')
                     ->leftJoin('campaign_types', 'campaign_types.id', '=', 'value_sets.campaign_type_id')
                     ->where('user_nominations.account_id', '!=' , $logged_user_id)
                     ->where('campaign_types.id' , '4')
                     ->where('value_sets.status' , '1')
+                    ->whereIn('group_id', $groupids)
                     ->get();
-                    
+
+                    $i='';
+                    $campaign_id = '';
+                    $out = array();
                     if($approved){
 
                         $appr_arr = $approved->toArray();
-                       
+                      
                         foreach ($appr_arr as $key => $value) {
                         
                             $role_type = $groupids_role[$value['group_id']];  /*** 2 for L1 and 3 for L2 ****/
-
+                           
                             if( ($role_type == 2 || $role_type == 3) && $role_type ){
-
+                                
                                 if( $value['level_1_approval'] == 0 || ($value['level_2_approval'] == 0 && ($value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) ) ){
-                                    $pending_nomination[$key] = $value['id'];
-                                }
-                               
 
+                                    
+                                    if($campaign_id != $value['campaign_id']){
+
+                                        $i = 1;
+                                        $pending_nomination[$key]['count'] = $i;
+                                        $campaign_id = $value['campaign_id'];
+
+                                        
+                                    }else{
+
+                                        $pending_nomination[$key]['count'] = $i++;
+
+                                    }
+
+
+                                   
+                                    $pending_nomination[$key]['id'] = $value['id'];
+                                    $pending_nomination[$key]['campaign_name'] = $value['campaign_name'];
+                                    $pending_nomination[$key]['campaign_id'] = $value['campaign_id'];
+
+                                   
+                                    //$array_name
+                                }
                             }else{
                                 return response()->json(['message' => 'You are not associated with this campaign.'], 200);
                             }
                         }
 
+
+
+
+
                     }else{
                         $pending_nomination = array();
                         
                     }
+
+                    print_r($pending_nomination);
+                    die;
                     return response()->json([
-                        'total_pending' => count($pending_nomination),
+                        'total_pending' => $pending_nomination,
                     ]);
 
                 } else {
@@ -2131,6 +2161,19 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         }
     }
 
-
+    function count_array_values($my_array, $match) 
+    { 
+        $count = 0; 
+        
+        foreach ($my_array as $key => $value) 
+        { 
+            if ($value == $match) 
+            { 
+                $count++; 
+            } 
+        } 
+        
+        return $count; 
+    } 
 
 }
