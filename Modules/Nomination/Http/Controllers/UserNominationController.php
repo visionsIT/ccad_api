@@ -1243,7 +1243,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                         'program_user_id' => $sender_program_id,
                                         'campaign_id' => $campaign_id,
                                         'budget' => $points_update,
-                                        'current_balance' => $campaign_budget_bal ? $campaign_budget_balt : 0,
+                                        'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
                                         'description' => "Budget refund by e thank you",
                                         'created_by_id' => $request->approver_account_id,
                                     ]);
@@ -1309,7 +1309,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $groupid[$key] = $value->user_group_id;
         }
 
-        if($status == 1){
+        if($status == 1){      // approved or decline
 
             $approved = UserNomination::where(function($q){
                     $q->where(function($query){
@@ -1324,7 +1324,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->orderBY('id','desc')
                 ->paginate(12);
 
-        }else{
+        }else{                     // pending
             $approved = UserNomination::where([
                // 'campaign_id' => $nomination_id,
                 'level_1_approval' => 0,
@@ -1747,7 +1747,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
      */
     public function exportReport(NominationReportExportRequest $request)
     {
-        return Excel::download(new NominationReportExport($request->get('status', null), $request), 'nominations.csv');
+       // return Excel::download(new NominationReportExport($request->get('status', null), $request), 'nominations.csv');
     }
 
     /**
@@ -1870,7 +1870,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         if(!empty($groupid)){
 
-            if($status == 1){
+            if($status == 1){    // approved or declined
 
                 $approved = UserNomination::where(function($q){
                     $q->where(function($query){
@@ -1884,7 +1884,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->orderBY('id','desc')
                 ->paginate(12);
 
-            }else{
+            }else{                // pending
                 $approved = UserNomination::where([
                     'level_2_approval' => 0,
                 ])
@@ -1934,13 +1934,29 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->get()->toArray();
 
                 if(!empty($user_group_data)){
+                    $totalReceived = $totalApproved = $totalAwarded = $totalCost = $totalBudgetAvailable = $totalBudgetAwarded = 0;
+
                     foreach ($user_group_data as $key => $value) {
-                        echo $groupid[$key] = $value->user_group_id;
+                        $groupid[$key] = $value->user_group_id;
                     }
-                    die('asdfasd');
+
+                    $approved = UserNomination::where(function($q){
+                        $q->where(function($query){
+                            $query->where('level_2_approval', '1');
+                        })
+                        ->orWhere(function($query){
+                            $query->where('level_2_approval', '-1');
+                        });
+                    })->whereIn('group_id', $groupid)
+                    ->get();
+
                     return response()->json([
-                        //'totalNumberOfOrders' => $totalNumberOfOrders,
-                        //'awardedPoints' => $awardPoints->awarded_points
+                        'totalReceived' => $totalReceived,
+                        'totalApproved' => $totalApproved,
+                        'totalAwarded' => $totalAwarded,
+                        'totalCost' => $totalCost,
+                        'totalBudgetAvailable' => $totalBudgetAvailable,
+                        'totalBudgetAwarded' => $totalBudgetAwarded,
                         ]);
                 } else {
                     return response()->json(['message' => 'You are not associated with this campaign.'], 200);
