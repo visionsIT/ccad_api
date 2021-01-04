@@ -38,6 +38,8 @@ class UserNominationTransformer extends TransformerAbstract
             'points'                    => $model->points,
             'logo'                      => optional($model->type)->logo,
             'reason'                    => $model->reason,
+            'personal_message'          => $model->personal_message,
+            'nominee_function'          => $model->nominee_function,
             'attachments'               => ($model->attachments !='')?$imgUrl.$model->attachments:'',
             'Approved for level 1'      => $model->level_1_approval,
             'Approved for level 2'      => $model->level_2_approval,
