@@ -1307,31 +1307,35 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         if(!empty($groupid)){
             if($status == 1){      // approved records
 
-                $approved = UserNomination::where(function($q) use ($logged_user_id){
+                $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
+                ->where(function($q) use ($logged_user_id){
                         $q->where(function($query) use ($logged_user_id){
-                            $query->where(['level_1_approval' => '1', 'approver_account_id' => $logged_user_id]);
+                            $query->where(['user_nominations.level_1_approval' => '1', 'user_nominations.approver_account_id' => $logged_user_id]);
                         })
                         ->orWhere(function($query) use ($logged_user_id){
-                            $query->where(['level_2_approval' => '1', 'approver_account_id' => $logged_user_id]);
+                            $query->where(['user_nominations.level_2_approval' => '1', 'user_nominations.approver_account_id' => $logged_user_id]);
                         });
                     })
-                    ->whereIn('group_id', $groupid)
-                    ->where('account_id', '!=' , $logged_user_id)
-                    ->where('campaign_id', $nomination_id)
-                    ->orderBY('id','desc')
+                    ->whereIn('user_nominations.group_id', $groupid)
+                    ->where('user_nominations.account_id', '!=' , $logged_user_id)
+                    ->where('program_users.vp_emp_number', $logged_user_id)
+                    ->where('user_nominations.campaign_id', $nomination_id)
+                    ->orderBY('user_nominations.id','desc')
                     ->paginate(12);
 
             } else if($status == 2){      // declined records
 
-                $approved = UserNomination::where(function($q) use ($logged_user_id){
+                $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
+                ->where(function($q) use ($logged_user_id){
                         $q->where(function($query) use ($logged_user_id){
-                            $query->where('rajecter_account_id', $logged_user_id);
+                            $query->where('user_nominations.rajecter_account_id', $logged_user_id);
                         });
                     })
-                    ->whereIn('group_id', $groupid)
-                    ->where('account_id', '!=' , $logged_user_id)
-                    ->where('campaign_id', $nomination_id)
-                    ->orderBY('id','desc')
+                    ->whereIn('user_nominations.group_id', $groupid)
+                    ->where('user_nominations.account_id', '!=' , $logged_user_id)
+                    ->where('program_users.vp_emp_number', $logged_user_id)
+                    ->where('user_nominations.campaign_id', $nomination_id)
+                    ->orderBY('user_nominations.id','desc')
                     ->paginate(12);
 
             } else{                     // pending records
