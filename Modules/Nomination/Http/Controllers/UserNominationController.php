@@ -1985,12 +1985,12 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                             if( ($role_type == 2 || $role_type == 3) && $role_type ){
 
-                                if( ( (( $value['level_1_approval'] == 1 || $value[' '] == 2) &&  ($value['level_2_approval'] == 1)) ) || ($value['level_1_approval'] == 0) || ($value['rajecter_account_id'] == $logged_user_id ) || ($value['approver_account_id'] == $logged_user_id )){
+                                if( ( (( $value['level_1_approval'] == 1 || $value[' '] == 2) &&  ($value['level_2_approval'] == 1)) ) || ($value['level_1_approval'] == 0) || ($value['rajecter_account_id'] == $logged_user_id ) || ($value['approver_account_id'] == $logged_user_id ) || $value['l2_approver_account_id'] == $logged_user_id){
                                     $received_nomination[$key] = $value['id'];
 
                                 }
 
-                                if($value['approver_account_id'] == $logged_user_id){
+                                if($value['approver_account_id'] == $logged_user_id || $value['l2_approver_account_id'] == $logged_user_id){
                                     $approved_nomination[$key] = $value['id'];
                                     $points_approved[$key] =  $value['points'];
                                 }
@@ -2085,74 +2085,40 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         $groupids[$key] = $value->user_group_id;
                     }
                     
-                    
-                    /*$approved = UserNomination::whereIn('group_id', $groupids)
-                    ->where('account_id', '!=' , $logged_user_id)
-                    //->where('campaign_id', $campaign_id)
-                    ->get();
-*/
-
-                    $approved = UserNomination::select('user_nominations.*','value_sets.name as campaign_name')
+                   
+                    $approved = UserNomination::select('value_sets.name','campaign_id', DB::raw('count(*) as total'))
                     ->leftJoin('value_sets', 'value_sets.id', '=', 'user_nominations.campaign_id')
                     ->leftJoin('campaign_types', 'campaign_types.id', '=', 'value_sets.campaign_type_id')
+                    ->where(function($q){
+                        $q->where(function($query){
+                            $query->where('level_1_approval', '0');
+                        })
+                        ->orWhere(function($query){
+                            $query->where('level_1_approval', '0');
+                            $query->orWhere('level_1_approval', '2');
+                            $query->where('level_2_approval', '0');
+                        });
+                    })
+
                     ->where('user_nominations.account_id', '!=' , $logged_user_id)
                     ->where('campaign_types.id' , '4')
                     ->where('value_sets.status' , '1')
                     ->whereIn('group_id', $groupids)
-                    ->get();
+                    ->groupBy('user_nominations.campaign_id')
+                    ->get()->toArray();
 
-                    $i=1;
-                    $campaign_id = '';
-                    $out = array();
+                    
+                    
                     if($approved){
 
-                        $appr_arr = $approved->toArray();
-                      
-                        foreach ($appr_arr as $key => $value) {
-                        
-                            $role_type = $groupids_role[$value['group_id']];  /*** 2 for L1 and 3 for L2 ****/
-                           
-                            if( ($role_type == 2 || $role_type == 3) && $role_type ){
-                                
-                                if( $value['level_1_approval'] == 0 || ($value['level_2_approval'] == 0 && ($value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) ) ){
-
-                                    
-                                    if($campaign_id != $value['campaign_id']){
-
-                                        $i = 1;
-                                        $pending_nomination[$key]['count'] = $i;
-                                        $campaign_id = $value['campaign_id'];
-
-                                        
-                                    }else{
-
-                                        $pending_nomination[$key]['count'] = $i++;
-
-                                    }
-                                   
-                                    $pending_nomination[$key]['id'] = $value['id'];
-                                    $pending_nomination[$key]['campaign_name'] = $value['campaign_name'];
-                                    $pending_nomination[$key]['campaign_id'] = $value['campaign_id'];
-
-                                   
-                                    //$array_name
-                                }
-                            }else{
-                                return response()->json(['message' => 'You are not associated with this campaign.'], 200);
-                            }
-                        }
-
-
-
+                         $pending_nomination = $approved;
 
 
                     }else{
                         $pending_nomination = array();
                         
                     }
-
-                    print_r($pending_nomination);
-                    die;
+                
                     return response()->json([
                         'total_pending' => $pending_nomination,
                     ]);
