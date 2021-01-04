@@ -41,6 +41,8 @@ class UserNominationTransformer extends TransformerAbstract
             'attachments'               => ($model->attachments !='')?$imgUrl.$model->attachments:'',
             'Approved for level 1'      => $model->level_1_approval,
             'Approved for level 2'      => $model->level_2_approval,
+            'Approved for level 1 Id'   => $model->approver_account_id,
+            'Approved for level 2 Id'   => $model->l2_approver_account_id,
             //'points'      => $model->points,
             'Decline reason'            => $model->decline_reason,
             'created_at'                => $model->created_at,
