@@ -1985,14 +1985,35 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                             if( ($role_type == 2 || $role_type == 3) && $role_type ){
 
-                                if( ( (( $value['level_1_approval'] == 1 || $value[' '] == 2) &&  ($value['level_2_approval'] == 1)) ) || ($value['level_1_approval'] == 0) || ($value['rajecter_account_id'] == $logged_user_id ) || ($value['approver_account_id'] == $logged_user_id ) || $value['l2_approver_account_id'] == $logged_user_id){
-                                    $received_nomination[$key] = $value['id'];
+                                if( 
+                                    ( (( $value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) &&  ($value['level_2_approval'] == 0)) )
+                                     || 
+
+
+                                     ($value['level_1_approval'] == 0) 
+
+                                     || 
+
+                                     ($value['rajecter_account_id'] == $logged_user_id ) 
+
+                                     || 
+
+                                     ($value['approver_account_id'] == $logged_user_id ) 
+
+                                     || 
+
+                                     $value['l2_approver_account_id'] == $logged_user_id)
+                                {
+
+                                        $received_nomination[$key] = $value['id'];
 
                                 }
 
                                 if($value['approver_account_id'] == $logged_user_id || $value['l2_approver_account_id'] == $logged_user_id){
+
                                     $approved_nomination[$key] = $value['id'];
                                     $points_approved[$key] =  $value['points'];
+
                                 }
                                
 
@@ -2091,12 +2112,18 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->leftJoin('campaign_types', 'campaign_types.id', '=', 'value_sets.campaign_type_id')
                     ->where(function($q){
                         $q->where(function($query){
-                            $query->where('level_1_approval', '0');
+                            $query->where('level_1_approval', '0'); // L1
                         })
                         ->orWhere(function($query){
-                            $query->where('level_1_approval', '0');
-                            $query->orWhere('level_1_approval', '2');
-                            $query->where('level_2_approval', '0');
+                        
+                            $query->where(function($query1){
+                                $query1->where('level_1_approval', '1')
+                                ->orWhere('level_1_approval', '2');
+                            });
+
+                            $query->where('level_2_approval', '0'); //L2
+
+
                         });
                     })
 
@@ -2110,15 +2137,13 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     
                     
                     if($approved){
-
                          $pending_nomination = $approved;
-
 
                     }else{
                         $pending_nomination = array();
                         
                     }
-                
+            
                     return response()->json([
                         'total_pending' => $pending_nomination,
                     ]);
