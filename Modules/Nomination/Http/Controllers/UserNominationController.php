@@ -1944,7 +1944,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         try {
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
-                //'campaign_id' => 'required|integer|exists:campaign_types,id',
+                 'campaign_id' => 'required|integer|exists:value_sets,id',
                 //'role_type' => 'required|integer|in:2,3',
             ];
 
