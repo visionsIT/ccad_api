@@ -1307,7 +1307,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         if(!empty($groupid)){
             if($status == 1){      // approved records
 
-                $approved = UserNomination::where(function($q){
+                $approved = UserNomination::where(function($q) use ($logged_user_id){
                         $q->where(function($query){
                             $query->where(['level_1_approval' => '1', 'approver_account_id' => $logged_user_id]);
                         })
@@ -1323,7 +1323,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             } else if($status == 2){      // declined records
 
-                $approved = UserNomination::where(function($q){
+                $approved = UserNomination::where(function($q) use ($logged_user_id){
                         $q->where(function($query){
                             $query->where('rajecter_account_id', $logged_user_id);
                         });
@@ -1335,7 +1335,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->paginate(12);
 
             } else{                     // pending records
-                // $approved = UserNomination::where(function($q){
+                // $approved = UserNomination::where(function($q) use ($logged_user_id){
                 //     $q->where(function($query){
                 //         $query->where(['level_1_approval' => '0', 'level_2_approval' => '0']);
                 //     })
