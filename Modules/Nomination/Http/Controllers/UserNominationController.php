@@ -1993,7 +1993,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->where('campaign_id', $campaign_id)
                     ->get();
 
-                    
+                    $received_nomination = array();
+                    $approved_nomination = array();
+                    $points_approved = array();
+
                     
                     if($approved){
                        
@@ -2041,18 +2044,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                     return response()->json(['message' => 'You are not associated with this campaign.'], 200);
                                 }
                             }
-                        }else{
-                            
-                            $received_nomination = array();
-                            $approved_nomination = array();
-                            $points_approved = array();
                         }
 
-                    }else{
-                        
-                        $received_nomination = array();
-                        $approved_nomination = array();
-                        $points_approved = array();
                     }
                     
                     $totalAwardedPoints = array_sum($points_approved);
