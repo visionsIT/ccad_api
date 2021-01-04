@@ -1336,7 +1336,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->orderBY('id','desc')
                     ->paginate(12);
 
-            } else{                     // pending
+            } else{                     // pending records
                 $approved = UserNomination::where(function($q){
                     $q->where(function($query){
                         $query->where('level_1_approval', '0');
