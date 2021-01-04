@@ -1308,10 +1308,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             if($status == 1){      // approved records
 
                 $approved = UserNomination::where(function($q) use ($logged_user_id){
-                        $q->where(function($query){
+                        $q->where(function($query) use ($logged_user_id){
                             $query->where(['level_1_approval' => '1', 'approver_account_id' => $logged_user_id]);
                         })
-                        ->orWhere(function($query){
+                        ->orWhere(function($query) use ($logged_user_id){
                             $query->where(['level_2_approval' => '1', 'approver_account_id' => $logged_user_id]);
                         });
                     })
@@ -1324,7 +1324,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             } else if($status == 2){      // declined records
 
                 $approved = UserNomination::where(function($q) use ($logged_user_id){
-                        $q->where(function($query){
+                        $q->where(function($query) use ($logged_user_id){
                             $query->where('rajecter_account_id', $logged_user_id);
                         });
                     })
@@ -1336,16 +1336,16 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             } else{                     // pending records
                 // $approved = UserNomination::where(function($q) use ($logged_user_id){
-                //     $q->where(function($query){
+                //     $q->where(function($query) use ($logged_user_id){
                 //         $query->where(['level_1_approval' => '0', 'level_2_approval' => '0']);
                 //     })
-                //     ->orWhere(function($query){
+                //     ->orWhere(function($query) use ($logged_user_id){
                 //         $query->where(['level_1_approval' => '1', 'level_2_approval' => '0']);
                 //     })
-                //     ->orWhere(function($query){
+                //     ->orWhere(function($query) use ($logged_user_id){
                 //         $query->where(['level_1_approval' => '0', 'level_2_approval' => '2']);
                 //     })
-                //     ->orWhere(function($query){
+                //     ->orWhere(function($query) use ($logged_user_id){
                 //         $query->where(['level_1_approval' => '2', 'level_2_approval' => '0']);
                 //     });
                 // })
