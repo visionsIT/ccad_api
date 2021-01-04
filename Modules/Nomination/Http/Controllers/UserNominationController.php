@@ -2092,7 +2092,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->whereIn('group_id', $groupids)
                     ->get();
 
-                    $i='';
+                    $i=1;
                     $campaign_id = '';
                     $out = array();
                     if($approved){
@@ -2120,8 +2120,6 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                         $pending_nomination[$key]['count'] = $i++;
 
                                     }
-
-
                                    
                                     $pending_nomination[$key]['id'] = $value['id'];
                                     $pending_nomination[$key]['campaign_name'] = $value['campaign_name'];
