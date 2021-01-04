@@ -2101,7 +2101,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         try {
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
-                //'campaign_id' => 'required|integer|exists:campaign_types,id',
+                'campaign_id' => 'required|integer|exists:value_sets,id',
                 //'role_type' => 'required|integer|in:2,3',
             ];
 
@@ -2111,8 +2111,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
             } else {
 
-                $group_id = '2,3';
-                $group_arr =  explode(',', $group_id);
+                $role_id = '2,3'; // role id
+                $role_arr =  explode(',', $role_id);
                 
                 $logged_user_id = $request->account_id;
                 $campaign_id = $request->campaign_id;
@@ -2121,7 +2121,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $user_group_data =  DB::table('users_group_list')
                 ->where('account_id', $logged_user_id)
                 ->where('status', '1')
-                ->whereIn('user_role_id', $group_arr)
+                ->whereIn('user_role_id', $role_arr)
                 ->get()->toArray();
                 
                 if(!empty($user_group_data)){
