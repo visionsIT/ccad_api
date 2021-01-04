@@ -1349,22 +1349,24 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 //         $query->where(['level_1_approval' => '2', 'level_2_approval' => '0']);
                 //     });
                 // })
-                $approved = UserNomination::where(function($q){
+                $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.receiver_id')
+                    ->where(function($q){
                     $q->where(function($query){
-                        $query->where('level_1_approval', '0'); // L1
+                        $query->where('user_nominations.level_1_approval', '0'); // L1
                     })
                     ->orWhere(function($query){
                         $query->where(function($query1){
-                            $query1->where('level_1_approval', '1')
-                            ->orWhere('level_1_approval', '2');
+                            $query1->where('user_nominations.level_1_approval', '1')
+                            ->orWhere('user_nominations.level_1_approval', '2');
                         });
-                        $query->where('level_2_approval', '0'); //L2
+                        $query->where('user_nominations.level_2_approval', '0'); //L2
                     });
                 })
-                ->whereIn('group_id', $groupid)
-                ->where('account_id', '!=' , $logged_user_id)
-                ->where('campaign_id', $nomination_id)
-                ->orderBY('id','desc')
+                ->whereIn('user_nominations.group_id', $groupid)
+                ->where('user_nominations.account_id', '!=' , $logged_user_id)
+                ->where('user_nominations.campaign_id', $nomination_id)
+                ->where('program_users.vp_emp_number', $logged_user_id)
+                ->orderBY('user_nominations.id','desc')
                 ->paginate(12);
             }
         } else {
