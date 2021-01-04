@@ -2037,4 +2037,100 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()]);
         }
     }
+
+
+    public function getCampaignReport_count(Request $request)
+    {
+
+        try {
+            $rules = [
+                'account_id' => 'required|integer|exists:accounts,id',
+                'campaign_id' => 'required|integer|exists:campaign_types,id',
+                //'role_type' => 'required|integer|in:2,3',
+            ];
+
+            $validator = \Validator::make($request->all(), $rules);
+
+            if ($validator->fails()){
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            } else {
+
+                $group_id = '2,3';
+                $group_arr =  explode(',', $group_id);
+                
+                $logged_user_id = $request->account_id;
+                $campaign_id = $request->campaign_id;
+                $role_type = $request->role_type;
+
+                $user_group_data =  DB::table('users_group_list')
+                ->where('account_id', $logged_user_id)
+                ->where('status', '1')
+                ->whereIn('user_role_id', $group_arr)
+                ->get()->toArray();
+                
+                if(!empty($user_group_data)){
+
+                    $totalReceived = $totalApproved = $totalAwarded = $totalCost = $totalBudgetAvailable = $totalBudgetAwarded = 0;
+
+                    foreach ($user_group_data as $key => $value) {
+
+                        $groupids_role[$value->user_group_id] =  $value->user_role_id;
+                        $groupids[$key] = $value->user_group_id;
+                    }
+                    
+                    
+                    $approved = UserNomination::whereIn('group_id', $groupids)
+                    ->where('account_id', '!=' , $logged_user_id)
+                    //->where('campaign_id', $campaign_id)
+                    ->get();
+
+
+
+                    $logged_Budget_data = UserNomination::select('user_nominations.*')
+                    ->leftJoin('value_sets', 'value_sets.id', '=', 'user_nominations.campaign_id')
+                    ->leftJoin('campaign_types', 'campaign_types.id', '=', 'value_sets.campaign_type_id')
+                    ->where('user_nominations.account_id', '!=' , $logged_user_id)
+                    ->where('campaign_types.id' , '4')
+                    ->where('value_sets.status' , '1')
+                    ->get();
+                    
+                    if($approved){
+
+                        $appr_arr = $approved->toArray();
+                       
+                        foreach ($appr_arr as $key => $value) {
+                        
+                            $role_type = $groupids_role[$value['group_id']];  /*** 2 for L1 and 3 for L2 ****/
+
+                            if( ($role_type == 2 || $role_type == 3) && $role_type ){
+
+                                if( $value['level_1_approval'] == 0 || ($value['level_2_approval'] == 0 && ($value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) ) ){
+                                    $pending_nomination[$key] = $value['id'];
+                                }
+                               
+
+                            }else{
+                                return response()->json(['message' => 'You are not associated with this campaign.'], 200);
+                            }
+                        }
+
+                    }else{
+                        $pending_nomination = array();
+                        
+                    }
+                    return response()->json([
+                        'total_pending' => count($pending_nomination),
+                    ]);
+
+                } else {
+                    return response()->json(['message' => 'You are not associated with this campaign.'], 200);
+                }
+            }
+        } catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()]);
+        }
+    }
+
+
+
 }

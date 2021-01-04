@@ -93,3 +93,4 @@ Route::get('get_campaign_type', 'CampaignLevelController@getCampaignTypes');
 Route::post('save_wall_settings', 'NominationController@saveWallSettings');
 Route::get('get_wall_settings/{campaign_id}', 'NominationController@getWallSettings');
 Route::post('user/campaign_report', 'UserNominationController@getCampaignReport');
+Route::post('user/campaign_report_specific', 'UserNominationController@getCampaignReport_count');
