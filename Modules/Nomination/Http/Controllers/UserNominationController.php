@@ -1349,7 +1349,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 //         $query->where(['level_1_approval' => '2', 'level_2_approval' => '0']);
                 //     });
                 // })
-                $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.receiver_id')
+                $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
                     ->where(function($q){
                     $q->where(function($query){
                         $query->where('user_nominations.level_1_approval', '0'); // L1
