@@ -1307,11 +1307,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         if(!empty($groupid)){
             if($status == 1){      // approved records
 
-                $approved = UserNomination::where(function($q){
-                        $q->where(function($query){
+                $approved = UserNomination::where(function($q) use ($logged_user_id){
+                        $q->where(function($query) use ($logged_user_id){
                             $query->where(['level_1_approval' => '1', 'approver_account_id' => $logged_user_id]);
                         })
-                        ->orWhere(function($query){
+                        ->orWhere(function($query) use ($logged_user_id){
                             $query->where(['level_2_approval' => '1', 'approver_account_id' => $logged_user_id]);
                         });
                     })
@@ -1323,8 +1323,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             } else if($status == 2){      // declined records
 
-                $approved = UserNomination::where(function($q){
-                        $q->where(function($query){
+                $approved = UserNomination::where(function($q) use ($logged_user_id){
+                        $q->where(function($query) use ($logged_user_id){
                             $query->where('rajecter_account_id', $logged_user_id);
                         });
                     })
@@ -1354,8 +1354,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         $query->where('level_1_approval', '0'); // L1
                     })
                     ->orWhere(function($query){
-                        $query->where('level_1_approval', '1');
-                        $query->orWhere('level_1_approval', '2');
+                        $query->where(function($query1){
+                            $query1->where('level_1_approval', '1')
+                            ->orWhere('level_1_approval', '2');
+                        });
                         $query->where('level_2_approval', '0'); //L2
                     });
                 })
