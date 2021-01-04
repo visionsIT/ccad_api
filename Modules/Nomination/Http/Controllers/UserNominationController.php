@@ -1305,7 +1305,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $groupid[$key] = $value->user_group_id;
         }
         if(!empty($groupid)){
-            if($status == 1){      // approved
+            if($status == 1){      // approved records
 
                 $approved = UserNomination::where(function($q){
                         $q->where(function($query){
@@ -1321,7 +1321,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->orderBY('id','desc')
                     ->paginate(12);
 
-            } else if($status == 2){      // declined
+            } else if($status == 2){      // declined records
 
                 $approved = UserNomination::where(function($q){
                         $q->where(function($query){
