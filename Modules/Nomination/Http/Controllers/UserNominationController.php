@@ -1294,6 +1294,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
      * @return Fractal
      */
     public function getUsersBy($nomination_id, Account $account_id,$status = null) {
+        
         $logged_user_id = $account_id->id;
         $user_group_data =  DB::table('users_group_list')
         ->where('account_id', $logged_user_id)
