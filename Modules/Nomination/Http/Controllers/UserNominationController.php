@@ -1335,30 +1335,32 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->paginate(12);
 
             } else{                     // pending records
-                $approved = UserNomination::where(function($q){
-                    $q->where(function($query){
-                        $query->where(['level_1_approval' => '0', 'level_2_approval' => '0']);
-                    })
-                    ->orWhere(function($query){
-                        $query->where(['level_1_approval' => '1', 'level_2_approval' => '0']);
-                    })
-                    ->orWhere(function($query){
-                        $query->where(['level_1_approval' => '0', 'level_2_approval' => '2']);
-                    })
-                    ->orWhere(function($query){
-                        $query->where(['level_1_approval' => '2', 'level_2_approval' => '0']);
-                    });
-                })
                 // $approved = UserNomination::where(function($q){
                 //     $q->where(function($query){
-                //         $query->where('level_1_approval', '0'); // L1
+                //         $query->where(['level_1_approval' => '0', 'level_2_approval' => '0']);
                 //     })
                 //     ->orWhere(function($query){
-                //         $query->where('level_1_approval', '1');
-                //         $query->orWhere('level_1_approval', '2');
-                //         $query->where('level_2_approval', '0'); //L2
+                //         $query->where(['level_1_approval' => '1', 'level_2_approval' => '0']);
+                //     })
+                //     ->orWhere(function($query){
+                //         $query->where(['level_1_approval' => '0', 'level_2_approval' => '2']);
+                //     })
+                //     ->orWhere(function($query){
+                //         $query->where(['level_1_approval' => '2', 'level_2_approval' => '0']);
                 //     });
                 // })
+                $approved = UserNomination::where(function($q){
+                    $q->where(function($query){
+                        $query->where('level_1_approval', '0'); // L1
+                    })
+                    ->orWhere(function($query){
+                        $query->where(function($query1){
+                            $query1->where('level_1_approval', '1')
+                            ->orWhere('level_1_approval', '2');
+                        });
+                        $query->where('level_2_approval', '0'); //L2
+                    });
+                })
                 ->whereIn('group_id', $groupid)
                 ->where('account_id', '!=' , $logged_user_id)
                 ->where('campaign_id', $nomination_id)
