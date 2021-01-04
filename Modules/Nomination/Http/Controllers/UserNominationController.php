@@ -1956,7 +1956,6 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     foreach ($user_group_data as $key => $value) {
 
-
                         // Not in Use-- Just for clarification $groupid
                        /* $groupid[$key]['group_id'] = $value->user_group_id;
                         $groupid[$key]['role_id'] = $value->user_role_id; // 2 for L1 and 3 for L2
@@ -1986,7 +1985,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                             if( ($role_type == 2 || $role_type == 3) && $role_type ){
 
-                                if( ( (( $value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) &&  ($value['level_2_approval'] == 1)) ) || ($value['level_1_approval'] == 0) || ($value['rajecter_account_id'] == $logged_user_id ) || ($value['approver_account_id'] == $logged_user_id )){
+                                if( ( (( $value['level_1_approval'] == 1 || $value[' '] == 2) &&  ($value['level_2_approval'] == 1)) ) || ($value['level_1_approval'] == 0) || ($value['rajecter_account_id'] == $logged_user_id ) || ($value['approver_account_id'] == $logged_user_id )){
                                     $received_nomination[$key] = $value['id'];
 
                                 }
@@ -2001,7 +2000,6 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                 return response()->json(['message' => 'You are not associated with this campaign.'], 200);
                             }
                         }
-
                     }else{
                         $received_nomination = array();
                         $approved_nomination = array();
@@ -2103,7 +2101,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->whereIn('group_id', $groupids)
                     ->get();
 
-                    $i='';
+                    $i=1;
                     $campaign_id = '';
                     $out = array();
                     if($approved){
@@ -2131,8 +2129,6 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                         $pending_nomination[$key]['count'] = $i++;
 
                                     }
-
-
                                    
                                     $pending_nomination[$key]['id'] = $value['id'];
                                     $pending_nomination[$key]['campaign_name'] = $value['campaign_name'];
@@ -2170,19 +2166,5 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         }
     }
 
-    function count_array_values($my_array, $match) 
-    { 
-        $count = 0; 
-        
-        foreach ($my_array as $key => $value) 
-        { 
-            if ($value == $match) 
-            { 
-                $count++; 
-            } 
-        } 
-        
-        return $count; 
-    } 
-
+   
 }
