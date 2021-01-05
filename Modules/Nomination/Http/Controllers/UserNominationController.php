@@ -1338,6 +1338,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->orderBY('user_nominations.id','desc')
                     ->paginate(12);
 
+
             } else{                     // pending records
                 // $approved = UserNomination::where(function($q){
                 //     $q->where(function($query){
@@ -1972,6 +1973,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->where('status', '1')
                 ->whereIn('user_role_id', $group_arr)
                 ->get()->toArray();
+
+                 
                 
                 if(!empty($user_group_data)){
 
@@ -1993,22 +1996,30 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         $groupids[$key] = $value->user_group_id;
                     }
                     
-                    
+                   
                     $approved = UserNomination::leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
-                    ->whereIn('user_nominations.group_id', $groupids)
                     ->where('user_nominations.account_id', '!=' , $logged_user_id)
-                    ->where('user_nominations.campaign_id', $campaign_id)
-                    ->where('program_users.vp_emp_number', $logged_user_id)
-                    ->get();
+                    ->where('user_nominations.campaign_id', $campaign_id);
+
+
+                    // 2 for L1
+                    if(in_array('2', $groupids_role)){
+                        $approved->where('program_users.vp_emp_number', $logged_user_id); 
+                    }else{
+                    //3 for L2
+                        $approved->whereIn('user_nominations.group_id', $groupids);
+                    }
+                    $result = $approved->get();
+
 
                     $received_nomination = array();
                     $approved_nomination = array();
                     $points_approved = array();
 
                     
-                    if($approved){
+                    if($result){
                        
-                        $appr_arr = $approved->toArray();
+                        $appr_arr = $result->toArray();
 
                         if(!empty($appr_arr)){
 
