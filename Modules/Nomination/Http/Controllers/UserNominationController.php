@@ -1994,9 +1994,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }
                     
                     
-                    $approved = UserNomination::whereIn('group_id', $groupids)
-                    ->where('account_id', '!=' , $logged_user_id)
-                    ->where('campaign_id', $campaign_id)
+                    $approved = UserNomination::leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
+                    ->whereIn('user_nominations.group_id', $groupids)
+                    ->where('user_nominations.account_id', '!=' , $logged_user_id)
+                    ->where('user_nominations.campaign_id', $campaign_id)
+                    ->where('program_users.vp_emp_number', $logged_user_id)
                     ->get();
 
                     $received_nomination = array();
