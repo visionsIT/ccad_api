@@ -2159,6 +2159,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->where('campaign_types.id' , '4')
                     ->where('value_sets.status' , '1')
                     ->whereIn('user_nominations.group_id', $groupids)
+                    ->where('program_users.vp_emp_number', $logged_user_id)
                     ->groupBy('user_nominations.campaign_id')
                     ->get()->toArray();
 
