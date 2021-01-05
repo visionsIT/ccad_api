@@ -257,7 +257,7 @@ class UserNominationController extends Controller
 
          if(!empty($receiverIds)){
             if($request->project_name){
-                $teamData = new CreateNominationTeam();
+                $teamData = CreateNominationTeam::create();
             }
             foreach ($receiverIds as $key => $receiverid_v) {
 
