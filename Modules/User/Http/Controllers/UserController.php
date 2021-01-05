@@ -36,7 +36,7 @@ class UserController extends Controller
     public function __construct(UserService $service)
     {
         $this->service = $service;
-        $this->middleware('auth:api', ['paginatedUsers']);
+        $this->middleware('auth:api', ['paginatedUsers','getGroupLeadUsers']);
     }
 
     
@@ -120,7 +120,7 @@ class UserController extends Controller
      * @throws \Throwable
      */
     public function store(Program $program, ProgramUsersRequest $request): Fractal
-    {
+    { 
         $user = $this->service->store($program, $request);
 
         return fractal($user, new UserTransformer());
