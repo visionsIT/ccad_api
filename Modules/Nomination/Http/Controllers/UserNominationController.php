@@ -2239,23 +2239,30 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $approved = UserNomination::select('value_sets.name','campaign_id', DB::raw('count(*) as total'))
                     ->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
                     ->leftJoin('value_sets', 'value_sets.id', '=', 'user_nominations.campaign_id')
-                    ->leftJoin('campaign_types', 'campaign_types.id', '=', 'value_sets.campaign_type_id')
-                    ->where(function($q){
-                        $q->where(function($query){
-                            $query->where('user_nominations.level_1_approval', '0'); // L1
-                        })
-                        ->orWhere(function($query){
+                    ->leftJoin('campaign_types', 'campaign_types.id', '=', 'value_sets.campaign_type_id');
+
+                    if(in_array('2', $groupids_role)){
+                        $approved->where('user_nominations.level_1_approval', '0'); // L1
+                    }else{
+
+                        $approved->where(function($q){
                         
-                            $query->where(function($query1){
-                                $query1->where('user_nominations.level_1_approval', '1')
-                                ->orWhere('user_nominations.level_1_approval', '2');
+                            $approved->orWhere(function($query){
+                            
+                                $query->where(function($query1){
+                                    $query1->where('user_nominations.level_1_approval', '1')
+                                    ->orWhere('user_nominations.level_1_approval', '2');
+                                });
+
+                                $query->where('user_nominations.level_2_approval', '0'); //L2
+
+
                             });
-
-                            $query->where('user_nominations.level_2_approval', '0'); //L2
-
-
                         });
-                    });
+
+
+                    }
+                   
                     $approved->where('user_nominations.account_id', '!=' , $logged_user_id);
                     $approved->where('campaign_types.id', '4');
                 
