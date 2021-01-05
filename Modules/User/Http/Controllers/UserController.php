@@ -613,4 +613,20 @@ class UserController extends Controller
 
     }
 
+    /***************************
+    get all users of group except 
+    simple user and admin
+    *****************************/
+    public function getGroupLeadUsers($group_id = null){
+        if($group_id == null){
+            return response()->json(['message'=>'Please provide Group id.', 'status'=>'error']);exit;
+        }else{
+             
+            $data = UsersGroupList::where('user_group_id',$group_id)->where('user_role_id','!=',1)->where('user_role_id','!=',4)->where('user_role_id','!=',5)->get();
+            
+            $userList = fractal($data, new UserGroupTransformer());
+            return $userList;
+        }
+    }/****fn_ends****/
+
 }
