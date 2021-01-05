@@ -71,7 +71,8 @@ class RippleSettingsController extends Controller
             }
 
 
-            $nameCheck = ValueSet::where('id', $campaign_id)->update(['name' => $request->name,'status' => $request->status, 'campaign_slug' => $slug ]);
+            // $nameCheck = ValueSet::where('id', $campaign_id)->update(['name' => $request->name,'status' => $request->status, 'campaign_slug' => $slug ]);
+            $nameCheck = ValueSet::where('id', $campaign_id)->update(['name' => $request->name,'status' => $request->status ]);
             
         
             // Check If campaign setting are there or not
