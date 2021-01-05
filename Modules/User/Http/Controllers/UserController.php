@@ -506,7 +506,7 @@ class UserController extends Controller
                 'language' => 'required',
                 'company' => 'required',
                 'job_title' => 'required',
-                'vp_emp_number' => 'required|integer|exists:program_users,id',
+                //'vp_emp_number' => 'required|integer|exists:accounts,id',
             ];
 
             $validator = \Validator::make($request->all(), $rules);
