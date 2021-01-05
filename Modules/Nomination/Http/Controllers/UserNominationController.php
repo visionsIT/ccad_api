@@ -449,7 +449,7 @@ class UserNominationController extends Controller
 
                             $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
 
-                            $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
+                            $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
                             $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                             $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
 
@@ -481,7 +481,7 @@ class UserNominationController extends Controller
 
                             $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
 
-                            $link = "https://ccad.meritincentives.com/approvals/approve-level-1";
+                            $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
                             $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                             $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
 
@@ -591,7 +591,7 @@ class UserNominationController extends Controller
 
         $subject = "Cleveland Clinic Abu Dhabi - Nomination for approval";
 
-        $link = "https://ccad.meritincentives.com/approvals/approve-level-1";
+        $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
 
         $message = "Please approve {$user_name} nomination for the {$value} value which has been submitted by {$sender} for the following reason: {$reason} \n\r <br> \n\r <br>";
 
@@ -631,7 +631,7 @@ class UserNominationController extends Controller
 
         $subject="Cleveland Clinic Abu Dhabi - Nomination submitted";
 
-        $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
+        $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
 
         //$nominated_by_group_name= $user_nomination->nominated_user_group_name;
 
@@ -883,7 +883,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
 
-                    $link = "https://ccad.meritincentives.com/approvals/approve-level-2";
+                    $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
                     $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
                     $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
 
