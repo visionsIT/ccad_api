@@ -46,7 +46,7 @@ class UserNominationTransformer extends TransformerAbstract
             'Approved for level 1 Id'   => $model->approver_account_id,
             'Approved for level 2 Id'   => $model->l2_approver_account_id,
             //'points'      => $model->points,
-            'Decline reason'            => $model->decline_reason,
+            'Decline reason'            => $model->reject_reason,
             'created_at'                => $model->created_at,
             'updated_at'                => $model->updated_at,
             'project_name'              => $model->project_name,
