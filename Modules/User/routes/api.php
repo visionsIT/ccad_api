@@ -59,3 +59,4 @@ Route::get('list_user_budget/{campaign_id?}', 'UserManageController@listUserCamp
 Route::get('get_sso_login_details', 'UserController@getssoLoginDetails');
 Route::post('user/save_sso_login_details', 'UserController@saveSsoLoginDetails');
 Route::post('user/add_suggestion', 'UserManageController@AddUserSuggestion');
+Route::get('get_group_leads/{group_id?}', 'UserController@getGroupLeadUsers');
