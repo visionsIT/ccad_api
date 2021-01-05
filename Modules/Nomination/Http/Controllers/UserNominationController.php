@@ -1294,7 +1294,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
      * @return Fractal
      */
 
-    public function getUsersBy($nomination_id, Account $account_id,$status = null) {
+     public function getUsersBy($nomination_id, Account $account_id,$status = null) {
         $logged_user_id = $account_id->id;
         $user_group_data =  DB::table('users_group_list')
         ->whereIn('user_role_id', ['2','3']) // 2 for Level1, 3 for level 2
@@ -1304,9 +1304,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         foreach ($user_group_data as $key => $value) {
             $groupids_role[$key] =  $value->user_role_id;
-            $groupid[$key] = $value->user_group_id;
+            $groupids[$key] = $value->user_group_id;
         }
-        if(!empty($groupid)){
+        if(!empty($groupids)){
             if($status == 1){      // approved records
 
                 $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
@@ -1351,25 +1351,31 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
 
             } else{                     // pending records
-                $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
-                    ->where(function($q){
-                        $q->where(function($query){
-                            $query->where('user_nominations.level_1_approval', '0'); // L1
-                        })
-                        ->orWhere(function($query){
-                            $query->where(function($query1){
-                                $query1->where('user_nominations.level_1_approval', '1')
-                                ->orWhere('user_nominations.level_1_approval', '2');
-                            });
-                            $query->where('user_nominations.level_2_approval', '0'); //L2
-                        });
-                    });
+                    $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user');
+
                     // 2 for L1
                     if(in_array('2', $groupids_role)){
                         $approved->where('program_users.vp_emp_number', $logged_user_id); 
+                        $approved->where('user_nominations.level_1_approval', '0'); // L1
                     }else{
                     //3 for L2
+
                         $approved->whereIn('user_nominations.group_id', $groupids);
+                        $approved->where(function($q){
+                        
+                            $q->orWhere(function($query){
+                            
+                                $query->where(function($query1){
+                                    $query1->where('user_nominations.level_1_approval', '1')
+                                    ->orWhere('user_nominations.level_1_approval', '2');
+                                });
+
+                                $query->where('user_nominations.level_2_approval', '0'); //L2
+
+
+                            });
+                        });
+
                     }
                     $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
 
