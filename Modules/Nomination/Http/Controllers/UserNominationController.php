@@ -1316,6 +1316,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         })
                         ->orWhere(function($query) use ($logged_user_id){
                             $query->where(['user_nominations.level_2_approval' => '1', 'user_nominations.approver_account_id' => $logged_user_id]);
+                            $query->orWhere(['user_nominations.level_2_approval' => '1', 'user_nominations.l2_approver_account_id' => $logged_user_id]);
+
+
                         });
                     });
                     // 2 for L1
