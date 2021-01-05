@@ -1940,7 +1940,6 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
     public function getCampaignReport(Request $request)
     {
-
         try {
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
