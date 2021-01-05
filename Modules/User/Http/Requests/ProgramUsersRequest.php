@@ -21,6 +21,7 @@ class ProgramUsersRequest extends FormRequest
             'password' => 'required',
             'language' => 'required',
             'company' => 'required',
+            'vp_emp_number' => 'required|exists:accounts,id',
 
         ];
     }
