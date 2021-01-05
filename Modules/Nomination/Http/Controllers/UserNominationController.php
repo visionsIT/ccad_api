@@ -2159,7 +2159,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                         $approved->where(function($q){
                         
-                            $approved->orWhere(function($query){
+                            $q->orWhere(function($query){
                             
                                 $query->where(function($query1){
                                     $query1->where('user_nominations.level_1_approval', '1')
