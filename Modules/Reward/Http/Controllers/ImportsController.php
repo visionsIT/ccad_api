@@ -14,6 +14,7 @@ use Modules\Reward\Models\ProductCatalog;
 use Modules\Reward\Models\ProductCategory;
 use Modules\Reward\Models\ProductDenomination;
 use Modules\Reward\Models\ProductOrder;
+use Modules\Reward\Models\ProductsCountries;
 use Modules\Account\Models\Account;
 use Spatie\Permission\Models\Role;
 use Modules\User\Models\ProgramUsers;
@@ -134,7 +135,7 @@ class ImportsController extends Controller
                     foreach($denomi as $denoValue){
                         ProductDenomination::create([
                             'value' => $denoValue,
-                            'points' => ((int)$denoValue*(int)$getCurrencyPoints),
+                            'points' => ((float)$denoValue*(float)$getCurrencyPoints),
                             'product_id' => $addedProduct->id,
                         ]);
                     }

@@ -116,7 +116,7 @@ class CommonSettingController extends Controller
                                     foreach($get_product_denomi as $key1=>$val1){
                                         $get_denomi_val = ProductDenomination::where('id',$val1->id)->first();
                                         if(!empty($get_denomi_val)){
-                                            $newCalculation = (((int)$get_denomi_val->value)*((int)$newPoints));
+                                            $newCalculation = (((float)$get_denomi_val->value)*((float)$newPoints));
                                             $update_denomi = array('points'=>$newCalculation);
                                             ProductDenomination::where('id',$val1->id)->update($update_denomi);
                                         }

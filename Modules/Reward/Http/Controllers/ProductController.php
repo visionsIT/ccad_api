@@ -362,7 +362,7 @@ class ProductController extends Controller
 
                     ProductDenomination::create([
                             'value' => $denoValue,
-                            'points' => (((int)$denoValue)*((int)$getCurrencyPoints)),
+                            'points' => (((float)$denoValue)*((float)$getCurrencyPoints)),
                             'product_id' => $id,
                         ]);
                 }
@@ -404,7 +404,7 @@ class ProductController extends Controller
                 foreach($denomi as $denoValue){
                     ProductDenomination::updateOrCreate([
                         'value' => $denoValue,
-                        'points' => (((int)$denoValue)*((int)$getCurrencyPoints)),
+                        'points' => (((float)$denoValue)*((float)$getCurrencyPoints)),
                         'product_id' => $product->id,
                     ]);
                 }
