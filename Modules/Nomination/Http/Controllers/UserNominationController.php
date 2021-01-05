@@ -2124,6 +2124,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->where('status', '1')
                 ->whereIn('user_role_id', $role_arr)
                 ->get()->toArray();
+
+                
                 
                 if(!empty($user_group_data)){
 
@@ -2135,7 +2137,6 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         $groupids[$key] = $value->user_group_id;
                     }
                     
-                   
                     $approved = UserNomination::select('value_sets.name','campaign_id', DB::raw('count(*) as total'))
                     ->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
                     ->leftJoin('value_sets', 'value_sets.id', '=', 'user_nominations.campaign_id')
@@ -2155,20 +2156,23 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
 
                         });
-                    })
-
-                    ->where('user_nominations.account_id', '!=' , $logged_user_id)
-                    ->where('campaign_types.id' , '4')
-                    ->where('value_sets.status' , '1')
-                    ->whereIn('user_nominations.group_id', $groupids)
-                    ->where('program_users.vp_emp_number', $logged_user_id)
-                    ->groupBy('user_nominations.campaign_id')
-                    ->get()->toArray();
-
+                    });
+                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id);
+                    $approved->where('campaign_types.id', '4');
+                
+                    // 2 for L1
+                    if(in_array('2', $groupids_role)){
+                        $approved->where('program_users.vp_emp_number', $logged_user_id); 
+                    }else{
+                    //3 for L2
+                        $approved->whereIn('user_nominations.group_id', $groupids);
+                    }
+                    $approved->groupBy('user_nominations.campaign_id');
                     
-                    
-                    if($approved){
-                         $pending_nomination = $approved;
+
+                    $result= $approved->get()->toArray();
+                    if($result){
+                         $pending_nomination = $result;
 
                     }else{
                         $pending_nomination = array();
