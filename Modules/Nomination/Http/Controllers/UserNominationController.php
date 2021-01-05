@@ -1391,7 +1391,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         ->get()->toArray();
 
         foreach ($user_group_data as $key => $value) {
-            $groupids_role[$value->user_group_id] =  $value->user_role_id;
+            $groupids_role[$key] =  $value->user_role_id;
             $groupid[$key] = $value->user_group_id;
         }
         if(!empty($groupid)){
@@ -1413,7 +1413,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
                     }
-                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc')->paginate(12);
+                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
+
+
+                    $result = $approved->paginate(12);
 
             } else if($status == 2){      // declined records
 
@@ -1430,7 +1433,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
                     }
-                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc')->paginate(12);
+                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
+
+                    $result = $approved->paginate(12);
 
 
             } else{                     // pending records
@@ -1454,13 +1459,15 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
                     }
-                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc')->paginate(12);
+                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
+
+                    $result = $approved->paginate(12);
             }
         } else {
-            $approved = array();
+            $result = array();
         }
 
-        return fractal($approved, new UserNominationTransformer());
+        return fractal($result, new UserNominationTransformer());
     }
 
 
