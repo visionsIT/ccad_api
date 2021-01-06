@@ -236,10 +236,11 @@ class NominationService
     public function getCampaignEcards($search = NULL){
         if($search === NULL) {
 
-            $data = UsersEcards::join('value_sets', 'users_ecards.campaign_id', '=', 'value_sets.id')
+            $data = UsersEcards::select("users_ecards.id as cardid", "users_ecards.ecard_id","users_ecards.campaign_id","users_ecards.image_message","users_ecards.sent_to","users_ecards.sent_by","users_ecards.points","users_ecards.send_type","users_ecards.new_image","users_ecards.image_path","users_ecards.created_at as card_create" )->join('value_sets', 'users_ecards.campaign_id', '=', 'value_sets.id')
                 ->join('campaign_settings', 'users_ecards.campaign_id', '=', 'campaign_settings.campaign_id')
                 ->where('value_sets.status','1')
                 ->where('campaign_settings.wall_settings','1')
+                ->orderByDesc('users_ecards.created_at')
                 ->paginate(10);
 
             foreach($data as $key => $value){
@@ -273,7 +274,7 @@ class NominationService
             
         }else{
 
-            $data = UsersEcards::join('value_sets', 'users_ecards.campaign_id', '=', 'value_sets.id')
+            $data = UsersEcards::select("users_ecards.id as cardid", "users_ecards.ecard_id","users_ecards.campaign_id","users_ecards.image_message","users_ecards.sent_to","users_ecards.sent_by","users_ecards.points","users_ecards.send_type","users_ecards.new_image","users_ecards.image_path","users_ecards.created_at as card_create" )->join('value_sets', 'users_ecards.campaign_id', '=', 'value_sets.id')
                 ->join('campaign_settings', 'users_ecards.campaign_id', '=', 'campaign_settings.campaign_id')
                 ->join('program_users', 'users_ecards.sent_to', '=', 'program_users.id')
                 ->where('value_sets.status','1')
@@ -281,6 +282,7 @@ class NominationService
                 ->where('program_users.first_name', 'LIKE', "%{$search}%")
                 ->orWhere('program_users.last_name', 'LIKE', "%{$search}%")
                 ->orWhere('users_ecards.campaign_id', '=', $search)
+                ->orderByDesc('users_ecards.created_at')
                 ->paginate(10);
                 
             foreach($data as $key => $value){
