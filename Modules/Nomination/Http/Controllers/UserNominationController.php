@@ -2037,15 +2037,28 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                                 if( ($role_type == 2 || $role_type == 3) && $role_type ){
 
+
+
+                                    if($role_type == 2){
+
+                                        if($value['level_1_approval'] == 0){
+                                            $received_nomination[$key] = $value['id'];
+                                        }
+
+
+                                    }elseif($role_type == 3){
+
+                                        if( 
+                                         (( $value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) &&  ($value['level_2_approval'] == 0)) ){
+
+                                            $received_nomination[$key] = $value['id'];
+
+                                         }
+
+                                    }
+
+
                                     if( 
-                                        ( (( $value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) &&  ($value['level_2_approval'] == 0)) )
-                                         || 
-
-
-                                         ($value['level_1_approval'] == 0) 
-
-                                         || 
-
                                          ($value['rajecter_account_id'] == $logged_user_id ) 
 
                                          || 
