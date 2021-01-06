@@ -141,7 +141,6 @@ class UserService
     public function store(Program $program, ProgramUsersRequest $request)
     { 
         try {
-
             $account = Account::create([
                 'name'              => $request->username,
                 'email'             => $request->email,
@@ -198,18 +197,20 @@ class UserService
                 $UsersGroupList->updated_at = $date;
                 $UsersGroupList->save();
             }
-
-            $check_lead_data = UsersGroupList::where(['account_id'=>$request->vp_emp_number,'user_group_id'=>$request->group_id,'user_role_id'=>'2'])->first();
+            if($request->vp_emp_number != ''){
+                $check_lead_data = UsersGroupList::where(['account_id'=>$request->vp_emp_number,'user_group_id'=>$request->group_id,'user_role_id'=>'2'])->first();
            
-            if(empty($check_lead_data)){
-                $UsersGroupList = new UsersGroupList;
-                $UsersGroupList->account_id = $request->vp_emp_number;
-                $UsersGroupList->user_group_id = $request->group_id;
-                $UsersGroupList->user_role_id = '2';
-                $UsersGroupList->created_at = $date;
-                $UsersGroupList->updated_at = $date;
-                $UsersGroupList->save();
+                if(empty($check_lead_data)){
+                    $UsersGroupList = new UsersGroupList;
+                    $UsersGroupList->account_id = $request->vp_emp_number;
+                    $UsersGroupList->user_group_id = $request->group_id;
+                    $UsersGroupList->user_role_id = '2';
+                    $UsersGroupList->created_at = $date;
+                    $UsersGroupList->updated_at = $date;
+                    $UsersGroupList->save();
+                }
             }
+
             return $programUser;
             
             // if(isset($request->emp_type)){
