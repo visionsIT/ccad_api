@@ -42,7 +42,7 @@ return $settings = array(
     /**
      * Where to redirect after logout
      */
-    'logoutRoute' => 'https://ccad.meritincentives.com/login',
+    'logoutRoute' => 'https://ccad.takreem.ae/login',
 
     /**
      * Where to redirect after login if no other option was provided

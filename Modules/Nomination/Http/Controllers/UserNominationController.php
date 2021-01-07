@@ -1322,7 +1322,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     });
                     // 2 for L1
                     if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id); 
+                        $approved->where('program_users.vp_emp_number', $logged_user_id);
                     }else{
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
@@ -1342,7 +1342,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     });
                     // 2 for L1
                     if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id); 
+                        $approved->where('program_users.vp_emp_number', $logged_user_id);
                     }else{
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
@@ -1357,16 +1357,16 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     // 2 for L1
                     if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id); 
+                        $approved->where('program_users.vp_emp_number', $logged_user_id);
                         $approved->where('user_nominations.level_1_approval', '0'); // L1
                     }else{
                     //3 for L2
 
                         $approved->whereIn('user_nominations.group_id', $groupids);
                         $approved->where(function($q){
-                        
+
                             $q->orWhere(function($query){
-                            
+
                                 $query->where(function($query1){
                                     $query1->where('user_nominations.level_1_approval', '1')
                                     ->orWhere('user_nominations.level_1_approval', '2');
@@ -1719,7 +1719,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $message .="Your nomination  for the " . $user_nomination->project_name . " project has been successfully approved! As a result, " . $user_nomination->nominated_account->name . " has been successfully awarded with " . $user_nomination->value  . " to their Kafu account.";
 
-                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
+                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://ccad.takreem.ae/wall-of-fame'>here</a>.";
 
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1733,7 +1733,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $message = "Dear " . $user_nomination->nominated_account->name ;
                 $message .="\n\r <br> Congratulations! \n\r <br> Your diligence and dedication towards the " . $user_nomination->project_name . " project, have played a tremendous role towards its success!";
                 $message .= "\n\r <br> As a sign of gratitude, you have been awarded with " . $user_nomination->value  . " to your Kafu account.";
-                $message .= "\n\r <br>  *Click <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='https://ccad.meritincentives.com/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
+                $message .= "\n\r <br>  *Click <a href='https://ccad.takreem.ae/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='https://ccad.takreem.ae/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
                 $message .=" ";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1771,8 +1771,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
-                //$message .="To view this award on the Kafu wall of fame, please <a href='https://ccad.meritincentives.com/wall-of-fame'>Click here</a>.";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.takreem.ae/wall-of-fame'>here</a>.";
+                //$message .="To view this award on the Kafu wall of fame, please <a href='https://ccad.takreem.ae/wall-of-fame'>Click here</a>.";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
 
@@ -1971,7 +1971,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $group_id = '2,3';
                 $group_arr =  explode(',', $group_id);
-                
+
                 $logged_user_id = $request->account_id;
                 $campaign_id = $request->campaign_id;
                 $role_type = $request->role_type;
@@ -1982,8 +1982,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->whereIn('user_role_id', $group_arr)
                 ->get()->toArray();
 
-                 
-                
+
+
                 if(!empty($user_group_data)){
 
                     $totalReceived = $totalApproved = $totalAwarded = $totalCost = $totalBudgetAvailable = $totalBudgetAwarded = 0;
@@ -2003,8 +2003,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         $groupids_role[$value->user_group_id] =  $value->user_role_id;
                         $groupids[$key] = $value->user_group_id;
                     }
-                    
-                   
+
+
                     $approved = UserNomination::leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
                     ->where('user_nominations.account_id', '!=' , $logged_user_id)
                     ->where('user_nominations.campaign_id', $campaign_id);
@@ -2012,7 +2012,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     // 2 for L1
                     if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id); 
+                        $approved->where('program_users.vp_emp_number', $logged_user_id);
                     }else{
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
@@ -2024,15 +2024,15 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $approved_nomination = array();
                     $points_approved = array();
 
-                    
+
                     if($result){
-                       
+
                         $appr_arr = $result->toArray();
 
                         if(!empty($appr_arr)){
 
                             foreach ($appr_arr as $key => $value) {
-                            
+
                                 $role_type = $groupids_role[$value['group_id']];  /*** 2 for L1 and 3 for L2 ****/
 
                                 if( ($role_type == 2 || $role_type == 3) && $role_type ){
@@ -2048,7 +2048,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                                     }elseif($role_type == 3){
 
-                                        if( 
+                                        if(
                                          (( $value['level_1_approval'] == 1 || $value['level_1_approval'] == 2) &&  ($value['level_2_approval'] == 0)) ){
 
                                             $received_nomination[$key] = $value['id'];
@@ -2058,14 +2058,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                     }
 
 
-                                    if( 
-                                         ($value['rajecter_account_id'] == $logged_user_id ) 
+                                    if(
+                                         ($value['rajecter_account_id'] == $logged_user_id )
 
-                                         || 
+                                         ||
 
-                                         ($value['approver_account_id'] == $logged_user_id ) 
+                                         ($value['approver_account_id'] == $logged_user_id )
 
-                                         || 
+                                         ||
 
                                          $value['l2_approver_account_id'] == $logged_user_id)
                                     {
@@ -2087,7 +2087,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         }
 
                     }
-                    
+
                     $totalAwardedPoints = array_sum($points_approved);
                     $conversionData = PointRateSettings::where(['currency_id'=>1])->get()->first();
                     $conversion_rate = $conversionData->points;
@@ -2096,7 +2096,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }else{
                         $total_cost = 0;
                     }
-                    
+
                     $logged_Budget_data = UserCampaignsBudget::select('user_campaigns_budget.budget')
                     ->leftJoin('program_users', 'program_users.id', '=', 'user_campaigns_budget.program_user_id')
                     ->where('user_campaigns_budget.campaign_id','=',$campaign_id)
@@ -2146,7 +2146,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $role_id = '2,3'; // role id
                 $role_arr =  explode(',', $role_id);
-                
+
                 $logged_user_id = $request->account_id;
                 $campaign_id = $request->campaign_id;
                 $role_type = $request->role_type;
@@ -2157,8 +2157,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ->whereIn('user_role_id', $role_arr)
                 ->get()->toArray();
 
-                
-                
+
+
                 if(!empty($user_group_data)){
 
                     $totalReceived = $totalApproved = $totalAwarded = $totalCost = $totalBudgetAvailable = $totalBudgetAwarded = 0;
@@ -2168,7 +2168,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         $groupids_role[$value->user_group_id] =  $value->user_role_id;
                         $groupids[$key] = $value->user_group_id;
                     }
-                    
+
                     $approved = UserNomination::select('value_sets.name','campaign_id', DB::raw('count(*) as total'))
                     ->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
                     ->leftJoin('value_sets', 'value_sets.id', '=', 'user_nominations.campaign_id')
@@ -2179,9 +2179,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }else{
 
                         $approved->where(function($q){
-                        
+
                             $q->orWhere(function($query){
-                            
+
                                 $query->where(function($query1){
                                     $query1->where('user_nominations.level_1_approval', '1')
                                     ->orWhere('user_nominations.level_1_approval', '2');
@@ -2195,19 +2195,19 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
 
                     }
-                   
+
                     $approved->where('user_nominations.account_id', '!=' , $logged_user_id);
                     $approved->where('campaign_types.id', '4');
-                
+
                     // 2 for L1
                     if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id); 
+                        $approved->where('program_users.vp_emp_number', $logged_user_id);
                     }else{
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
                     }
                     $approved->groupBy('user_nominations.campaign_id');
-                    
+
 
                     $result= $approved->get()->toArray();
                     if($result){
@@ -2215,9 +2215,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     }else{
                         $pending_nomination = array();
-                        
+
                     }
-            
+
                     return response()->json([
                         'total_pending' => $pending_nomination,
                     ]);
@@ -2231,5 +2231,5 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         }
     }
 
-   
+
 }

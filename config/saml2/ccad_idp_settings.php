@@ -9,7 +9,7 @@ $idp_entityId = '';
 $idp_sso_url = '';
 $idp_sl_url = '';
 $idp_x509cert = '';
-$spSlsUrl = 'https://ccad.meritincentives.com/login';
+$spSlsUrl = 'https://ccad.takreem.ae/login';
 
 // If you choose to use ENV vars to define these values, give this IdP its own env var names
 // so you can define different values for each IdP, all starting with 'SAML2_'.$this_idp_env_id
