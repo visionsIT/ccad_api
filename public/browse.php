@@ -78,7 +78,7 @@
                     document.getElementById("images_box").innerHTML = imgDiv;
                 }
             };
-            xhttp.open("GET", "https://ccadapi.meritincentives.com/api/browser/browse", true);
+            xhttp.open("GET", "https://ccadapi.takreem.ae/api/browser/browse", true);
             xhttp.send();
         }
         function copyURL(index) {
@@ -91,7 +91,7 @@
             document.execCommand("Copy");
             document.body.removeChild(myTemporaryInputElement);
             document.getElementById("copy_btn_"+index).textContent="Copied!";
-            setTimeout(function(){ 
+            setTimeout(function(){
                 document.getElementById("copy_btn_"+index).textContent="Copy Url";
             }, 1000);
         }
