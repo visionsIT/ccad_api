@@ -4,16 +4,16 @@ if ($mysqli -> connect_errno) {
   echo "Failed to connect to MySQL: " . $mysqli -> connect_error;
   exit();
 }
-$ssoHostUrl = 'https://adportsapi.meritincentives.com';
+$ssoHostUrl = 'https://ccadapi.meritincentives.com';
 $idp_entityId = '';
 $idp_sso_url = '';
 $idp_sl_url = '';
 $idp_x509cert = '';
-$spSlsUrl = 'https://adports.meritincentives.com/login';
+$spSlsUrl = 'https://ccad.meritincentives.com/login';
 
 // If you choose to use ENV vars to define these values, give this IdP its own env var names
 // so you can define different values for each IdP, all starting with 'SAML2_'.$this_idp_env_id
-$this_idp_env_id = 'adports';
+$this_idp_env_id = 'ccad';
 
 //This is variable is for simplesaml example only.
 // For real IdP, you must set the url values in the 'idp' config to conform to the IdP's real urls.
@@ -57,12 +57,12 @@ return $settings = array(
 
         // Usually x509cert and privateKey of the SP are provided by files placed at
         // the certs folder. But we can also provide them with the following parameters
-        'x509cert' => env('SAML2_adports_SP_x509',''),
-        'privateKey' => env('SAML2_adports_SP_PRIVATEKEY',''),
+        'x509cert' => env('SAML2_ccad_SP_x509',''),
+        'privateKey' => env('SAML2_ccad_SP_PRIVATEKEY',''),
 
         // Identifier (URI) of the SP entity.
         // Leave blank to use the '{idpName}_metadata' route, e.g. 'test_metadata'.
-        'entityId' => env('SAML2_adports_SP_ENTITYID',''),
+        'entityId' => env('SAML2_ccad_SP_ENTITYID',''),
 
         // Specifies info about where and how the <AuthnResponse> message MUST be
         // returned to the requester, in this case our SP.
