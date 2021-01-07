@@ -50,7 +50,6 @@ class EventServiceProvider extends ServiceProvider
                 'attributes' => $user->getAttributes(),
                 'assertion' => $user->getRawSamlAssertion()
             ];
-            echo "<pre>"; print_r($user, $userData); die;
             //$username = $userData['attributes']['http://schemas.microsoft.com/identity/claims/displayname'][0];
             $useremail = $userData['attributes']['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'][0];
 
