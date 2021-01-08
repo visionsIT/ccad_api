@@ -20,7 +20,7 @@ class AccountController extends Controller
     public function __construct(AccountService $account_service)
     {
         $this->account_service = $account_service;
-        $this->middleware('auth:api')->only(['getAuthenticatedAccountData']);
+        $this->middleware('auth:api')->only(['getAuthenticatedAccountData', 'getSSOAuthenticated']);
     }
 
     /**
@@ -123,6 +123,10 @@ class AccountController extends Controller
         })->filter();
 
 
+    }
+
+    public function getSSOAuthenticated(Request $request){
+        echo "www<pre>"; print_r($request->all());die;
     }
 
 }

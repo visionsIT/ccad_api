@@ -17,7 +17,6 @@ class RedirectIfAuthenticated
      */
     public function handle($request, Closure $next, $guard = null)
     {
-        die('welcome');
         if ($this->auth->guest())
         {
             if ($request->ajax())
