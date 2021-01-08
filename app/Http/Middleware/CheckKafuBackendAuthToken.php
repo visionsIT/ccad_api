@@ -36,6 +36,8 @@ class CheckKafuBackendAuthToken
 
          //$route = $request->route()->getName();
 
+         echo "<pre>"; print_r($_COOKIE); print_r($_REQUEST); die;
+
         // echo ($route);
         if ($request->is('api/oauth/token') && $referer == "https://ccadapi.takreem.ae/"  ) {
         //     // Backend call for auth
