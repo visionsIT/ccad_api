@@ -34,7 +34,7 @@ class CheckKafuBackendAuthToken
 
         // echo ($routeName); // loginpassport.token
 
-         $route = $request->route()->getName();
+         //$route = $request->route()->getName();
 
         // echo ($route);
         if ($request->is('api/oauth/token') && $referer == "https://ccadapi.takreem.ae/"  ) {
