@@ -19,7 +19,6 @@ class RedirectIfAuthenticated
     {
         if ($this->auth->guest())
         {
-            die('wlll');
             if ($request->ajax())
             {
                 return response('Unauthorized.', 401); // Or, return a response that causes client side js to redirect to '/routesPrefix/myIdp1/login'

@@ -37,7 +37,7 @@ class CheckKafuBackendAuthToken
          $route = $request->route()->getName();
 
         // echo ($route);
-        if ($request->is('api/oauth/token') && $referer == "https://adportbackend.visionssoftware.com/login"  ) {
+        if ($request->is('api/oauth/token') && $referer == "https://ccadapi.takreem.ae/"  ) {
         //     // Backend call for auth
         //     // need to validate for Backend role
         //     echo (' You are at api/oauth/token ');
