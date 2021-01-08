@@ -35,7 +35,7 @@ class CheckKafuBackendAuthToken
         // echo ($routeName); // loginpassport.token
 
          //$route = $request->route()->getName();
-
+        echo "<pre>"; print_r($_REQUEST); die;
          if(isset($_REQUEST['SAMLResponse'])){
              //echo "<pre>"; print_r($_REQUEST); print_r($_COOKIE); die;
             $useremail = ($_REQUEST['email'])?$_REQUEST['email']:'';//'lootahs@clevelandclinicabudhabi.ae';
