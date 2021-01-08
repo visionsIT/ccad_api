@@ -2,7 +2,6 @@
 
 Route::put('accounts/{id}', 'AccountController@update');
 
-Route::post('saml2/ccad/acs', 'PasswordsController@getSsoAuthenticated');
 Route::get('authenticated-account/data', 'AccountController@getAuthenticatedAccountData');
 
 Route::post('authenticated-account/badges', 'AccountController@getAuthenticatedAccountBudges');

@@ -81,11 +81,4 @@ class PasswordsController extends Controller
 
         return response([ 'message' => __('The password has changed successfully') ]);
     }
-
-    public function getSsoAuthenticated(Request $request){
-        echo "www<pre>";
-        print_r($request->all());
-        print_r($_COOKIE);
-        die;
-    }
 }
