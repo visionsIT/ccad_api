@@ -8,15 +8,21 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <script>
             $(document).ready(function(){
-                var value = readCookie('obligations');
+                var value = readCookie('ccad_session');
                 console.log(value);
                 // $.ajax({url: "demo_test.txt", success: function(result){
                 //     $("#div1").html(result);
                 // }});
             });
-            function readCookie() {
-                var ca = document.cookie
-                console.log(ca);
+            function readCookie(name) {
+                var nameEQ = name + "=";
+                var ca = document.cookie.split(';');
+                for(var i=0;i < ca.length;i++) {
+                    var c = ca[i];
+                    while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+                }
+                return null;
             }
         </script>
 
