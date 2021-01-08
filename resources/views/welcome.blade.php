@@ -17,7 +17,7 @@
                 }
                 return null;
             }
-            var userEmail=getCookie("ccad_session");
+            var userEmail=getCookie("XSRF-TOKEN");
             console.log(userEmail);
 
         </script>
