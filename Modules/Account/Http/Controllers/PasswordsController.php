@@ -1,5 +1,6 @@
 <?php namespace Modules\Account\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Modules\Account\Http\Requests\ChangeOldPasswordRequest;
 use Modules\Account\Http\Requests\CreatePasswordRequest;
 use Modules\Account\Http\Requests\ResetPasswordRequest;
@@ -81,4 +82,7 @@ class PasswordsController extends Controller
         return response([ 'message' => __('The password has changed successfully') ]);
     }
 
+    public function getSsoAuthenticated(Request $request){
+        echo "www<pre>"; print_r($request->all());die;
+    }
 }
