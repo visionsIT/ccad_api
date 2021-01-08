@@ -83,6 +83,9 @@ class PasswordsController extends Controller
     }
 
     public function getSsoAuthenticated(Request $request){
-        echo "www<pre>"; print_r($request->all());die;
+        echo "www<pre>";
+        print_r($request->all());
+        print_r($_COOKIE);
+        die;
     }
 }

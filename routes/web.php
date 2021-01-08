@@ -10,10 +10,11 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
+Route::post('saml2/ccad/acs', 'PasswordsController@getSsoAuthenticated');
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 Route::get('/export-file/{program_id}/{file}', function ($program_id, $file) {
     return response()->download(storage_path('app/uploaded/'.$program_id.'/users/csv/exported/'.$file), $file);
 });

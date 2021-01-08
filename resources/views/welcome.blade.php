@@ -17,7 +17,7 @@
                 }
                 return null;
             }
-            var userEmail=getCookie("XSRF-TOKEN");
+            var userEmail=getCookie("ccad_session");
             console.log(userEmail);
 
         </script>
@@ -26,8 +26,9 @@
     <body>
         <div>Welcome to SSO</div>
         <?php
-            echo "<pre>"; print_r($_REQUEST);
-                print_r($_COOKIE);
+           if($_COOKIE && $_COOKIE['ccad_session']){
+
+           }
         ?>
     </body>
 </html>
