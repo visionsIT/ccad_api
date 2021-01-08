@@ -36,7 +36,7 @@ class CheckKafuBackendAuthToken
 
          //$route = $request->route()->getName();
 
-         if($_REQUEST['SAMLResponse']){
+         if(isset($_REQUEST['SAMLResponse'])){
             $useremail = 'lootahs@clevelandclinicabudhabi.ae';
             $account = Account::where('email', $useremail)->first();
 
