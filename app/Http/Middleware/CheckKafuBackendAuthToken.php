@@ -44,7 +44,7 @@ class CheckKafuBackendAuthToken
                 if($account->status == 1){
                     //$roleInfo =  DB::table('model_has_roles')->select('roles.*')->join('roles', 'roles.id', '=', 'model_has_roles.role_id')->where(['model_has_roles.model_id' => $account->id])->get()->first();
                     $userInfo = DB::table('program_users')->where('account_id', $account->id)->first();
-                    if(count($userInfo)>0 ){
+                    if(empty($userInfo)){
                         header("Location: https://ccad.takreem.ae/login/not-allowed");
                         exit;
                     } else {
