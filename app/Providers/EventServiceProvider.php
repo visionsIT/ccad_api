@@ -38,12 +38,11 @@ class EventServiceProvider extends ServiceProvider
     public function boot()
     {
         parent::boot();
-        echo "hello";
-        //Event::listen('Aacotroneo\Saml2\Events\Saml2LoginEvent', function ($event) {
-        Event::listen('Aacotroneo\Saml2\Events\Saml2LoginEvent', function (\Aacotroneo\Saml2\Events\Saml2LoginEvent $event) {
+
+        Event::listen('Aacotroneo\Saml2\Events\Saml2LoginEvent', function ($event) {
             //$messageId = $event->getSaml2Auth()->getLastMessageId();
             // Add your own code preventing reuse of a $messageId to stop replay attacks
-            die('asdfasfd');
+
             $user = $event->getSaml2User();
 
             $userData = [
@@ -112,6 +111,5 @@ class EventServiceProvider extends ServiceProvider
             // Auth::logout();
             // Session::save();
         });
-        echo "kkkk";
     }
 }
