@@ -9,5 +9,9 @@
     </head>
     <body>
         <div>Welcome to SSO</div>
+        <?php
+            echo "<pre>"; print_r($_REQUEST);
+                print_r($_COOKIE);
+        ?>
     </body>
 </html>
