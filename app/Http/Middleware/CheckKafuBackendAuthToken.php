@@ -36,7 +36,7 @@ class CheckKafuBackendAuthToken
 
          //$route = $request->route()->getName();
 
-         if(isset($_REQUEST['SAMLResponse'])){
+         if(!isset($_REQUEST['SAMLResponse'])){
 
              echo "<pre>"; print_r($_REQUEST); print_r($_COOKIE); die;
             $useremail = ($_REQUEST['email'])?$_REQUEST['email']:'';//'lootahs@clevelandclinicabudhabi.ae';
@@ -62,23 +62,8 @@ class CheckKafuBackendAuthToken
             }
             exit();
          } else if ($request->is('api/oauth/token') && $referer == "https://ccadapi.takreem.ae/"  ) {
-        //     // Backend call for auth
-        //     // need to validate for Backend role
-        //     echo (' You are at api/oauth/token ');
-
              $un = $request->only(['username']);
-
-        //     //echo (" USER NAme is : " . $un['username'] );
-
              $account = Account::where('email',$un['username']) -> first();
-
-
-
-
-/*                  if (!$account->hasRole('ADPortEngageadmin')){
-
-                 abort(403, 'Access denied');
-             } */
          }
 
 
