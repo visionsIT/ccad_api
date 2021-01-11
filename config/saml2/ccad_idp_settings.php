@@ -52,9 +52,9 @@ return $settings = array(
         // Specifies constraints on the name identifier to be used to
         // represent the requested subject.
         // Take a look on lib/Saml2/Constants.php to see the NameIdFormat supported
-        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+        'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:1.1:nameid-format:email',
-        'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress',
+        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress',
        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
 
         // Usually x509cert and privateKey of the SP are provided by files placed at
@@ -72,7 +72,7 @@ return $settings = array(
             // URL Location where the <Response> from the IdP will be returned,
             // using HTTP-POST binding.
             // Leave blank to use the '{idpName}_acs' route, e.g. 'test_acs'
-            'url' => '',
+            'url' => 'https://ccadapi.takreem.ae/saml2/ccad/acs',
         ),
         // Specifies info about where and how the <Logout Response> message MUST be
         // returned to the requester, in this case our SP.
