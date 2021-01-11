@@ -129,11 +129,11 @@ return $settings = array(
 
         // Indicates that the nameID of the <samlp:logoutRequest> sent by this SP
         // will be encrypted.
-        'nameIdEncrypted' => true,
+        'nameIdEncrypted' => false,
 
         // Indicates whether the <samlp:AuthnRequest> messages sent by this SP
         // will be signed.              [The Metadata of the SP will offer this info]
-        'authnRequestsSigned' => true,
+        'authnRequestsSigned' => false,
 
         // Indicates whether the <samlp:logoutRequest> messages sent by this SP
         // will be signed.
@@ -141,7 +141,7 @@ return $settings = array(
 
         // Indicates whether the <samlp:logoutResponse> messages sent by this SP
         // will be signed.
-        'logoutResponseSigned' => true,
+        'logoutResponseSigned' => false,
 
         /* Sign the Metadata
          False || True (use sp certs) || array (
@@ -156,15 +156,15 @@ return $settings = array(
 
         // Indicates a requirement for the <samlp:Response>, <samlp:LogoutRequest> and
         // <samlp:LogoutResponse> elements received by this SP to be signed.
-        'wantMessagesSigned' => true,
+        'wantMessagesSigned' => false,
 
         // Indicates a requirement for the <saml:Assertion> elements received by
         // this SP to be signed.        [The Metadata of the SP will offer this info]
-        'wantAssertionsSigned' => true,
+        'wantAssertionsSigned' => false,
 
         // Indicates a requirement for the NameID received by
         // this SP to be encrypted.
-        'wantNameIdEncrypted' => true,
+        'wantNameIdEncrypted' => false,
 
         // Authentication context.
         // Set to false and no AuthContext will be sent in the AuthNRequest,
