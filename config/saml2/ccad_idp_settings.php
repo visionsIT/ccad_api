@@ -75,7 +75,7 @@ return $settings = array(
             //'url' => '',
             "requestedAttributes" => array(
                 array(
-                    "name" => "",
+                    "name" => "CCAD",
                     "isRequired" => false,
                     "nameFormat" => "",
                     "friendlyName" => "",
