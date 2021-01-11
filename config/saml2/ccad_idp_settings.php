@@ -73,20 +73,6 @@ return $settings = array(
             // using HTTP-POST binding.
             // Leave blank to use the '{idpName}_acs' route, e.g. 'test_acs'
             'url' => '',
-            'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-        ),
-        "attributeConsumingService"=> array(
-            "serviceName" => "ccad",
-            "serviceDescription" => "Test Service",
-            "requestedAttributes" => array(
-                array(
-                    "name" => "",
-                    "isRequired" => false,
-                    "nameFormat" => "",
-                    "friendlyName" => "",
-                    "attributeValue" => array()
-                )
-            )
         ),
         // Specifies info about where and how the <Logout Response> message MUST be
         // returned to the requester, in this case our SP.
@@ -96,7 +82,6 @@ return $settings = array(
             // using HTTP-Redirect binding.
             // Leave blank to use the '{idpName}_sls' route, e.g. 'test_sls'
             'url' => $spSlsUrl,
-            'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
         ),
     ),
 
@@ -104,7 +89,7 @@ return $settings = array(
     'idp' => array(
         // Identifier of the IdP entity  (must be a URI)
         //'entityId' => env('SAML2_adports_IDP_ENTITYID', $idp_host . '/saml2/idp/metadata.php'),
-        'entityId' => ($idp_entityId)?$idp_entityId:$idp_host . '/saml2/idp/metadata.php',
+        'entityId' => '',//($idp_entityId)?$idp_entityId:$idp_host . '/saml2/idp/metadata.php',
         // SSO endpoint info of the IdP. (Authentication Request protocol)
         'singleSignOnService' => array(
             // URL Target of the IdP where the SP will send the Authentication Request Message,
