@@ -26,7 +26,6 @@ class RedirectIfAuthenticated
             else
             {
                 $saml2Auth = new Saml2Auth(Saml2Auth::loadOneLoginAuthFromIpdConfig('ccad'));
-                die('welcome redirectifAuth');
                 return $saml2Auth->login(URL::full());
             }
         }
