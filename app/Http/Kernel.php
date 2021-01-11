@@ -18,7 +18,7 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         Middleware\TrustProxies::class,
         \Barryvdh\Cors\HandleCors::class,
-        Middleware\CheckKafuBackendAuthToken::class,
+        //Middleware\CheckKafuBackendAuthToken::class,
     ];
 
     /**
