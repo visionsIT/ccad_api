@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use \Illuminate\Http\Request;
 use Modules\Account\Models\Account;
@@ -39,14 +38,8 @@ class CheckKafuBackendAuthToken
 
          if(isset($_REQUEST['SAMLResponse'])){
 
-            // echo "<pre>"; print_r($_REQUEST); print_r($_COOKIE); die;
-             Event::listen('Aacotroneo\Saml2\Events\Saml2LoginEvent', function ($event) {
-                //$messageId = $event->getSaml2Auth()->getLastMessageId();
-                // Add your own code preventing reuse of a $messageId to stop replay attacks
+             echo "<pre>"; print_r($_REQUEST);  die;
 
-                $user = $event->getSaml2User();
-                echo "<pre>ddd"; print_r($user); die;
-            });
             $useremail = ($_REQUEST['email'])?$_REQUEST['email']:'';//'lootahs@clevelandclinicabudhabi.ae';
             $account = Account::where('email', $useremail)->first();
 
