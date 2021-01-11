@@ -89,7 +89,7 @@ return $settings = array(
     'idp' => array(
         // Identifier of the IdP entity  (must be a URI)
         //'entityId' => env('SAML2_adports_IDP_ENTITYID', $idp_host . '/saml2/idp/metadata.php'),
-        'entityId' => '',//($idp_entityId)?$idp_entityId:$idp_host . '/saml2/idp/metadata.php',
+        'entityId' => $idp_host . '/saml2/idp/metadata.php',//($idp_entityId)?$idp_entityId:$idp_host . '/saml2/idp/metadata.php',
         // SSO endpoint info of the IdP. (Authentication Request protocol)
         'singleSignOnService' => array(
             // URL Target of the IdP where the SP will send the Authentication Request Message,
