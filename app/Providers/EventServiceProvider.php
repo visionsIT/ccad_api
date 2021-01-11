@@ -38,8 +38,9 @@ class EventServiceProvider extends ServiceProvider
     public function boot()
     {
         parent::boot();
-
+echo "hello";
         Event::listen('Aacotroneo\Saml2\Events\Saml2LoginEvent', function ($event) {
+            die('welcome');
             //$messageId = $event->getSaml2Auth()->getLastMessageId();
             // Add your own code preventing reuse of a $messageId to stop replay attacks
 
@@ -111,5 +112,6 @@ class EventServiceProvider extends ServiceProvider
             // Auth::logout();
             // Session::save();
         });
+        die('script ending');
     }
 }
