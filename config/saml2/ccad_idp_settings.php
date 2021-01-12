@@ -4,12 +4,32 @@ if ($mysqli -> connect_errno) {
   echo "Failed to connect to MySQL: " . $mysqli -> connect_error;
   exit();
 }
-$ssoHostUrl = 'https://ccadapi.takreem.ae';
-$idp_entityId = '';
-$idp_sso_url = '';
-$idp_sl_url = '';
-$idp_x509cert = '';
-$spSlsUrl = 'https://ccad.takreem.ae/login';
+$ssoHostUrl = 'https://127.0.0.1';//'https://ccadapi.takreem.ae';
+$idp_entityId = 'https://app.onelogin.com/saml/metadata/3c1aa785-390f-45a5-a890-71b30f999bc0';
+$idp_sso_url = 'https://ccad-visions-dev.onelogin.com/trust/saml2/http-post/sso/3c1aa785-390f-45a5-a890-71b30f999bc0';
+$idp_sl_url = 'https://ccad-visions-dev.onelogin.com/trust/saml2/http-redirect/slo/1340169';
+$idp_x509cert = 'MIID6zCCAtOgAwIBAgIUTwUe7nx0T4w8LI/NRUstW4Q5P/8wDQYJKoZIhvcNAQEF
+BQAwSjEVMBMGA1UECgwMQ0NBRC1WaXNpb25zMRUwEwYDVQQLDAxPbmVMb2dpbiBJ
+ZFAxGjAYBgNVBAMMEU9uZUxvZ2luIEFjY291bnQgMB4XDTIxMDExMTEzMTQyMFoX
+DTI2MDExMTEzMTQyMFowSjEVMBMGA1UECgwMQ0NBRC1WaXNpb25zMRUwEwYDVQQL
+DAxPbmVMb2dpbiBJZFAxGjAYBgNVBAMMEU9uZUxvZ2luIEFjY291bnQgMIIBIjAN
+BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5BguNINY+gL41rZZNoD5tu9Ljv1B
+XtSqjrPhBZNS4r/wxErrDIuFd3N2GBwKvoSffEQpLGEe+9j4XeX7DOAWlSilUZX+
+83iGPr8UCoVuNvLJHmPdcQJGJh0PFINsEoDFQigXpRtlHidwfA0Sob1h4rWOp24b
+/JJN+DX+71HUOk2IelfPjxEuwIzEJOHi2nnVIAvnpIM+nX3Fp8CmrAR8rIM37fAV
+VmQjyp5x59MwiyjM4TFjr/51JDs8WuqsasSrcIjeejIQ7f4c2gCknEjcnDv4Gf+F
+Y8LPYSJDl1RIMViiBFt83sZCEVS+AVuAKL0vB5zBEWx5hNOG+QeM3XES9wIDAQAB
+o4HIMIHFMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFAcz9385MAHIZ2QUoyjLRPN4
+c51BMIGFBgNVHSMEfjB8gBQHM/d/OTAByGdkFKMoy0TzeHOdQaFOpEwwSjEVMBMG
+A1UECgwMQ0NBRC1WaXNpb25zMRUwEwYDVQQLDAxPbmVMb2dpbiBJZFAxGjAYBgNV
+BAMMEU9uZUxvZ2luIEFjY291bnQgghRPBR7ufHRPjDwsj81FSy1bhDk//zAOBgNV
+HQ8BAf8EBAMCB4AwDQYJKoZIhvcNAQEFBQADggEBAHzreEJ2Ud193eHVjezAUC+s
+wFFKdBWSr0qQJUIACfAqvdZ2Y50SZQguG824hm+Ncns75gFR1V2Ho3USXVL2FoKw
+MSn4cee3N7Ttg/g1ePMJ2HGGXfWV82Ssa5coKJIzk6R/ImcVqU4B/hYZF+f5jLMN
+JrmZWXJHXNaciSzOGH4gKZIycctjKOZ9PI3Aaxm1wTEuv5siRLOuzitDVVgJ2dAW
+JL+jaBTed28YMiJZ3hXDMjK0xZ256vK0clmH9sK29LwLI5ZMSjetRWdNYt0r75M0
+VZBNHqMDC9AUMPU/jLdC9A8eKkh4gI5BYTkCHitgkweER5VQPZaYI7WOK1Y7v2U=';
+$spSlsUrl = 'https://127.0.0.1/login';//'https://ccad.takreem.ae/login';
 
 // If you choose to use ENV vars to define these values, give this IdP its own env var names
 // so you can define different values for each IdP, all starting with 'SAML2_'.$this_idp_env_id
@@ -19,7 +39,7 @@ $this_idp_env_id = 'ccad';
 // For real IdP, you must set the url values in the 'idp' config to conform to the IdP's real urls.
 $idp_host = ($ssoHostUrl)?$ssoHostUrl:'http://localhost:8000/simplesaml';
 
-$result = $mysqli->query("SELECT * FROM sso_login_details where id = 1");
+/*$result = $mysqli->query("SELECT * FROM sso_login_details where id = 1");
 while ($row = $result->fetch_assoc())
 {
     $idp_entityId = ($row['entity_id'])?$row['entity_id']:$idp_host . '/saml2/idp/metadata.php';
@@ -27,7 +47,7 @@ while ($row = $result->fetch_assoc())
     $idp_sl_url = ($row['sl_url'])?$row['sl_url']:$idp_host . '/saml2/idp/SingleLogoutService.php';
     $idp_x509cert = ($row['x509'])?$row['x509']:'MIID/TCCAuWgAwIBAgIJAI4R3WyjjmB1MA0GCSqGSIb3DQEBCwUAMIGUMQswCQYDVQQGEwJBUjEVMBMGA1UECAwMQnVlbm9zIEFpcmVzMRUwEwYDVQQHDAxCdWVub3MgQWlyZXMxDDAKBgNVBAoMA1NJVTERMA8GA1UECwwIU2lzdGVtYXMxFDASBgNVBAMMC09yZy5TaXUuQ29tMSAwHgYJKoZIhvcNAQkBFhFhZG1pbmlAc2l1LmVkdS5hcjAeFw0xNDEyMDExNDM2MjVaFw0yNDExMzAxNDM2MjVaMIGUMQswCQYDVQQGEwJBUjEVMBMGA1UECAwMQnVlbm9zIEFpcmVzMRUwEwYDVQQHDAxCdWVub3MgQWlyZXMxDDAKBgNVBAoMA1NJVTERMA8GA1UECwwIU2lzdGVtYXMxFDASBgNVBAMMC09yZy5TaXUuQ29tMSAwHgYJKoZIhvcNAQkBFhFhZG1pbmlAc2l1LmVkdS5hcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMbzW/EpEv+qqZzfT1Buwjg9nnNNVrxkCfuR9fQiQw2tSouS5X37W5h7RmchRt54wsm046PDKtbSz1NpZT2GkmHN37yALW2lY7MyVUC7itv9vDAUsFr0EfKIdCKgxCKjrzkZ5ImbNvjxf7eA77PPGJnQ/UwXY7W+cvLkirp0K5uWpDk+nac5W0JXOCFR1BpPUJRbz2jFIEHyChRt7nsJZH6ejzNqK9lABEC76htNy1Ll/D3tUoPaqo8VlKW3N3MZE0DB9O7g65DmZIIlFqkaMH3ALd8adodJtOvqfDU/A6SxuwMfwDYPjoucykGDu1etRZ7dF2gd+W+1Pn7yizPT1q8CAwEAAaNQME4wHQYDVR0OBBYEFPsn8tUHN8XXf23ig5Qro3beP8BuMB8GA1UdIwQYMBaAFPsn8tUHN8XXf23ig5Qro3beP8BuMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAGu60odWFiK+DkQekozGnlpNBQz5lQ/bwmOWdktnQj6HYXu43e7sh9oZWArLYHEOyMUekKQAxOK51vbTHzzw66BZU91/nqvaOBfkJyZKGfluHbD0/hfOl/D5kONqI9kyTu4wkLQcYGyuIi75CJs15uA03FSuULQdY/Liv+czS/XYDyvtSLnu43VuAQWN321PQNhuGueIaLJANb2C5qq5ilTBUw6PxY9Z+vtMjAjTJGKEkE/tQs7CvzLPKXX3KTD9lIILmX5yUC3dLgjVKi1KGDqNApYGOMtjr5eoxPQrqDBmyx3flcy0dQTdLXud3UjWVW3N0PYgJtw5yBsS74QTGD4=';
 
-}
+}*/
 
 $mysqli -> close();
 
