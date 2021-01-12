@@ -49,6 +49,22 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 |
 */
 
+$allowedOrigins = array(
+    '(http(s)://)?(www\.)?your_api_domain\.com', // Laravel API Domain
+    'http://my_vue_client.dev' // VueJS CLient
+ );
+ if (isset($_SERVER['HTTP_ORIGIN']) && $_SERVER['HTTP_ORIGIN'] != '') {
+    foreach ($allowedOrigins as $allowedOrigin) {
+       if (preg_match('#' . $allowedOrigin . '#', $_SERVER['HTTP_ORIGIN'])) {
+          header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+          header('Access-Control-Allow-Methods: GET, PUT, POST, DELETE, OPTIONS');
+          header('Access-Control-Max-Age: 1000');
+          header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+          break;
+       }
+    }
+ }
+
 $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
 
 $response = $kernel->handle(
