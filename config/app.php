@@ -178,8 +178,6 @@ return [
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Aacotroneo\Saml2\Saml2ServiceProvider::class,
         Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
-        FruitCake\Cors\CorsServiceProvider::class,
-
     ],
 
     /*
