@@ -4,7 +4,7 @@ if ($mysqli -> connect_errno) {
   echo "Failed to connect to MySQL: " . $mysqli -> connect_error;
   exit();
 }
-$ssoHostUrl = 'https://127.0.0.1';//'https://ccadapi.takreem.ae';
+$ssoHostUrl = 'https://ccad.meritincentives.com';//'https://ccadapi.takreem.ae';
 $idp_entityId = 'https://app.onelogin.com/saml/metadata/3c1aa785-390f-45a5-a890-71b30f999bc0';
 $idp_sso_url = 'https://ccad-visions-dev.onelogin.com/trust/saml2/http-post/sso/3c1aa785-390f-45a5-a890-71b30f999bc0';
 $idp_sl_url = 'https://ccad-visions-dev.onelogin.com/trust/saml2/http-redirect/slo/1340169';
@@ -29,7 +29,7 @@ MSn4cee3N7Ttg/g1ePMJ2HGGXfWV82Ssa5coKJIzk6R/ImcVqU4B/hYZF+f5jLMN
 JrmZWXJHXNaciSzOGH4gKZIycctjKOZ9PI3Aaxm1wTEuv5siRLOuzitDVVgJ2dAW
 JL+jaBTed28YMiJZ3hXDMjK0xZ256vK0clmH9sK29LwLI5ZMSjetRWdNYt0r75M0
 VZBNHqMDC9AUMPU/jLdC9A8eKkh4gI5BYTkCHitgkweER5VQPZaYI7WOK1Y7v2U=';
-$spSlsUrl = 'https://127.0.0.1/login';//'https://ccad.takreem.ae/login';
+$spSlsUrl = 'https://ccad.meritincentives.com';//'https://ccad.takreem.ae/login';
 
 // If you choose to use ENV vars to define these values, give this IdP its own env var names
 // so you can define different values for each IdP, all starting with 'SAML2_'.$this_idp_env_id
@@ -72,9 +72,9 @@ return $settings = array(
         // Specifies constraints on the name identifier to be used to
         // represent the requested subject.
         // Take a look on lib/Saml2/Constants.php to see the NameIdFormat supported
-        'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+       // 'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:email',
-       //'NameIDFormat' => 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+       'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress',
        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:unspecified',
 
@@ -86,7 +86,7 @@ return $settings = array(
 
         // Identifier (URI) of the SP entity.
         // Leave blank to use the '{idpName}_metadata' route, e.g. 'test_metadata'.
-        'entityId' => env('SAML2_ccad_SP_ENTITYID',''),
+        'entityId' => env('SAML2_ccad_SP_ENTITYID','ccad'),
 
         // Specifies info about where and how the <AuthnResponse> message MUST be
         // returned to the requester, in this case our SP.
@@ -94,7 +94,7 @@ return $settings = array(
             // URL Location where the <Response> from the IdP will be returned,
             // using HTTP-POST binding.
             // Leave blank to use the '{idpName}_acs' route, e.g. 'test_acs'
-            'url' => '',
+            'url' => 'https://ccad.meritincentives.com/saml2/ccad/acs',
         ),
         // Specifies info about where and how the <Logout Response> message MUST be
         // returned to the requester, in this case our SP.
