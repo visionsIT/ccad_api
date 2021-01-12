@@ -15,6 +15,12 @@ class UserCampaignTransformer extends TransformerAbstract
      */
     public function transform(UserCampaignsBudget $data): array
     {
+
+        $user_profile_img = '';
+        if(isset($data->user->profile_image) && $data->user->profile_image != '' && $data->user->profile_image != null && $data->user->profile_image != 'null'){
+            $profile_img = '/'.$data->user->image_path.$data->user->profile_image;
+            $user_profile_img = url($profile_img);
+        }
         
         return [
             'id' => $data->id,
@@ -47,6 +53,7 @@ class UserCampaignTransformer extends TransformerAbstract
             'language' => $data->user->language,
             'is_active' => $data->user->is_active,
             'ripple_budget' => $data->user->ripple_budget,
+            'profile_image' => $user_profile_img,
         ];
     }
 }

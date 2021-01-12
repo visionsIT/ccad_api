@@ -32,6 +32,12 @@ class UserTransformer extends TransformerAbstract
         ->where(['users_group_list.account_id' => $User->account_id])
         ->get();
 
+        $user_profile_img = '';
+        if($User->profile_image != '' && $User->profile_image != null && $User->profile_image != 'null'){
+            $profile_img = '/'.$User->image_path.$User->profile_image;
+            $user_profile_img = url($profile_img);
+        }
+
 
         return [
             'id' => $User->id,
@@ -68,6 +74,7 @@ class UserTransformer extends TransformerAbstract
             'vp_emp_number' => $User->vp_emp_number,
             'program_id' => $program_user_id->id,
             'last_login' => $last_login,
+            'profile_image' => $user_profile_img,
         ];
     }
 }
