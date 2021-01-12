@@ -629,4 +629,79 @@ class UserController extends Controller
         }
     }/****fn_ends****/
 
+
+
+    /**********************
+    upload user profile pic
+    **********************/
+    public function uploadUserProfilePic(Request $request){
+        
+        $rules = [
+            'account_id' => 'required|integer|exists:accounts,id',
+            'profile_pic' => 'required',
+        ];
+
+        $validator = \Validator::make($request->all(), $rules);
+
+        if ($validator->fails())
+            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+        if ($request->hasFile('profile_pic')) {
+            $file = $request->file('profile_pic');
+            $request->validate([
+                'profile_pic' => 'file||mimes:jpeg,png,jpg',
+            ]);
+            $file_name = $file->getClientOriginalName();
+            $file_ext = $file->getClientOriginalExtension();
+            $fileInfo = pathinfo($file_name);
+            $filename = $fileInfo['filename'];
+            $path = 'uploaded/user_profile_pics/';
+            if(!File::exists($path)) {
+                File::makeDirectory($path, $mode = 0777, true, true);
+            }
+            $randm = rand(10,1000);
+            $newname = $randm.time().'-userProfile-'.$filename.'.'.$file_ext;
+            $newname = str_replace(" ","_",$newname);
+            $destinationPath = public_path($path);
+            $file->move($destinationPath, $newname);
+
+            #delete_user_prev_image_from_folder
+            $get_image = ProgramUsers::select('profile_image')->where('account_id',$request->account_id)->first();
+
+            if(!empty($get_image)){
+                if($get_image->profile_image != '' && $get_image->profile_image != null && $get_image->profile_image != 'null'){
+                    File::delete($destinationPath.$get_image->profile_image);
+                }
+            }
+
+            ProgramUsers::where('account_id',$request->account_id)->update(['profile_image'=>$newname,'image_path'=>$path]);
+
+            return response()->json(['message'=>'Profile Image saved successfully.', 'status'=>'success']);exit;
+        }else{
+            return response()->json(['message'=>'please provide Profile Image.', 'status'=>'error']);exit;
+        }  
+
+
+    }/****fn_ends_here***/
+
+
+    /******************
+    get user profile pic
+    ********************/
+    public function getUserProfilePic($account_id = null){
+        $get_image = ProgramUsers::select('profile_image','image_path')->where('account_id',$account_id)->first();
+
+        if(!empty($get_image)){
+            if($get_image->profile_image != '' && $get_image->profile_image != null && $get_image->profile_image != 'null'){
+
+                $profile_img = '/'.$get_image->image_path.$get_image->profile_image;
+                $user_profile_img = url($profile_img);
+
+                return response()->json(['message'=>'Profile Image get successfully.', 'status'=>'success','profile_image'=>$user_profile_img]);exit;
+            }
+        }
+
+        return response()->json(['message'=>'Image not Found.', 'status'=>'error']);exit;
+    }/******fn_ends_here******/
+
 }
