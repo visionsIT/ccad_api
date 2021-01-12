@@ -74,7 +74,7 @@ return $settings = array(
         // Take a look on lib/Saml2/Constants.php to see the NameIdFormat supported
        // 'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:email',
-       'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress',
+       'NameIDFormat' => 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
        //'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:unspecified',
 
