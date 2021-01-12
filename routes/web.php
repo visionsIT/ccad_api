@@ -11,9 +11,9 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 Route::get('/export-file/{program_id}/{file}', function ($program_id, $file) {
     return response()->download(storage_path('app/uploaded/'.$program_id.'/users/csv/exported/'.$file), $file);
 });

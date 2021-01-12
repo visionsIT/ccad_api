@@ -39,7 +39,7 @@ class UserController extends Controller
         $this->middleware('auth:api', ['paginatedUsers','getGroupLeadUsers']);
     }
 
-    
+
     /*******************
     fn to get all users
     *******************/
@@ -120,7 +120,7 @@ class UserController extends Controller
      * @throws \Throwable
      */
     public function store(Program $program, ProgramUsersRequest $request): Fractal
-    { 
+    {
         $user = $this->service->store($program, $request);
 
         return fractal($user, new UserTransformer());
@@ -489,8 +489,8 @@ class UserController extends Controller
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
             $check_record = UsersGroupList::where(['account_id'=>$request->account_id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->update(['status'=>$request->change_status]);
-            
-            
+
+
             return response()->json(['message' => 'Status has been changed successfully.'], 200);
 
         } catch (\Throwable $th) {
@@ -504,8 +504,8 @@ class UserController extends Controller
                 'first_name' => 'required',
                 'last_name' => 'required',
                 'language' => 'required',
-                'company' => 'required',
-                'job_title' => 'required',
+                //'company' => 'required',
+                //'job_title' => 'required',
                 //'vp_emp_number' => 'required|integer|exists:accounts,id',
             ];
 
@@ -614,16 +614,16 @@ class UserController extends Controller
     }
 
     /***************************
-    get all users of group except 
+    get all users of group except
     simple user and admin
     *****************************/
     public function getGroupLeadUsers($group_id = null){
         if($group_id == null){
             return response()->json(['message'=>'Please provide Group id.', 'status'=>'error']);exit;
         }else{
-             
+
             $data = UsersGroupList::where('user_group_id',$group_id)->where('user_role_id','!=',1)->where('user_role_id','!=',4)->where('user_role_id','!=',5)->get();
-            
+
             $userList = fractal($data, new UserGroupTransformer());
             return $userList;
         }
