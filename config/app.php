@@ -177,7 +177,8 @@ return [
         Laravel\Passport\PassportServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Aacotroneo\Saml2\Saml2ServiceProvider::class,
-        Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class
+        Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
+        FruitCake\Cors\CorsServiceProvider::class,
 
     ],
 
