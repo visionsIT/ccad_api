@@ -1,9 +1,9 @@
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
-      Options -MultiViews
+        Options -MultiViews -Indexes
     </IfModule>
 
-    <IfModule mod_headers.c>
+<IfModule mod_headers.c>
         SetEnvIf Origin "http(s)?://([^.]+\.)?(mysite.com|mysite.local:4200|localhost:4200)$" AccessControlAllowOrigin=$0$1
         Header add Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
         Header set Access-Control-Allow-Credentials true
@@ -11,16 +11,17 @@
 
     RewriteEngine On
 
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)/$ /$1 [L,R=301]
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
 
     # Handle Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
-
-    # Handle Authorization Header
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 </IfModule>
