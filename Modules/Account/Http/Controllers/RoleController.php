@@ -25,6 +25,7 @@ class RoleController extends Controller
     {
         $this->repository = $repository;
         $this->service = $service;
+        $this->middleware('auth:api');
     }
 
     /**

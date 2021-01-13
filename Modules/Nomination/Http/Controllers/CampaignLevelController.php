@@ -24,6 +24,7 @@ class CampaignLevelController extends Controller
     {
         $this->repository = $repository;
         $this->types_services = $types_services;
+        $this->middleware('auth:api');
     }
 
     /**

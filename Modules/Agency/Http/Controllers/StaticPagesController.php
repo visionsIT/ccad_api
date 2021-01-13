@@ -8,6 +8,12 @@ use Illuminate\Routing\Controller;
 
 class StaticPagesController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
+    
     /**
      * Display a listing of the resource.
      *

@@ -32,6 +32,7 @@ class NominationController extends Controller
     {
         $this->repository = $repository;
         $this->nomination_service = $nomination_service;
+        $this->middleware('auth:api');
     }
     /**
     /**

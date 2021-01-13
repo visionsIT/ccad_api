@@ -21,6 +21,7 @@ class ProductOrderController extends Controller
         $this->repository    = $repository;
         $this->point_service = $point_service;
         $this->service       = $service;
+        $this->middleware('auth:api');
     }
 
     /**

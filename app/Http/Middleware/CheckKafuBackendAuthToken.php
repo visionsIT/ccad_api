@@ -28,9 +28,9 @@ class CheckKafuBackendAuthToken
 
         $result =  $next($request);
 
-        $referer =  $request->header('referer');
+         $referer =  $request->header('referer');
 
-        $routeName = Route::currentRouteName();
+         $routeName = Route::currentRouteName();
 
         // echo ($routeName); // loginpassport.token
 

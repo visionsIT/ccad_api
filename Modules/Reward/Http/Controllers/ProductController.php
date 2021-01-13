@@ -32,6 +32,7 @@ class ProductController extends Controller
     {
         $this->repository = $repository;
         $this->service    = $service;
+        $this->middleware('auth:api');
     }
 
     /**

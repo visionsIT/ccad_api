@@ -18,6 +18,7 @@ class GoalItemController extends Controller
     public function __construct(GoalItemService $service)
     {
         $this->service = $service;
+        $this->middleware('auth:api');
     }
 
     /**

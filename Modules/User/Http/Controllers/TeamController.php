@@ -19,6 +19,7 @@ class TeamController extends Controller
     {
         $this->service = $service;
         $this->teams = $teams;
+        $this->middleware('auth:api');
     }
 
     /**

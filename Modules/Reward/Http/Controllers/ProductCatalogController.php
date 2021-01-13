@@ -17,6 +17,7 @@ class ProductCatalogController extends Controller
     public function __construct(ProductCatalogRepository $repository)
     {
         $this->repository = $repository;
+        $this->middleware('auth:api');
     }
 
     /**

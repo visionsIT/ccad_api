@@ -65,7 +65,8 @@ class UserNominationController extends Controller
         $this->point_service = $point_service;
         $this->account_service = $account_service;
         $this->ripple_repository = $ripple_repository;
-        $this->middleware('auth:api')->only(['nominations']);
+        //$this->middleware('auth:api')->only(['nominations']);
+        $this->middleware('auth:api');
     }
 
     /**

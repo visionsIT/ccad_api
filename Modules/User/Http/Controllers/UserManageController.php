@@ -38,6 +38,7 @@ class UserManageController extends Controller
     public function __construct(ProgramRepository $program_repository)
     {
         $this->program_repository = $program_repository;
+        $this->middleware('auth:api');
     }
 
 

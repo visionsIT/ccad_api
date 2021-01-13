@@ -33,6 +33,7 @@ class RippleSettingsController extends Controller
     public function __construct(RippleSettingsRepository $repository)
     {
         $this->repository = $repository;
+        $this->middleware('auth:api');
     }
     
     /**
