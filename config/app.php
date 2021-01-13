@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'AD Ports'),
+    'name' => env('APP_NAME', 'CCAD'),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,7 +26,7 @@ return [
     |
     */
 
-    'env' => env('APP_ENV', 'local'),
+    'env' => env('APP_ENV', 'production'),
 
     /*
     |--------------------------------------------------------------------------
@@ -51,7 +51,7 @@ return [
     | your application so that it is used when running Artisan tasks.
     |
     */
-    'url' => env('APP_URL', 'https://adportsapi.meritincentives.com'),
+    'url' => env('APP_URL', 'https://ccadapi.takreem.ae'),
 
     'asset_url' => env('ASSET_URL', null),
 
@@ -177,8 +177,7 @@ return [
         Laravel\Passport\PassportServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Aacotroneo\Saml2\Saml2ServiceProvider::class,
-        Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class
-
+        Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
     ],
 
     /*
