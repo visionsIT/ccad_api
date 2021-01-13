@@ -26,7 +26,7 @@ class PointController extends Controller
     {
         $this->service         = $service;
         $this->program_service = $program_service;
-        $this->middleware('auth:api');
+        //$this->middleware('auth:api');
     }
 
 
