@@ -4,7 +4,7 @@ if ($mysqli -> connect_errno) {
   echo "Failed to connect to MySQL: " . $mysqli -> connect_error;
   exit();
 }
-$ssoHostUrl = 'https://ccad.meritincentives.com';//'https://ccadapi.takreem.ae';
+$ssoHostUrl = 'https://ccadapi.takreem.ae';//'https://ccadapi.takreem.ae';
 $idp_entityId = 'https://app.onelogin.com/saml/metadata/3c1aa785-390f-45a5-a890-71b30f999bc0';
 $idp_sso_url = 'https://ccad-visions-dev.onelogin.com/trust/saml2/http-post/sso/3c1aa785-390f-45a5-a890-71b30f999bc0';
 $idp_sl_url = 'https://ccad-visions-dev.onelogin.com/trust/saml2/http-redirect/slo/1340169';
@@ -29,7 +29,7 @@ MSn4cee3N7Ttg/g1ePMJ2HGGXfWV82Ssa5coKJIzk6R/ImcVqU4B/hYZF+f5jLMN
 JrmZWXJHXNaciSzOGH4gKZIycctjKOZ9PI3Aaxm1wTEuv5siRLOuzitDVVgJ2dAW
 JL+jaBTed28YMiJZ3hXDMjK0xZ256vK0clmH9sK29LwLI5ZMSjetRWdNYt0r75M0
 VZBNHqMDC9AUMPU/jLdC9A8eKkh4gI5BYTkCHitgkweER5VQPZaYI7WOK1Y7v2U=';
-$spSlsUrl = 'https://ccad.meritincentives.com';//'https://ccad.takreem.ae/login';
+$spSlsUrl = 'https://ccadapi.takreem.ae';//'https://ccad.takreem.ae/login';
 
 // If you choose to use ENV vars to define these values, give this IdP its own env var names
 // so you can define different values for each IdP, all starting with 'SAML2_'.$this_idp_env_id
