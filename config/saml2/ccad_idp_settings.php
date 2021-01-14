@@ -5,30 +5,10 @@ if ($mysqli -> connect_errno) {
   exit();
 }
 $ssoHostUrl = 'https://ccadapi.takreem.ae';//'https://ccadapi.takreem.ae';
-$idp_entityId = 'https://app.onelogin.com/saml/metadata/3c1aa785-390f-45a5-a890-71b30f999bc0';
-$idp_sso_url = 'https://ccad-visions-dev.onelogin.com/trust/saml2/http-post/sso/3c1aa785-390f-45a5-a890-71b30f999bc0';
-$idp_sl_url = 'https://ccad-visions-dev.onelogin.com/trust/saml2/http-redirect/slo/1340169';
-$idp_x509cert = 'MIID6zCCAtOgAwIBAgIUTwUe7nx0T4w8LI/NRUstW4Q5P/8wDQYJKoZIhvcNAQEF
-BQAwSjEVMBMGA1UECgwMQ0NBRC1WaXNpb25zMRUwEwYDVQQLDAxPbmVMb2dpbiBJ
-ZFAxGjAYBgNVBAMMEU9uZUxvZ2luIEFjY291bnQgMB4XDTIxMDExMTEzMTQyMFoX
-DTI2MDExMTEzMTQyMFowSjEVMBMGA1UECgwMQ0NBRC1WaXNpb25zMRUwEwYDVQQL
-DAxPbmVMb2dpbiBJZFAxGjAYBgNVBAMMEU9uZUxvZ2luIEFjY291bnQgMIIBIjAN
-BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5BguNINY+gL41rZZNoD5tu9Ljv1B
-XtSqjrPhBZNS4r/wxErrDIuFd3N2GBwKvoSffEQpLGEe+9j4XeX7DOAWlSilUZX+
-83iGPr8UCoVuNvLJHmPdcQJGJh0PFINsEoDFQigXpRtlHidwfA0Sob1h4rWOp24b
-/JJN+DX+71HUOk2IelfPjxEuwIzEJOHi2nnVIAvnpIM+nX3Fp8CmrAR8rIM37fAV
-VmQjyp5x59MwiyjM4TFjr/51JDs8WuqsasSrcIjeejIQ7f4c2gCknEjcnDv4Gf+F
-Y8LPYSJDl1RIMViiBFt83sZCEVS+AVuAKL0vB5zBEWx5hNOG+QeM3XES9wIDAQAB
-o4HIMIHFMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFAcz9385MAHIZ2QUoyjLRPN4
-c51BMIGFBgNVHSMEfjB8gBQHM/d/OTAByGdkFKMoy0TzeHOdQaFOpEwwSjEVMBMG
-A1UECgwMQ0NBRC1WaXNpb25zMRUwEwYDVQQLDAxPbmVMb2dpbiBJZFAxGjAYBgNV
-BAMMEU9uZUxvZ2luIEFjY291bnQgghRPBR7ufHRPjDwsj81FSy1bhDk//zAOBgNV
-HQ8BAf8EBAMCB4AwDQYJKoZIhvcNAQEFBQADggEBAHzreEJ2Ud193eHVjezAUC+s
-wFFKdBWSr0qQJUIACfAqvdZ2Y50SZQguG824hm+Ncns75gFR1V2Ho3USXVL2FoKw
-MSn4cee3N7Ttg/g1ePMJ2HGGXfWV82Ssa5coKJIzk6R/ImcVqU4B/hYZF+f5jLMN
-JrmZWXJHXNaciSzOGH4gKZIycctjKOZ9PI3Aaxm1wTEuv5siRLOuzitDVVgJ2dAW
-JL+jaBTed28YMiJZ3hXDMjK0xZ256vK0clmH9sK29LwLI5ZMSjetRWdNYt0r75M0
-VZBNHqMDC9AUMPU/jLdC9A8eKkh4gI5BYTkCHitgkweER5VQPZaYI7WOK1Y7v2U=';
+$idp_entityId = '';
+$idp_sso_url = '';
+$idp_sl_url = '';
+$idp_x509cert = '';
 $spSlsUrl = 'https://ccadapi.takreem.ae';//'https://ccad.takreem.ae/login';
 
 // If you choose to use ENV vars to define these values, give this IdP its own env var names
@@ -81,12 +61,12 @@ return $settings = array(
 
         // Usually x509cert and privateKey of the SP are provided by files placed at
         // the certs folder. But we can also provide them with the following parameters
-        'x509cert' => env('SAML2_ccad_SP_x509',''),
-        'privateKey' => env('SAML2_ccad_SP_PRIVATEKEY',''),
+        'x509cert' => '',
+        'privateKey' => '',
 
         // Identifier (URI) of the SP entity.
         // Leave blank to use the '{idpName}_metadata' route, e.g. 'test_metadata'.
-        'entityId' => env('SAML2_ccad_SP_ENTITYID','ccad'),
+        'entityId' => 'ccad',
 
         // Specifies info about where and how the <AuthnResponse> message MUST be
         // returned to the requester, in this case our SP.
@@ -94,7 +74,7 @@ return $settings = array(
             // URL Location where the <Response> from the IdP will be returned,
             // using HTTP-POST binding.
             // Leave blank to use the '{idpName}_acs' route, e.g. 'test_acs'
-            'url' => 'https://ccadapi.takreem.ae/saml2/ccad/acs',
+            'url' => '/',
         ),
         // Specifies info about where and how the <Logout Response> message MUST be
         // returned to the requester, in this case our SP.
