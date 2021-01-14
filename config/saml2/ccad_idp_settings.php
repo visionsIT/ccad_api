@@ -4,7 +4,7 @@ if ($mysqli -> connect_errno) {
   echo "Failed to connect to MySQL: " . $mysqli -> connect_error;
   exit();
 }
-$ssoHostUrl = 'https://ccadapi.takreem.ae';//'https://ccadapi.takreem.ae';
+$ssoHostUrl = 'https://ccadapi.meritincentives.com';//'https://ccadapi.takreem.ae';
 $idp_entityId = '';
 $idp_sso_url = '';
 $idp_sl_url = '';
