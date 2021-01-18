@@ -67,14 +67,14 @@ class EventServiceProvider extends ServiceProvider
                     $roleInfo =  DB::table('model_has_roles')->select('roles.*')->join('roles', 'roles.id', '=', 'model_has_roles.role_id')->where(['model_has_roles.model_id' => $account->id])->get()->first();
                     $userInfo = DB::table('program_users')->where('account_id', $account->id)->first();
                     if(count($roleInfo)>0 && $roleInfo->general_permission == 0 && $userInfo->id != $userInfo->vp_emp_number ){
-                        header("Location: https://ccad.meritincentives.com/login/not-allowed");
+                        header("Location: https://ccadapi.takreem.ae/login/not-allowed");
                         exit;
                     } else {
                         $successToken =  $account->createToken('userToken'.$account->id)->accessToken;
-                        header("Location: https://ccad.meritincentives.com/login/".$successToken);
+                        header("Location: https://ccadapi.takreem.ae/login/".$successToken);
                     }
                 } else {
-                    header("Location: https://ccad.meritincentives.com/login/not-active");
+                    header("Location: https://ccadapi.takreem.ae/login/not-active");
                     exit;
                 }
             } else {
@@ -85,7 +85,7 @@ class EventServiceProvider extends ServiceProvider
                 //     print_r($user->getAttribute('displayname'));
                 //     die();
 
-                //     $expectedReturnTo = 'https://ccad.meritincentives.com/login/error';
+                //     $expectedReturnTo = 'https://ccadapi.takreem.ae/login/error';
                 //     $expectedSessionIndex = $user->getSessionIndex();
                 //     $expectedNameId = $userData['id'];
                 //     $expectedNameIdFormat = 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent';
@@ -100,13 +100,13 @@ class EventServiceProvider extends ServiceProvider
                 //     $saml2->logout($expectedReturnTo, $expectedNameId, $expectedSessionIndex, $expectedNameIdFormat, $expectedStay, $expectedNameIdNameQualifier);*/
                 //     //$event->logout($returnTo, $nameId,'', '', false, '');
                 // }
-                header("Location: https://ccad.meritincentives.com/login/not-exist");
+                header("Location: https://ccadapi.takreem.ae/login/not-exist");
             }
             exit();
         });
 
         Event::listen('Aacotroneo\Saml2\Events\Saml2LogoutEvent', function ($event) {
-           header("Location: https://ccad.meritincentives.com/login/");
+           header("Location: https://ccadapi.takreem.ae/login/");
            exit();
             // Auth::logout();
             // Session::save();

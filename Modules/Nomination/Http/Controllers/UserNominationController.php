@@ -1720,7 +1720,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $message .="Your nomination  for the " . $user_nomination->project_name . " project has been successfully approved! As a result, " . $user_nomination->nominated_account->name . " has been successfully awarded with " . $user_nomination->value  . " to their Kafu account.";
 
-                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
+                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://ccadapi.takreem.ae/wall-of-fame'>here</a>.";
 
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1734,7 +1734,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $message = "Dear " . $user_nomination->nominated_account->name ;
                 $message .="\n\r <br> Congratulations! \n\r <br> Your diligence and dedication towards the " . $user_nomination->project_name . " project, have played a tremendous role towards its success!";
                 $message .= "\n\r <br> As a sign of gratitude, you have been awarded with " . $user_nomination->value  . " to your Kafu account.";
-                $message .= "\n\r <br>  *Click <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='https://ccad.meritincentives.com/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
+                $message .= "\n\r <br>  *Click <a href='https://ccadapi.takreem.ae/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='https://ccadapi.takreem.ae/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
                 $message .=" ";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1772,8 +1772,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.meritincentives.com/wall-of-fame'>here</a>.";
-                //$message .="To view this award on the Kafu wall of fame, please <a href='https://ccad.meritincentives.com/wall-of-fame'>Click here</a>.";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccadapi.takreem.ae/wall-of-fame'>here</a>.";
+                //$message .="To view this award on the Kafu wall of fame, please <a href='https://ccadapi.takreem.ae/wall-of-fame'>Click here</a>.";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
 
