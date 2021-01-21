@@ -66,7 +66,7 @@ return $settings = array(
 
         // Identifier (URI) of the SP entity.
         // Leave blank to use the '{idpName}_metadata' route, e.g. 'test_metadata'.
-        'entityId' => 'ccad',
+        'entityId' => 'https://ccadapi.takreem.ae/saml2/ccad/metadata',
 
         // Specifies info about where and how the <AuthnResponse> message MUST be
         // returned to the requester, in this case our SP.
@@ -74,7 +74,7 @@ return $settings = array(
             // URL Location where the <Response> from the IdP will be returned,
             // using HTTP-POST binding.
             // Leave blank to use the '{idpName}_acs' route, e.g. 'test_acs'
-            'url' => '',
+            'url' => 'https://ccadapi.takreem.ae/saml2/ccad/acs',
         ),
         // Specifies info about where and how the <Logout Response> message MUST be
         // returned to the requester, in this case our SP.
