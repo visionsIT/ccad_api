@@ -3,6 +3,7 @@
 use League\Fractal\TransformerAbstract;
 use Modules\Reward\Models\ProductOrder;
 use Modules\User\Models\ProgramUsers;
+use Helper;
 
 class ProductOrderTransformer extends TransformerAbstract
 {
@@ -21,14 +22,24 @@ class ProductOrderTransformer extends TransformerAbstract
         } elseif($ProductOrder->status === -1){
             $currentOrderStatus = 'Cancelled';
         }
+
+        $ProductOrderID = Helper::customCrypt($ProductOrder->id);
+        $account_ID = Helper::customCrypt($ProductOrder->account_id);
+        $user_data_program = ProgramUsers::where('account_id', $ProductOrder->account_id)->first()->toArray();
+        $user_info = $user_data_program;
+        unset($user_info['id']);
+        unset($user_info['account_id']);
+        $user_info['id'] = Helper::customCrypt($user_data_program['id']);
+        $user_info['account_id'] = Helper::customCrypt($user_data_program['account_id']);
+        
         return [
-            'id'         => $ProductOrder->id,
+            'id'         => $ProductOrderID,
             'value'      => $ProductOrder->value,
             'product'    => optional($ProductOrder->product)->name,
             'image'      => optional($ProductOrder->product)->image,
             'name'       => optional($ProductOrder->account)->name,
-            'account_id' => $ProductOrder->account_id,
-            'user'       => ProgramUsers::where('account_id', $ProductOrder->account_id)->first(),
+            'account_id' => $account_ID,
+            'user'       => $user_info,
             'first_name' => $ProductOrder->first_name,
             'last_name'  => $ProductOrder->last_name,
             'email'      => $ProductOrder->email,

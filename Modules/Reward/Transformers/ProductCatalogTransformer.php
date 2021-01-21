@@ -2,6 +2,7 @@
 use League\Fractal\TransformerAbstract;
 use Modules\Reward\Models\ProductCatalog;
 use DB;
+use Helper;
 class ProductCatalogTransformer extends TransformerAbstract
 {
     /**
