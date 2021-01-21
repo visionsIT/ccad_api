@@ -15,6 +15,8 @@ use Modules\Nomination\Models\CampaignTypes;
 use Modules\Nomination\Models\CampaignSettings;
 use Modules\User\Models\ProgramUsers;
 use DB;
+use Helper;
+
 class CampaignLevelController extends Controller
 {
     private $repository;
@@ -117,9 +119,18 @@ class CampaignLevelController extends Controller
 
     public function updateType(ValueSetRequest $request, $id): JsonResponse
     {
-        ValueSet::where('id', $id)->update($request->all());
 
-        return response()->json(['message' => 'Nomination type Updated Successfully']);
+        try{
+            $id = Helper::customDecrypt($id);
+            //$request['campaign_type_id'] =  Helper::customDecrypt($request->campaign_type_id);
+            ValueSet::where('id', $id)->update($request->all());
+
+            return response()->json(['message' => 'Nomination type Updated Successfully']);
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check id and try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+        
     }
 
     public function addNewType(ValueSetRequest $request)
@@ -153,6 +164,8 @@ class CampaignLevelController extends Controller
 
     public function updateStatus(Request $request) {
         try {
+            $request['id'] =  Helper::customDecrypt($request->id);
+            
             $rules = [
                 'id' => 'required|integer|exists:value_sets,id',
                 'status' => 'required|integer',
@@ -169,7 +182,7 @@ class CampaignLevelController extends Controller
 
             return response()->json(['message' => 'Status has been changed successfully.'], 200);
         } catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+            return response()->json(['message' => 'Something get wrong! Please check id and try again.', 'errors' => $th->getMessage()], 402);
         }
     }
 

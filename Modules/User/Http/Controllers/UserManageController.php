@@ -30,6 +30,8 @@ use Modules\User\Models\UsersPoint;
 use Modules\User\Transformers\UserCampaignTransformer;
 use DB;
 use Modules\User\Models\UsersGroupList;
+use Modules\User\Models\UsersSuggestion;
+use Helper;
 
 class UserManageController extends Controller
 {
@@ -237,7 +239,16 @@ class UserManageController extends Controller
             $groupCount = Role::where('program_id', $program_id)->where('parent_id', 0)->count();
 
             $ordersCount = ProductOrder::where('status' , 1)->count();
-            $recentFiveOrders = ProductOrder::select('product_orders.id', 'first_name', 'last_name', 'email', 'product_orders.value', 'product_orders.status', 'products.name')->where('product_orders.status' , 1)->join('products', 'products.id', '=' ,'product_orders.product_id')->orderBy('product_orders.id', 'desc')->limit(5)->get();
+            $recentFiveOrders = ProductOrder::select('product_orders.id', 'first_name', 'last_name', 'email', 'product_orders.value', 'product_orders.status', 'products.name')->where('product_orders.status' , 1)->join('products', 'products.id', '=' ,'product_orders.product_id')->orderBy('product_orders.id', 'desc')->limit(5)->get()->toArray();
+
+            $recentFiveOrders_all = $recentFiveOrders;
+            foreach ($recentFiveOrders_all as $key1 => $answer) {
+                unset($recentFiveOrders_all[$key1]['id']);
+            }
+            
+            foreach ($recentFiveOrders as $key => $value) {
+                $recentFiveOrders_all[$key]['id'] = Helper::customCrypt($value['id']);
+            }
 
             $approved = UserNomination::where(['level_1_approval' => 1])->orWhere(['level_2_approval' => 1])->count();
             $decline = UserNomination::where(['level_1_approval' => -1])->orWhere(['level_2_approval' => -1])->count();
@@ -265,7 +276,7 @@ class UserManageController extends Controller
                     'gift_card_orders' =>$giftCartOrders,
                     'physical_product_orders' =>$physicalProductOrders,
                 ],
-                'recent_five_orders' => $recentFiveOrders,
+                'recent_five_orders' => $recentFiveOrders_all,
 
             ], 200);
         } catch (\Throwable $th) {
@@ -275,6 +286,9 @@ class UserManageController extends Controller
 
     public function uploadUsersBudget(Request $request) {
         try {
+
+            $loggedID = Helper::customDecrypt($request->logged_user_id);
+            $request['logged_user_id'] = $loggedID;
 
             $rules = [
                 'budget_file' => 'required',
@@ -363,6 +377,8 @@ class UserManageController extends Controller
 
             }else{#user_campaign_budget
 
+                $request['campaign_id'] =  Helper::customDecrypt($request->campaign_id);
+
                 $rules = [
                     'campaign_id' => 'required|exists:value_sets,id',
                 ];
@@ -428,7 +444,8 @@ class UserManageController extends Controller
             return response()->json([
                 'error_message' => $th->getMessage(),
                 'error_line' => $th->getLine(),
-                'error_file' => $th->getFile()
+                'error_file' => $th->getFile(),
+                'message_description' => 'Please check logged user id and campaign id if type is 2',
             ]);
         }
     }
@@ -436,6 +453,17 @@ class UserManageController extends Controller
     add user budget(individualy)
     ***************************/
     public function addUserCampaignsBudget(Request $request,$id = null) {
+
+        try{
+            if($id){
+                $id = Helper::customDecrypt($id);
+            }
+            $request['campaign_id'] =  Helper::customDecrypt($request->campaign_id);
+            $request['logged_user_id'] =  Helper::customDecrypt($request->logged_user_id);
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
 
         try {
             $date = date('Y-m-d h:i:s');
@@ -563,6 +591,9 @@ class UserManageController extends Controller
                 $get_userBudget = UserCampaignsBudget::with(['user'])->paginate('10');
                 return fractal($get_userBudget, new UserCampaignTransformer());
             }else{
+
+                $campaign_id =  Helper::customDecrypt($campaign_id);
+                
                 $get_userBudget = UserCampaignsBudget::select('user_campaigns_budget.*')
                 ->with(['user'])
                 ->leftJoin('program_users', 'program_users.id', '=', 'user_campaigns_budget.program_user_id')
@@ -580,7 +611,8 @@ class UserManageController extends Controller
             return response()->json([
                 'error_message' => $th->getMessage(),
                 'error_line' => $th->getLine(),
-                'error_file' => $th->getFile()
+                'error_file' => $th->getFile(),
+                'message_description' => 'Please check campaign id',
             ]);
         }
     }/********End function*********/
@@ -595,7 +627,113 @@ class UserManageController extends Controller
     }
 
     public function AddUserSuggestion(Request $request){
-        die('welcome');
+        try{
+            $request['program_user_id'] =  Helper::customDecrypt($request->program_user_id);
+            
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check program_user_id and try again.', 'errors' => $th->getMessage()], 402);
+        }
+        if($request->hasFile('image')) {
+             $rules = [
+                'program_user_id' => 'required|integer|exists:program_users,id',
+                'image' => 'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document|max:10240' 
+             ]; 
+        }else{
+            $rules = [
+                'program_user_id' => 'required|integer|exists:program_users,id'
+            ];
+        }
+
+        $validator = \Validator::make($request->all(), $rules);
+
+        if ($validator->fails())
+            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $file_name = $file->getClientOriginalName();
+            $file_ext = $file->getClientOriginalExtension();
+            $fileInfo = pathinfo($file_name);
+            $filename = $fileInfo['filename'];
+            $imgName = 'EN'.$filename.substr(strftime("%Y", time()),2).'.'.$file_ext;
+            $destinationPath = public_path('storage/user_submissions/');
+            $file->move($destinationPath, $imgName);
+        }
+
+
+        DB::beginTransaction();
+
+        try{
+
+            if (isset($imgName)) {
+                $imgNameval = $imgName;
+            }else{
+                $imgNameval = '';
+            }
+           
+            $suggestion = UsersSuggestion::create([
+                'user_id' => $request->program_user_id,
+                'attachment' => $imgNameval,
+                'image_path' => $imgNameval ? 'storage/user_submissions/' : '',
+                'suggestion' => $request->suggestion_content,
+            ]);
+           
+            if($suggestion){
+
+
+                $sendToUser = ProgramUsers::find($request->program_user_id);
+
+                if ($request->hasFile('image')) {
+                    $new_img = '/storage/user_submissions/'.$imgName;
+                    $new_img_path = url($new_img);
+                }
+
+
+                $image_url = [
+                    'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
+                ];
+
+                $data = [
+                    'email' => env('FEEDBACK_SEND_TO'),
+                    'sendername' => $sendToUser->first_name.' '. $sendToUser->last_name,
+                    'suggestion' => $request->suggestion_content,
+                    'title_subject' => "User Suggestion",
+                ];
+              
+
+                if(isset($new_img_path)){
+                     $data["image_link"] = $new_img_path;
+                }
+
+               
+                try {
+
+                    Mail::send('emails.suggestions', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                    $m->from('info@meritincentives.com','Vodafone Egypt');    
+                    $m->to($data["email"])->subject($data["title_subject"]);
+                    if(isset($data['image_link'])){
+                        $m->attach($data['image_link']);
+                    }
+                    
+                    });
+                    DB::commit();
+               
+                } catch (\Exception $e) {
+
+                    DB::rollBack();
+                    return response()->json(['message' => $e->getMessage(), 'errors' => $validator->errors()], 422);
+                }
+
+
+            }
+            return response()->json(['message' => 'Suggestion has been sent successfully.']);
+
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+        }
     }
 
 }

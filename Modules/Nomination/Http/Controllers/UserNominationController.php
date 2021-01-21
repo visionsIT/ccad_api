@@ -47,6 +47,7 @@ use Illuminate\Support\Facades\Mail;
 use Modules\User\Models\UsersGroupList;
 use Modules\CommonSetting\Models\PointRateSettings;
 use DB;
+use Helper;
 class UserNominationController extends Controller
 {
     private $repository;
@@ -162,6 +163,9 @@ class UserNominationController extends Controller
     public function user_EthankyouRecords(Request $request)
     {
         try{
+
+            $request['campaignID'] =  Helper::customDecrypt($request->campaignID);
+
             $input = $request->all();
             $data = UsersEcards::leftJoin('user_nominations', 'user_nominations.ecard_id', '=', 'users_ecards.id')
             ->select('user_nominations.*', 'users_ecards.*', DB::raw( 'user_nominations.level_1_approval as "Approved for level 1"'), DB::raw( 'user_nominations.level_2_approval as "Approved for level 2"'), DB::raw('DATE_FORMAT(users_ecards.created_at, "%b %d, %Y %h:%i %p") as created_date_time'))
@@ -186,7 +190,7 @@ class UserNominationController extends Controller
             );
             return response()->json(['data'=>$finaldata,'meta'=>$meta,'message'=>'Data Listed successfully.', 'status'=>'success']);
         } catch (\Exception $e) {
-            return response()->json(['data'=>[],'meta'=>[],'message'=>$e->getMessage(), 'status'=>'success']);
+            return response()->json(['data'=>[],'meta'=>[],'message'=>$e->getMessage(), 'status'=>'error','error_descriptin'=>'Please check campaign_id']);
         }
     }
 

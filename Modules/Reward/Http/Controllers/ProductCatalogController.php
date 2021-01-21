@@ -9,6 +9,7 @@ use Illuminate\Routing\Controller;
 use Modules\Reward\Http\Requests\ProductCatalogRequest;
 use Modules\Reward\Transformers\ProductCatalogTransformer;
 use Modules\Reward\Repositories\ProductCatalogRepository;
+use Helper;
 
 class ProductCatalogController extends Controller
 {

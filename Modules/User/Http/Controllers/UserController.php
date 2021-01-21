@@ -28,6 +28,8 @@ use Modules\User\Exports\UserExport;
 use Validator;
 use DB;
 use File;
+use Helper;
+use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
@@ -134,9 +136,15 @@ class UserController extends Controller
     public function show($id): Fractal
     {
 
-        $user = $this->service->find($id);
+        try{
+            $id = Helper::customDecrypt($id);
+            $user = $this->service->find($id);
 
-        return fractal($user, new UserTransformer());
+            return fractal($user, new UserTransformer());
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check id and try again.', 'errors' => $th->getMessage()], 402);
+        }
+
     }
 
     /**
@@ -147,9 +155,16 @@ class UserController extends Controller
      */
     public function update(ProgramUsersRequest $request, $id): JsonResponse
     {
-        $this->service->update($request, $id);
+        try{
+            $id = Helper::customDecrypt($id);
+            $this->service->update($request, $id);
 
-        return response()->json([ 'message' => 'Data has been successfully updated' ]);
+            return response()->json([ 'message' => 'Data has been successfully updated' ]);
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+        
     }
 
     /**
@@ -159,9 +174,16 @@ class UserController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-        $this->service->destroy($id);
+        try{
+            $id = Helper::customDecrypt($id);
+            $this->service->destroy($id);
 
-        return response()->json([ 'message' => 'Data has been successfully deleted' ]);
+            return response()->json([ 'message' => 'Data has been successfully deleted' ]);
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+        
     }
 
     /**
@@ -446,6 +468,10 @@ class UserController extends Controller
 
     public function updateUserStatus(Request $request){
         try {
+
+            $request['user_id'] = Helper::customDecrypt($request['user_id']);
+            $request['account_id'] = Helper::customDecrypt($request['account_id']);
+
             $rules = [
                 'user_id' => 'required|integer|exists:program_users,id',
                 'account_id' => 'required|integer|exists:accounts,id',
@@ -468,7 +494,7 @@ class UserController extends Controller
             return response()->json(['message' => 'Status has been changed successfully.'], 200);
 
         } catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+            return response()->json(['message' => 'Something get wrong! Please check user_id, account_id and try again.', 'errors' => $th->getMessage()], 402);
         }
     }
     /************************
@@ -703,5 +729,57 @@ class UserController extends Controller
 
         return response()->json(['message'=>'Image not Found.', 'status'=>'error']);exit;
     }/******fn_ends_here******/
+
+    public function userBlockUnblock($b_status = null, $account_id = null){
+
+        try{
+            if($b_status == null || $account_id == null){
+                return response()->json(['message'=>'Please provide user id and block status.', 'status'=>'error']);exit;
+            }else{
+                $account_id = Helper::customDecrypt($account_id);
+                $account = Account::where('id',$account_id)->first();
+                if(!empty($account)){
+
+                    $image_url = [
+                        'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
+                        'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
+                        'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
+                        'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
+                    ];
+
+                    $data = [
+                        'email' => $account->email,
+                        'name' => $account->name,
+                    ];
+
+                    if($b_status == 0){
+                        Account::where('id',$account_id)->update(['login_attempts'=>0]);
+
+                        Mail::send('emails.UserUnBlockMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                            $m->to($data["email"])->subject('Account Unblocked');
+                        });
+
+                        return response()->json(['message'=>'User Un-Blocked Successfully.', 'status'=>'success']);exit;
+                    }else{
+                        Account::where('id',$account_id)->update(['login_attempts'=>3]);
+
+                        Mail::send('emails.AdminBlockUserMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                            $m->to($data["email"])->subject('Account Suspended');
+                        });
+
+                        return response()->json(['message'=>'User Blocked Successfully.', 'status'=>'success']);exit;
+                    }
+                }else{
+                    return response()->json(['message'=>'Wrong account id.', 'status'=>'error']);exit;
+                }
+
+            }
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+
+        
+    }#unblock_fn_ends
 
 }
