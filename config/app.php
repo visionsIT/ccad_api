@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'CCAD'),
+    'name' => env('APP_NAME', 'AD Ports'),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,7 +26,7 @@ return [
     |
     */
 
-    'env' => env('APP_ENV', 'production'),
+    'env' => env('APP_ENV', 'local'),
 
     /*
     |--------------------------------------------------------------------------
@@ -39,7 +39,7 @@ return [
     |
     */
 
-    'debug' => env('APP_DEBUG', false),
+    'debug' => env('APP_DEBUG', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -51,7 +51,7 @@ return [
     | your application so that it is used when running Artisan tasks.
     |
     */
-    'url' => env('APP_URL', 'https://ccadapi.takreem.ae'),
+    'url' => env('APP_URL', 'https://adportsapi.meritincentives.com'),
 
     'asset_url' => env('ASSET_URL', null),
 
@@ -177,7 +177,8 @@ return [
         Laravel\Passport\PassportServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Aacotroneo\Saml2\Saml2ServiceProvider::class,
-        Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class,
+        Sichikawa\LaravelSendgridDriver\SendgridTransportServiceProvider::class
+
     ],
 
     /*
@@ -227,7 +228,6 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
         'Excel' => \Maatwebsite\Excel\Facades\Excel::class,
-        'Helper' => App\Helpers\Helper::class,
 
     ],
 
