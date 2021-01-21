@@ -42,7 +42,7 @@ class EventServiceProvider extends ServiceProvider
         Event::listen('Aacotroneo\Saml2\Events\Saml2LoginEvent', function ($event) {
             //$messageId = $event->getSaml2Auth()->getLastMessageId();
             // Add your own code preventing reuse of a $messageId to stop replay attacks
-die('kkkk');
+
             $user = $event->getSaml2User();
 
             $userData = [
