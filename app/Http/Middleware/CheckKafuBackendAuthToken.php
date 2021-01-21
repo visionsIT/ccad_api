@@ -64,11 +64,6 @@ class CheckKafuBackendAuthToken
         //      $un = $request->only(['username']);
         //      $account = Account::where('email',$un['username'])->first();
         //  }
-
-
-
-
-
         return $result;
 
     }
