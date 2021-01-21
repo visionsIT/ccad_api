@@ -11,6 +11,7 @@ use Modules\Program\Transformers\CurrentBalanceTransformer;
 use Modules\Program\Transformers\PointsTransformer;
 use Spatie\Fractal\Fractal;
 use DB;
+use Helper;
 
 class PointController extends Controller
 {
@@ -26,7 +27,7 @@ class PointController extends Controller
     {
         $this->service         = $service;
         $this->program_service = $program_service;
-        //$this->middleware('auth:api');
+        $this->middleware('auth:api');
     }
 
 
@@ -75,20 +76,20 @@ class PointController extends Controller
 
     public function totalBalanceByProgramid($program_id) {
 
-
-        $current_budget_bal = UsersPoint::select('balance')->where('user_id',$program_id)->latest()->first();
-
-        if($current_budget_bal){
-            $budget_bal = $current_budget_bal->balance;
-        }else{
-            $budget_bal = 0;
-        }
-
         try {
+            $decrypted_id = Helper::customDecrypt($program_id);
+            $current_budget_bal = UsersPoint::select('balance')->where('user_id',$program_id)->latest()->first();
+
+            if($current_budget_bal){
+                $budget_bal = $current_budget_bal->balance;
+            }else{
+                $budget_bal = 0;
+            }
+
             return response()->json(['data' => array("current_balance" => $budget_bal , "user_balance" => 0, "user_nominations" => 0 )], 200);
 
         }catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+            return response()->json(['message' => 'Something get wrong! Please check program_id and try again.', 'errors' => $th->getMessage()], 402);
         }
 
     }

@@ -10,10 +10,12 @@ use Modules\Reward\Http\Requests\ProductCategoryRequest;
 use Modules\Reward\Http\Requests\ProductRequest;
 use Modules\Reward\Transformers\ProductCategoryTransformer;
 use Modules\Reward\Transformers\ProductTransformer;
+use Modules\Reward\Transformers\ProductsTransformer;
 use Modules\Reward\Repositories\ProductCategoryRepository;
 use Modules\Reward\Repositories\ProductRepository;
 use Illuminate\Http\Request;
 use Illuminate\Http\response;
+use Helper;
 
 class ProductCategoryController extends Controller
 {

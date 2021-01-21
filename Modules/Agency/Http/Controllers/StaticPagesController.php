@@ -11,7 +11,7 @@ class StaticPagesController extends Controller
 
     public function __construct()
     {
-        $this->middleware('auth:api');
+        $this->middleware('auth:api', ['except' =>['getBeforeLoginStaticPages','uploadImage','getImages']]);
     }
     
     /**
@@ -384,5 +384,27 @@ class StaticPagesController extends Controller
             }
         }
         return response()->json(["files"=>$images]);
+    }
+
+    public function getBeforeLoginStaticPages(StaticPages $staticPages, $id)
+    {
+
+        if($id == '25' || $id == 'privacy-policy' || $id == '26' || $id == 'terms-and-conditions'){
+            $page = StaticPages::where('id', $id)->orWhere('allies_name', $id)->first();
+            if($page) {
+                return response()->json(['data'=>$page, 'message'=>'Page listed successfully.', 'status'=>'success']);
+            } else {
+                return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
+            }
+        }else{
+            $this->middleware('auth:api');
+            $page = StaticPages::where('id', $id)->orWhere('allies_name', $id)->first();
+            if($page) {
+                return response()->json(['data'=>$page, 'message'=>'Page listed successfully.', 'status'=>'success']);
+            } else {
+                return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
+            }
+        }
+
     }
 }
