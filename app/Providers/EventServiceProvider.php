@@ -44,7 +44,7 @@ class EventServiceProvider extends ServiceProvider
             // Add your own code preventing reuse of a $messageId to stop replay attacks
 
             $user = $event->getSaml2User();
-
+echo "<pre>"; print_r($user); die;
             $userData = [
                 'id' => $user->getUserId(),
                 'attributes' => $user->getAttributes(),
