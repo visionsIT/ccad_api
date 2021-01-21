@@ -23,7 +23,8 @@ use Modules\User\Models\UserCampaignsBudgetLogs;
 use DB;
 use Illuminate\Support\Facades\Mail;
 use File;
-
+use Illuminate\Support\Facades\Crypt;
+use Helper;
 class RippleSettingsController extends Controller
 {
 
@@ -44,7 +45,7 @@ class RippleSettingsController extends Controller
     public function saveRippleSettings(Request $request)
     {
         try {
-
+            $request['campaign_id'] =  Helper::customDecrypt($request->campaign_id);
             $data = $request->all();
             $campaign_id = $data['campaign_id'];
 
@@ -116,7 +117,7 @@ class RippleSettingsController extends Controller
             return response()->json(['message' => 'Settings has been updated successfully.'], 200);
 
         } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            return response()->json(['message' => 'The given data was invalid.Also check campaign_id and try again.', 'errors' => $validator->errors()], 422);
         }
     }
 
@@ -128,7 +129,7 @@ class RippleSettingsController extends Controller
 
     public function createEcardsRipple(Request $request) {
         try {
-
+            $request['campaign_id'] =  Helper::customDecrypt($request->campaign_id);
             $rules = [
                 'card_title' => 'required|unique:ecards,card_title',
                 'image'   => 'required'
@@ -160,7 +161,7 @@ class RippleSettingsController extends Controller
             return response()->json(['status' => true, 'message' => 'E-card has been created successfully.', 'data' => $newCard]);
 
         } catch (\Throwable $th) {
-            return response()->json(['status' => true, 'message'=>'Something went wrong! Please try after some time.']);
+            return response()->json(['status' => true, 'message'=>'Something went wrong! Please cehck campaign_id and try after some time.']);
         }
     }
 
@@ -172,6 +173,8 @@ class RippleSettingsController extends Controller
      public function updateEcardsRipple(Request $request) {
 
         try {
+
+            $request['id'] =  Helper::customDecrypt($request->id);
 
             $rules = [
                 'id' => 'required|integer|exists:ecards,id',
@@ -207,7 +210,7 @@ class RippleSettingsController extends Controller
             return response()->json(['status' => true, 'message' => 'E-card has been updated successfully.']);
 
         } catch (\Throwable $th) {
-            return response()->json(['status' => true, 'message'=>'Something went wrong! Please try after some time.']);
+            return response()->json(['status' => true, 'message'=>'Something went wrong! Please check id and try after some time.']);
         }
     }
 
@@ -218,8 +221,17 @@ class RippleSettingsController extends Controller
 
     public function getRippleSettings($id): Fractal
     {
-        $result = $this->repository->getRippleSettingsBy($id);
-        return fractal($result, new RippleSettingsTransformer);
+
+        try{
+            $id =  Helper::customDecrypt($id);
+            $result = $this->repository->getRippleSettingsBy($id);
+            return fractal($result, new RippleSettingsTransformer);
+
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check id and try again.', 'errors' => $th->getMessage()], 402);
+        } 
+
+        
     }
 
     /**
@@ -246,6 +258,8 @@ class RippleSettingsController extends Controller
      public function ecardStatusChange(Request $request) {
         try {
 
+            $request['id'] =  Helper::customDecrypt($request->id);
+
             $rules = [
                 'id' => 'required|integer|exists:ecards,id',
             ];
@@ -264,7 +278,7 @@ class RippleSettingsController extends Controller
         
             return response()->json(['message' => 'Status has been changed successfully.'], 200);
         } catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+            return response()->json(['message' => 'Something get wrong! Please check id and try again.', 'errors' => $th->getMessage()], 402);
         }
     }
 
@@ -323,7 +337,14 @@ class RippleSettingsController extends Controller
 
     public function sendEcardRipple(Request $request)
     {
-
+        try{
+            $request['sender_id'] =  Helper::customDecrypt($request->sender_id);
+            $request['send_to_id'] = Helper::customDecrypt($request->send_to_id);
+            $request['ecard_id'] = Helper::customDecrypt($request->ecard_id);
+            
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check sender_id,send_to_id,ecard_id and try again.', 'errors' => $th->getMessage()], 402);
+        }
         
         $data = array();
 
@@ -665,7 +686,8 @@ class RippleSettingsController extends Controller
     public function saveEligibleUsersSettings(Request $request)
     {
         try {
-
+            $request['campaign_id'] =  Helper::customDecrypt($request->campaign_id);
+            
             $data = $request->all();
             $campaign_id = $data['campaign_id'];
 
@@ -720,7 +742,7 @@ class RippleSettingsController extends Controller
             return response()->json(['message' => 'Settings has been updated successfully.'], 200);
 
         } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            return response()->json(['message' => 'The given data was invalid.Also check campaign_id', 'errors' => $validator->errors()], 422);
 
         }
     }

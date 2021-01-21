@@ -5,7 +5,7 @@ use Modules\User\Models\ProgramUsers;
 use Modules\User\Models\UsersPoint;
 use Modules\User\Models\UserCampaignsBudget;
 use Modules\Reward\Models\ProductOrder;
-
+use Helper;
 class UserCampaignTransformer extends TransformerAbstract
 {
     /**
@@ -23,15 +23,15 @@ class UserCampaignTransformer extends TransformerAbstract
         }
         
         return [
-            'id' => $data->id,
-            'campaign_id' => $data->campaign_id,
+            'id' => Helper::customCrypt($data->id),
+            'campaign_id' => Helper::customCrypt($data->campaign_id),
             'budget' => $data->budget,
             'description' => $data->description,
-            'program_user_id' => $data->program_user_id,
+            'program_user_id' => Helper::customCrypt($data->program_user_id),
             'created_at' => $data->created_at,
             'updated_at' => $data->updated_at,
             'program_id' => $data->user->program_id,
-            'account_id' => $data->user->account_id,
+            'account_id' => Helper::customCrypt($data->user->account_id),
             'emp_number' => $data->user->emp_number,
             'vp_emp_number' => $data->user->vp_emp_number,
             'first_name' => $data->user->first_name,

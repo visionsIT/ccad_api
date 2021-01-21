@@ -1,9 +1,13 @@
-<?php namespace Modules\Reward\Transformers;
+<?php 
+namespace Modules\Reward\Transformers;
 
 use League\Fractal\TransformerAbstract;
 use Modules\Reward\Models\Product;
 use Modules\Reward\Models\ProductsCountries;
+use Modules\User\Models\UsersGoalItem;
+use Modules\User\Models\ProgramUsers;
 use DB;
+use Helper;
 class ProductsTransformer extends TransformerAbstract
 {
 
@@ -45,10 +49,37 @@ class ProductsTransformer extends TransformerAbstract
             $category_name = '';
         }
 
+        $GoalItem = 'no';
+        $account_user = \Auth::user();
+        $user_id = ProgramUsers::select('id')->where('account_id',$account_user->id)->first();
+        if(!empty($user_id)){
+           $check_goal_item = UsersGoalItem::where(['product_id'=>$product->id,'user_id'=>$user_id->id])->first();
+            if(!empty($check_goal_item)){
+                $GoalItem = 'yes';
+            } 
+        }
+
+
         $country_data =  DB::table('products_countries')->select('countries.name', 'countries.id as country_id')->where(['products_countries.product_id' => $product->id])->join('countries', 'countries.id', '=', 'products_countries.country_id')->get();
 
+        $productID = Helper::customCrypt($product->id);
+
+        $denomination = $product->denominations()->select('id', 'value', 'points')->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy('value','ASC')->get()->toArray();
+
+        $denomination_all = $denomination;
+        foreach ($denomination_all as $key1 => $answer) {
+            unset($denomination_all[$key1]['id']);
+        }
+        
+        $denomination_final= array();
+        foreach ($denomination as $key => $value) {
+            $denomination_all[$key]['id'] = Helper::customCrypt($value['id']);
+        }
+
+
+
         return [
-            'id'           => $product->id,
+            'id'           => $productID,
             'name'         => $product->name,
             'value'        => $product->value,
             'image'        => $product->image,
@@ -68,7 +99,7 @@ class ProductsTransformer extends TransformerAbstract
             'base_price' => $product->base_price,
             'brand_id'      => $product->brand->id,
             'brand_name'    => $product->brand->name,
-            'denominations' => $product->denominations()->select('id', 'value', 'points')->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy('value','ASC')->get()->all(),
+            'denominations' => $denomination_all,
             'Sub'          => $product->sub()->select('id', 'name', 'value')->get()->all(),
             'seen'         => $product->product_seen ? $product->product_seen->account_id === 1 : FALSE,
             'status'  => $product->status,
@@ -76,6 +107,7 @@ class ProductsTransformer extends TransformerAbstract
             'country_id' => $country_data,
             'currency_id' => $product->currency_id,
             'currency' => $product->currency,
+            'isGoalItem' => $GoalItem,
         ];
 
 

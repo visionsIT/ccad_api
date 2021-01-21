@@ -11,6 +11,7 @@ use Modules\User\Http\Services\UserService;
 use Modules\User\Http\Services\UserNominationService;
 use Spatie\Fractal\Fractal;
 use Modules\User\Transformers\PointsTransformer;
+use Helper;
 
 class PointController extends Controller
 {
@@ -109,17 +110,24 @@ class PointController extends Controller
      */
     public function currentBalance($program_id, $user_id): Fractal
     {
-        $user            = $this->user_service->find($user_id);
 
-        $user_balance    = $this->user_service->userProfileBalance($user_id);
-        $userNominations = $this->user_nomination_service->find($user_id);
-        $nominations_count = count($userNominations->toArray());
+        try{
+            $user_id = Helper::customDecrypt($user_id);
+            $user            = $this->user_service->find($user_id);
 
-        $current_balance = $this->service->currentBalance($user);
+            $user_balance    = $this->user_service->userProfileBalance($user_id);
+            $userNominations = $this->user_nomination_service->find($user_id);
+            $nominations_count = count($userNominations->toArray());
 
-        $tranformData = json_encode(array('current_bal' => $current_balance, 'nominations' => $nominations_count, 'balance' => $user_balance));
+            $current_balance = $this->service->currentBalance($user);
 
-        return fractal($tranformData, new CurrentBalanceTransformer());
+            $tranformData = json_encode(array('current_bal' => $current_balance, 'nominations' => $nominations_count, 'balance' => $user_balance));
+
+            return fractal($tranformData, new CurrentBalanceTransformer());
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check user_id and try again.', 'errors' => $th->getMessage()], 402);
+        }
+
     }
 
     public function filterPointsHistory(Request $request): Fractal {

@@ -22,7 +22,7 @@ use Modules\Nomination\Models\CampaignSettings;
 use Modules\Nomination\Models\ValueSet;
 use Modules\Nomination\Models\UserNomination;
 use DB;
-
+use Helper;
 class NominationController extends Controller
 {
     private $repository;
@@ -263,7 +263,7 @@ class NominationController extends Controller
     **************************/
     public function saveWallSettings(Request $request){
         try{
-
+            $request['campaign_id'] =  Helper::customDecrypt($request->campaign_id);
             $rules = [
                 'wall_post' => 'required|in:0,1',
                 'campaign_id'=>'required|exists:campaign_settings,campaign_id',
@@ -279,12 +279,15 @@ class NominationController extends Controller
             return response()->json(['message'=>'Saved successfully.', 'status'=>'success']);exit;
 
         } catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
+            return response()->json(['message' => 'Something get wrong! Please check campaign_id and try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
         }
     }/****fn ends***/
 
     public function getWallSettings($campaign_id){
         try{
+
+            $campaign_id = Helper::customDecrypt($campaign_id);
+            
             $check_campaign = CampaignSettings::where('campaign_id','=',$campaign_id)->first();
             if(!empty($check_campaign)){
                 $get_wall_setting = CampaignSettings::select('wall_settings')->where('campaign_id','=',$campaign_id)->first();
@@ -295,7 +298,7 @@ class NominationController extends Controller
             }
 
         } catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
+            return response()->json(['message' => 'Something get wrong! Please cehck campaign_id and try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
         }
     }#fn_ends
 

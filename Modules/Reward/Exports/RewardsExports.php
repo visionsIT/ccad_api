@@ -51,7 +51,7 @@ class RewardsExports implements FromCollection, WithHeadings
                 //echo "<pre>"; print_r($getRewardsList); die;
                 if(count($getRewardsList)>0){
                     foreach ($getRewardsList as $key => $value) {
-                        $getDenominations = DB::table('product_denominations')->select('value')->where('product_id', $value->id)->get();
+                        $getDenominations = DB::table('product_denominations')->select('value')->where('product_id', $value->id)->whereNull('deleted_at')->get();
                         $denominationList = '';
                         if(count($getDenominations)>0){
                             foreach ($getDenominations as $keyd => $valued) {

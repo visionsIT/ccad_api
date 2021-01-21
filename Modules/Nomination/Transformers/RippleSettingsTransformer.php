@@ -3,6 +3,8 @@
 use League\Fractal\TransformerAbstract;
 use Modules\Nomination\Models\CampaignSettings;
 use DB;
+use Illuminate\Support\Facades\Crypt;
+use Helper;
 class RippleSettingsTransformer extends TransformerAbstract
 {
     /**
@@ -16,6 +18,11 @@ class RippleSettingsTransformer extends TransformerAbstract
         $campain_data =  DB::table('campaign_settings')->select('value_sets.name', 'value_sets.status')->where(['campaign_settings.id' => $model->id])->leftJoin('value_sets', 'value_sets.id', '=', 'campaign_settings.campaign_id')->get()->first();
 
         $ecards_data = DB::table('campaign_settings')->select('ecards.id','ecards.card_title', 'ecards.card_image', 'ecards.status', 'ecards.allow_points','ecards.campaign_id')->where(['campaign_settings.id' => $model->id])->rightJoin('ecards', 'ecards.campaign_id', '=', 'campaign_settings.campaign_id')->get();
+
+        foreach ($ecards_data as $key => $value) {
+            $value->id = Helper::customCrypt($value->id);
+        }
+        
 
         return [
             'id'  => $model->id,
