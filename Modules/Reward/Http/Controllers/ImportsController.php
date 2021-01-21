@@ -26,12 +26,6 @@ use Modules\CommonSetting\Models\PointRateSettings;
 
 class ImportsController extends Controller
 {
-
-    public function __construct()
-    {
-        $this->middleware('auth:api');
-    }
-    
     public function import(Request $request, $program_id)
     {
         //todo move uploaded file to a folder

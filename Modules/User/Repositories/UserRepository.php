@@ -105,23 +105,6 @@ class UserRepository extends Repository
 
     public function createNewFeedback($data) {
         try {
-
-            if(isset($data['email'])){
-                $data['email'] = $data['email'];
-            }else{
-
-                $emailData = ProgramUsers::select('email')->where('id', $data['user_id'])->first();
-                $data['email'] = $emailData->email;
-            }
-
-            $feedback_create = UsersFeedback::create([
-                'user_id' => isset($data['user_id']) ? $data['user_id'] : NULL,
-                'name' => isset($data['name']) ? $data['name'] : NULL,
-                'email' => $data['email'],
-                'phone' => isset($data['phone']) ? $data['phone']: NULL,
-                'feedback' => $data['feedback']
-            ]);
-
             $image_url = [
                 'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
                 'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
@@ -138,7 +121,12 @@ class UserRepository extends Repository
                 $m->to(env('FEEDBACK_SEND_TO'))->subject('New Feedback');
             });
 
-            return response()->json(['status' => true, 'message' => 'Thank you for your valuable feedback' ]);
+            $feedback_create = UsersFeedback::create([
+                'user_id' => $data['user_id']?$data['user_id']:null,
+                'email' => $data['email'],
+                'feedback' => $data['feedback']
+            ]);
+            return response()->json(['status' => true, 'message' => 'Your order has been placed successfully and will be shipped soon.' ]);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage() ]);
         }

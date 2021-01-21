@@ -5,7 +5,6 @@ use Modules\User\Models\ProgramUsers;
 use Modules\User\Models\UsersPoint;
 use Modules\Reward\Models\ProductOrder;
 use DB;
-use Helper;
 class UserTransformer extends TransformerAbstract
 {
     /**
@@ -32,20 +31,14 @@ class UserTransformer extends TransformerAbstract
         ->join('user_roles', 'user_roles.id', '=', 'users_group_list.user_role_id')
         ->where(['users_group_list.account_id' => $User->account_id])
         ->get();
-
-        $user_profile_img = '';
-        if($User->profile_image != '' && $User->profile_image != null && $User->profile_image != 'null'){
-            $profile_img = '/'.$User->image_path.$User->profile_image;
-            $user_profile_img = url($profile_img);
-        }
-
-
+        
+        
         return [
-            'id' => Helper::customCrypt($User->id),
+            'id' => $User->id,
             'name' => $username,
             'email' => filter_var($User->email, FILTER_SANITIZE_EMAIL),
             'username' => $User->username,
-            'account_id' => Helper::customCrypt($User->account_id),
+            'account_id' => $User->account_id,
             'user_groups' => optional($User->account)->getRoleNames(),
             'user_group_id' => $gruop_id ? $gruop_id->user_group_id : '',
             'user_group_all' => $all_group_data ? $all_group_data : '',
@@ -64,7 +57,6 @@ class UserTransformer extends TransformerAbstract
             'town' => $User->town,
             'postcode' => $User->postcode,
             'country' => $User->country,
-            'country_id' => $User->country_id,
             'telephone' => $User->telephone,
             'mobile' => $User->mobile,
             'date_of_birth' => $User->date_of_birth,
@@ -73,10 +65,8 @@ class UserTransformer extends TransformerAbstract
             'status' => $User->is_active,
             'emp_number' => $User->emp_number,
             'vp_emp_number' => $User->vp_emp_number,
-            'program_id' => Helper::customCrypt($program_user_id->id),
+            'program_id' => $program_user_id->id,
             'last_login' => $last_login,
-            'profile_image' => $user_profile_img,
-            'login_attempt' => $User->account->login_attempts,
         ];
     }
 }

@@ -3,7 +3,6 @@
 use League\Fractal\TransformerAbstract;
 use Modules\Nomination\Models\ValueSet;
 use DB;
-use Helper;
 class ValueSetTransformer extends TransformerAbstract
 {
     /**
@@ -18,7 +17,7 @@ class ValueSetTransformer extends TransformerAbstract
         $campain_type =  DB::table('value_sets')->select('campaign_types.campaign_type')->where(['value_sets.id' => $model->id])->join('campaign_types', 'campaign_types.id', '=', 'value_sets.campaign_type_id')->get()->first();
 
         return [
-            'id'                    => Helper::customCrypt($model->id) ,
+            'id'                    => $model->id,
             'name'                  => $model->name,
             'description'           => $model->description,
             'values'                => $model->types->count(),

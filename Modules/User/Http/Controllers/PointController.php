@@ -11,7 +11,6 @@ use Modules\User\Http\Services\UserService;
 use Modules\User\Http\Services\UserNominationService;
 use Spatie\Fractal\Fractal;
 use Modules\User\Transformers\PointsTransformer;
-use Helper;
 
 class PointController extends Controller
 {
@@ -28,7 +27,6 @@ class PointController extends Controller
         $this->service      = $service;
         $this->user_service = $user_service;
         $this->user_nomination_service = $user_nomination_service;
-        $this->middleware('auth:api');
     }
 
 
@@ -110,24 +108,17 @@ class PointController extends Controller
      */
     public function currentBalance($program_id, $user_id): Fractal
     {
+        $user            = $this->user_service->find($user_id);
 
-        try{
-            $user_id = Helper::customDecrypt($user_id);
-            $user            = $this->user_service->find($user_id);
+        $user_balance    = $this->user_service->userProfileBalance($user_id);
+        $userNominations = $this->user_nomination_service->find($user_id);
+        $nominations_count = count($userNominations->toArray());
 
-            $user_balance    = $this->user_service->userProfileBalance($user_id);
-            $userNominations = $this->user_nomination_service->find($user_id);
-            $nominations_count = count($userNominations->toArray());
+        $current_balance = $this->service->currentBalance($user);
 
-            $current_balance = $this->service->currentBalance($user);
+        $tranformData = json_encode(array('current_bal' => $current_balance, 'nominations' => $nominations_count, 'balance' => $user_balance));
 
-            $tranformData = json_encode(array('current_bal' => $current_balance, 'nominations' => $nominations_count, 'balance' => $user_balance));
-
-            return fractal($tranformData, new CurrentBalanceTransformer());
-        }catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please check user_id and try again.', 'errors' => $th->getMessage()], 402);
-        }
-
+        return fractal($tranformData, new CurrentBalanceTransformer());
     }
 
     public function filterPointsHistory(Request $request): Fractal {

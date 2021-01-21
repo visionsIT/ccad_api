@@ -8,12 +8,6 @@
 		<td align="center" style="padding: 40px 20px; line-height: 1.6;">
 			<img src="{{ $image_url['smile_img_url'] }}" alt="Thank You" width="100" />
 			<h2 style="text-transform: uppercase; color: #2C72EC;">Feedback Message</h2>
-			@if(isset($data['name']) && $data['name'] != '' && $data['name'] != null && $data['name'] != 'null')
-			<h4>Name:- {{ $data['name'] }}</h4>
-			@endif
-			@if(isset($data['phone']) && $data['phone'] != '' && $data['phone'] != null && $data['phone'] != 'null')
-			<h4>Phone:- {{ $data['phone'] }}</h4>
-			@endif
 			<h4>{{ $data['feedback'] }}</h4>
 			<h5 style="margin-bottom: 0; "><strong>Sent by:</strong> {{$data['email']}}</h5>
 		</td>

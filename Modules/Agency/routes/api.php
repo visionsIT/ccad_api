@@ -13,4 +13,3 @@ Route::resource('static_pages', 'StaticPagesController');
 Route::post('static_pages/change_status', 'StaticPagesController@updatePageStatus');
 Route::post('uploader/upload', 'StaticPagesController@uploadImage');
 Route::get('browser/browse', 'StaticPagesController@getImages');
-Route::get('get_static_pages/{slug}', 'StaticPagesController@getBeforeLoginStaticPages');

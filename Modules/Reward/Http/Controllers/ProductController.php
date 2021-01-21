@@ -24,7 +24,6 @@ use Modules\Reward\Models\ProductsCountries;
 use Modules\User\Models\ProgramUsers;
 use Throwable;
 use DB;
-use Helper;
 class ProductController extends Controller
 {
     private $repository, $service;
@@ -33,7 +32,6 @@ class ProductController extends Controller
     {
         $this->repository = $repository;
         $this->service    = $service;
-        $this->middleware('auth:api');
     }
 
     /**
@@ -46,7 +44,7 @@ class ProductController extends Controller
        
         $products = $this->repository->paginate(12);
 
-        return fractal($products, new ProductsTransformer);
+        return fractal($products, new ProductTransformer);
     }
 
 
@@ -60,7 +58,7 @@ class ProductController extends Controller
     public function store(ProductRequest $request)
     {
         $product = $this->repository->create($request->all());
-        return fractal($product, new ProductsTransformer);
+        return fractal($product, new ProductTransformer);
     }
 
     /**
@@ -72,19 +70,11 @@ class ProductController extends Controller
      */
     public function show($id): Fractal
     {
+        $product = $this->repository->find($id);
 
-        try{
-            $id = Helper::customDecrypt($id);
-            $product = $this->repository->find($id);
+        ProductsAccountsSeen::firstOrCreate([ 'account_id' => 1, 'product_id' => $product->id ]);
 
-            ProductsAccountsSeen::firstOrCreate([ 'account_id' => 1, 'product_id' => $product->id ]);
-
-            return fractal($product, new ProductsTransformer);
-        }catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
-        }
-
-        
+        return fractal($product, new ProductsTransformer);
     }
 
 
@@ -124,7 +114,7 @@ class ProductController extends Controller
     {
         $products = $this->service->search($request->query('keyword'));
 
-        return fractal($products, new ProductsTransformer);
+        return fractal($products, new ProductTransformer);
     }
 
     public function searchAdvance(Request $request)
@@ -153,7 +143,7 @@ class ProductController extends Controller
         $_SESSION['minValue'] = $minValue;
         $_SESSION['maxValue'] = $maxvalue;
 
-        $denominationsList = ProductDenomination::select('product_id')->whereRaw('CAST(points AS DECIMAL(10,2)) >= ' . $minValue)->whereRaw('CAST(points AS DECIMAL(10,2)) <= ' . $maxvalue)->whereNull('deleted_at')->groupBy('product_id')->get()->all();
+        $denominationsList = ProductDenomination::select('product_id')->whereRaw('CAST(points AS DECIMAL(10,2)) >= ' . $minValue)->whereRaw('CAST(points AS DECIMAL(10,2)) <= ' . $maxvalue)->groupBy('product_id')->get()->all();
 
         $productIds = [];
         foreach($denominationsList as $deno){
@@ -181,7 +171,7 @@ class ProductController extends Controller
             ]);
         } else {
 
-            return fractal($products, new ProductsTransformer);
+            return fractal($products, new ProductTransformer);
         }
     }
     public function searchAdvance1(Request $request)
@@ -236,7 +226,7 @@ class ProductController extends Controller
             ]);
         } else {
             
-            return fractal($products, new ProductsTransformer);
+            return fractal($products, new ProductTransformer);
         }
     }
 
@@ -338,7 +328,6 @@ class ProductController extends Controller
 
             if($id !== null && $request->action === 'update') {
 
-                $id = Helper::customDecrypt($id);
                 $this->service->update($productData, $id);
 
                 DB::table('products')
@@ -518,8 +507,6 @@ class ProductController extends Controller
 
     public function updateProductStatus(Request $request) {
         try {
-            $request['id'] =  Helper::customDecrypt($request->id);
-            
             $rules = [
                 'id' => 'required|integer|exists:products,id',
                 'status' => 'required|integer',
@@ -536,7 +523,7 @@ class ProductController extends Controller
 
             return response()->json(['message' => 'Product status has been changed successfully.'], 200);
         } catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please check id and try again.', 'errors' => $th->getMessage()], 402);
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
         }
     }
 }

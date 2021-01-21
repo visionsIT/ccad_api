@@ -112,12 +112,12 @@ class PointController extends Controller
                     $roleData = DB::table('model_has_roles')->select('roles.*')->where(['model_id' => $users[$i]->account_id])->join('roles', 'roles.id', '=', 'model_has_roles.role_id')->get()->first();
 
                     array_push($roleCheckArr, $roleData);
-
+                    
                     if ($roleData) {
                         if ($roleData->birthday_campaign_permission == 1 && $roleData->birthday_points > 0){
-
+                            
                             $pointsBal = 0;
-
+                            
                             $pointsData = UsersPoint::where('user_id', $users[$i]->id)->orderBy('id', 'desc')->first();
 
                             if($pointsData) {

@@ -9,7 +9,6 @@ use Illuminate\Routing\Controller;
 use Modules\Reward\Http\Requests\ProductCatalogRequest;
 use Modules\Reward\Transformers\ProductCatalogTransformer;
 use Modules\Reward\Repositories\ProductCatalogRepository;
-use Helper;
 
 class ProductCatalogController extends Controller
 {
@@ -18,7 +17,6 @@ class ProductCatalogController extends Controller
     public function __construct(ProductCatalogRepository $repository)
     {
         $this->repository = $repository;
-        $this->middleware('auth:api');
     }
 
     /**

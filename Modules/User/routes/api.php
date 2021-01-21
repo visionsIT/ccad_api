@@ -60,7 +60,3 @@ Route::get('get_sso_login_details', 'UserController@getssoLoginDetails');
 Route::post('user/save_sso_login_details', 'UserController@saveSsoLoginDetails');
 Route::post('user/add_suggestion', 'UserManageController@AddUserSuggestion');
 Route::get('get_group_leads/{group_id?}', 'UserController@getGroupLeadUsers');
-
-##########Upload profile pic of user############
-Route::post('/upload_profile_pic','UserController@uploadUserProfilePic');
-Route::get('/get_profile_pic/{account_id}','UserController@getUserProfilePic');

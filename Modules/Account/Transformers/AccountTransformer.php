@@ -7,7 +7,6 @@ use Modules\User\Models\UsersPoint;
 use Modules\Nomination\Models\CampaignSettings;
 use Modules\User\Models\ProgramUsers;
 use DB;
-use Helper;
 
 
 class AccountTransformer extends TransformerAbstract
@@ -22,25 +21,16 @@ class AccountTransformer extends TransformerAbstract
 
         date_default_timezone_set('Asia/Dubai');
         $dubai_time = date('Y-m-d H:i:s');
-
-        // For Single Login
-        $current_date = date('Y-m-d H:i:s');
-        $token_id = str_random(16).'_'.strtotime($current_date);
-
         #update_table_last_login_date_time
         Account::where('id',$account->id)->update(['last_login'=>$dubai_time]);
         
         $userCountry = ProgramUsers::select('country','country_id')->where('account_id',$account->id)->get()->toArray();
-
-        $accountID = Helper::customCrypt($account->id);
-        $userID = Helper::customCrypt(optional($account->user)->id);
-
         return [
-            'id'              => $accountID,
+            'id'              => $account->id,
             'name'            => ucfirst($account->user->first_name).' '.ucfirst($account->user->last_name),
             'email'           => $account->email,
             'type'            => $account->type,
-            'user_id'         => $userID,
+            'user_id'         => optional($account->user)->id,
             'title'           => optional($account->user)->title,
             'program_id'      => $account->client_admins->client->programs->id ?? $account->user->program_id, //TODO WTF REALLY
             'last_login'      => $account->last_login,

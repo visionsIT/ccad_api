@@ -16,7 +16,6 @@ class PointsBudgetController extends Controller
     {
         $this->service         = $service;
         $this->program_service = $program_service;
-        $this->middleware('auth:api');
     }
 
     public function index($program_id)

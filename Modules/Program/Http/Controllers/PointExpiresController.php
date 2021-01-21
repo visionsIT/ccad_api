@@ -15,7 +15,6 @@ class PointExpiresController extends Controller
     {
         $this->service         = $service;
         $this->program_service = $program_service;
-        $this->middleware('auth:api');
     }
 
     /**

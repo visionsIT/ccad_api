@@ -16,7 +16,6 @@ class UserProductOrderController extends Controller
     public function __construct(ProductOrderRepository $repository)
     {
         $this->repository = $repository;
-        $this->middleware('auth:api');
     }
 
     /**

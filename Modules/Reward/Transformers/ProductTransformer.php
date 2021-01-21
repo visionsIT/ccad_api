@@ -3,10 +3,7 @@
 use League\Fractal\TransformerAbstract;
 use Modules\Reward\Models\Product;
 use Modules\Reward\Models\ProductsCountries;
-use Modules\User\Models\UsersGoalItem;
-use Modules\User\Models\ProgramUsers;
 use DB;
-use Helper;
 class ProductTransformer extends TransformerAbstract
 {
 

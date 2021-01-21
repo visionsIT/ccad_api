@@ -30,7 +30,6 @@ class ProgramController extends Controller
     {
         $this->program_service = $program_service;
         $this->service = $service;
-        $this->middleware('auth:api');
         // $this->middleware('auth:api', ['sendEcard']);
         // $this->middleware('auth:api')->only(['sendEcard']);
         // $this->middleware('guest');
