@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'supportsCredentials'    => FALSE,
+    'supportsCredentials'    => TRUE,
     'allowedOrigins'         => [ '*' ],
     'allowedOriginsPatterns' => [],
     'allowedHeaders'         => [ '*' ],
