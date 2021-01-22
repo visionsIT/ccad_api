@@ -4,12 +4,12 @@ if ($mysqli -> connect_errno) {
   echo "Failed to connect to MySQL: " . $mysqli -> connect_error;
   exit();
 }
-$ssoHostUrl = env('APP_API_URL');
+$ssoHostUrl = env('FRONT_APP_URL');
 $idp_entityId = '';
 $idp_sso_url = '';
 $idp_sl_url = '';
 $idp_x509cert = '';
-$spSlsUrl = env('APP_API_URL');
+$spSlsUrl = env('FRONT_APP_URL');
 
 // If you choose to use ENV vars to define these values, give this IdP its own env var names
 // so you can define different values for each IdP, all starting with 'SAML2_'.$this_idp_env_id
@@ -64,7 +64,7 @@ return $settings = array(
 
         // Identifier (URI) of the SP entity.
         // Leave blank to use the '{idpName}_metadata' route, e.g. 'test_metadata'.
-        'entityId' => env('APP_API_URL').'/saml2/ccad/metadata',
+        'entityId' => env('FRONT_APP_URL').'/saml2/ccad/metadata',
 
         // Specifies info about where and how the <AuthnResponse> message MUST be
         // returned to the requester, in this case our SP.
@@ -72,7 +72,7 @@ return $settings = array(
             // URL Location where the <Response> from the IdP will be returned,
             // using HTTP-POST binding.
             // Leave blank to use the '{idpName}_acs' route, e.g. 'test_acs'
-            'url' => env('APP_API_URL').'/saml2/ccad/acs',
+            'url' => env('FRONT_APP_URL').'/saml2/ccad/acs',
         ),
         // Specifies info about where and how the <Logout Response> message MUST be
         // returned to the requester, in this case our SP.

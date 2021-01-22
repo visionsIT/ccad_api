@@ -16,7 +16,7 @@ use Modules\User\Models\ProgramUsers;
 use Modules\User\Models\RippleBudgetLog;
 use Modules\User\Models\UsersPoint;
 use Modules\Program\Models\UsersEcards;
-use Modules\Nomination\Models\UserRipples; 
+use Modules\Nomination\Models\UserRipples;
 use Modules\Nomination\Models\UserNomination;
 use Modules\User\Models\UserCampaignsBudget;
 use Modules\User\Models\UserCampaignsBudgetLogs;
@@ -34,10 +34,10 @@ class RippleSettingsController extends Controller
     {
         $this->repository = $repository;
     }
-    
+
     /**
      * API: Save Ripple setting as per the Admin input
-     * 
+     *
      */
 
     public function saveRippleSettings(Request $request)
@@ -60,8 +60,8 @@ class RippleSettingsController extends Controller
             $delimiter = '_';
 
             $slug = strtolower(trim(preg_replace('/[\s-]+/', $delimiter, preg_replace('/[^A-Za-z0-9-]+/', $delimiter, preg_replace('/[&]/', 'and', preg_replace('/[\']/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $page_slug))))), $delimiter));
-           
-    
+
+
             $campainData = $this->repository->getCampaignNameById($request->name, $campaign_id);
 
             if(count($campainData) > 0){
@@ -73,8 +73,8 @@ class RippleSettingsController extends Controller
 
             // $nameCheck = ValueSet::where('id', $campaign_id)->update(['name' => $request->name,'status' => $request->status, 'campaign_slug' => $slug ]);
             $nameCheck = ValueSet::where('id', $campaign_id)->update(['name' => $request->name,'status' => $request->status ]);
-            
-        
+
+
             // Check If campaign setting are there or not
             if (CampaignSettings::where('campaign_id', '=', $campaign_id)->count() > 0) {
                 // Update
@@ -86,7 +86,7 @@ class RippleSettingsController extends Controller
 
                  if ($validator->fails())
                         return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
-                
+
                  CampaignSettings::where('campaign_id', $campaign_id)->update([
 
                     'send_multiple_status' => $request->send_multiple_status,
@@ -110,7 +110,7 @@ class RippleSettingsController extends Controller
                     'budget_type' => $request->budget_type,
                     'points_allowed' => $request->points_allowed,
                 ]);
-           
+
             }
             return response()->json(['message' => 'Settings has been updated successfully.'], 200);
 
@@ -122,7 +122,7 @@ class RippleSettingsController extends Controller
 
     /**
      * API: Ecard Save Handler
-     * 
+     *
      */
 
     public function createEcardsRipple(Request $request) {
@@ -165,7 +165,7 @@ class RippleSettingsController extends Controller
 
     /**
      * API - Update : Ecard Save Handler
-     * 
+     *
     */
 
      public function updateEcardsRipple(Request $request) {
@@ -194,9 +194,9 @@ class RippleSettingsController extends Controller
             }else{
                 $imgName = $request->img_name;
             }
-            
+
             $ecardId = $request->id;
-            
+
             Ecards::where('id', $ecardId)->update([
                 'card_title' => $request->card_title,
                 'card_image' => $imgName,
@@ -212,7 +212,7 @@ class RippleSettingsController extends Controller
 
     /**
      * API - Get Ripple Settings
-     * 
+     *
     */
 
     public function getRippleSettings($id): Fractal
@@ -223,7 +223,7 @@ class RippleSettingsController extends Controller
 
     /**
      * API - Get Ripple Settings
-     * 
+     *
     */
 
     public function getRippleSettingsBySlug($slug): Fractal
@@ -238,7 +238,7 @@ class RippleSettingsController extends Controller
 
     /**
      * API - E-card Template Active/Inactive
-     * 
+     *
     */
 
 
@@ -260,7 +260,7 @@ class RippleSettingsController extends Controller
 
             ]);
 
-        
+
             return response()->json(['message' => 'Status has been changed successfully.'], 200);
         } catch (\Throwable $th) {
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
@@ -269,7 +269,7 @@ class RippleSettingsController extends Controller
 
     /**
      * API - E-card Template Delete  // Not in use
-     * 
+     *
     */
 
 
@@ -287,7 +287,7 @@ class RippleSettingsController extends Controller
             $ecardId = $request->id;
             $affectedRows = Ecards::where('id', '=', $ecardId)->delete();
 
-        
+
             return response()->json(['message' => 'Status has been changed successfully.'], 200);
         } catch (\Throwable $th) {
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
@@ -297,7 +297,7 @@ class RippleSettingsController extends Controller
 
     /**
      * API - Get Ripple Budget  // Not in use
-     * 
+     *
     */
 
 
@@ -317,13 +317,13 @@ class RippleSettingsController extends Controller
 
     /**
      * API - Front End : Send E-card
-     * 
+     *
     */
 
     public function sendEcardRipple(Request $request)
     {
 
-        
+
         $data = array();
 
         $rules = [
@@ -346,7 +346,7 @@ class RippleSettingsController extends Controller
         $setting_slug = $request->campaign_slug;
         $getCampaignData = $this->repository->getCampaignIDBySLug($setting_slug);
         $campaign_id = $getCampaignData->id;
-        
+
 
         // Get Campaign Setting Data by Campaign id
 
@@ -388,7 +388,7 @@ class RippleSettingsController extends Controller
             if($currentBud < ($inputPoint*$recevrCount)) {
                 return response()->json(['message'=>"Insufficient campaign budget", 'status'=>'error']);
             }
-        } else { 
+        } else {
 
             if($points_allowed == 1){
                 // for overall budget
@@ -402,13 +402,13 @@ class RippleSettingsController extends Controller
                 }
             }
         }
-       
+
         if(!empty($receiverIds)){
 
             foreach ($receiverIds as $key => $receiverid) {
 
                 $sendToUser = ProgramUsers::find($receiverid);
-                    
+
                 DB::beginTransaction();
 
                 try {
@@ -424,7 +424,7 @@ class RippleSettingsController extends Controller
                         $currentBud = $campaign_budget_bal;
                         $finalBud = $currentBud-$inputPoint;
                         // Update sender Budget
-                        
+
 
                          $updateSenderBudget = UserCampaignsBudget::where([
 
@@ -434,7 +434,7 @@ class RippleSettingsController extends Controller
                         ])->update(['budget' => $finalBud ]);
 
 
-                    
+
 
                     } // End Ripple Budget
 
@@ -465,21 +465,21 @@ class RippleSettingsController extends Controller
                         if($budget_type == 1){
 
                              // For Logs
-                        
+
                             $createRippleLog = UserCampaignsBudgetLogs::create([
                                 'program_user_id' => $request->sender_id,
                                 'campaign_id' => $campaign_id,
                                 'budget' => $inputPoint,
                                 'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
-                                'description' => "Budget dedcuted by e thank you",   
-                                'created_by_id' =>  $request->sender_id,     
+                                'description' => "Budget dedcuted by e thank you",
+                                'created_by_id' =>  $request->sender_id,
                             ]);
 
 
 
 
                         }
-                        
+
                         //update receiver budget
                         $currentBud = UsersPoint::select('balance')->where('user_id',$receiverid)->latest()->first();
                         $currentBud = $currentBud ? $currentBud->balance : 0;
@@ -497,8 +497,8 @@ class RippleSettingsController extends Controller
                     }
 
                     /********************* If Approval Required ***************************/
-                  
-                    if($approval_request == 1 && $points_allowed == 1){ 
+
+                    if($approval_request == 1 && $points_allowed == 1){
 
                         $groupData = $this->repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
 
@@ -534,10 +534,10 @@ class RippleSettingsController extends Controller
                             'point_type' => $budget_type
                             //'nomination_id' => $campaign_id,
                         ]);
-                        $user_nomin_inserted_id = $user_nomination_data->id; 
+                        $user_nomin_inserted_id = $user_nomination_data->id;
 
                     }
-                    
+
                     $EcardDataCreated = UsersEcards::create([
                         'ecard_id' => $request->ecard_id,
                         'sent_to' => $receiverid,
@@ -546,9 +546,9 @@ class RippleSettingsController extends Controller
                         'sent_by' => $request->sender_id,
                         'points' => $inputPoint,
                         'send_type' => $request->send_type,
-                        
+
                     ]);
-                    $ecard_lat_inserted_id = $EcardDataCreated->id; 
+                    $ecard_lat_inserted_id = $EcardDataCreated->id;
 
 
                     if(isset($user_nomin_inserted_id)){
@@ -556,7 +556,7 @@ class RippleSettingsController extends Controller
                             'id' => $user_nomin_inserted_id
                         ])->update(['ecard_id' => $ecard_lat_inserted_id ]);
                     }
-                     
+
 
                     /****** Card Module ******/
 
@@ -566,7 +566,7 @@ class RippleSettingsController extends Controller
                             'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
                         ];
 
-            
+
                         $eCardDetails = Ecards::find($request->ecard_id);
 
                         $path = public_path().'/uploaded/e_card_images/new';
@@ -585,7 +585,7 @@ class RippleSettingsController extends Controller
 
                         if($update === 1){
                             $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
-                
+
                             $image_mesaage = str_replace(" ","%20",$request->image_message);#bcs_send_in_url
                             $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
                             $conv = new \Anam\PhantomMagick\Converter();
@@ -617,14 +617,14 @@ class RippleSettingsController extends Controller
                         try {
 
                             Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                                $m->from('info@meritincentives.com','CCAD');    
+                                $m->from('info@meritincentives.com','CCAD');
                                 $m->to($data["email"])->subject($data["card_title"].' Ecard!');
                             });
 
 
                             DB::commit();
                         } catch (\Exception $e) {
-                           
+
                             DB::rollBack();
                             array_push($failed, $e->getMessage());
                         }
@@ -634,14 +634,14 @@ class RippleSettingsController extends Controller
 
 
                 } catch (\Exception $e) {
-                   
+
                     DB::rollBack();
                     array_push($failed, $e->getMessage());
                 }
             }  // end foreach
 
 
-           
+
             if(!empty($failed)) {
                 return response()->json(['message'=>'E-Card/Ripple Effect points has not been sent to '.implode(", ",$failed).'. Please try again later.', 'status'=>'success']);
             } else {
@@ -657,7 +657,7 @@ class RippleSettingsController extends Controller
 
     /**
      * API: Save Eligible users settings as per the Admin input
-     * 
+     *
      */
 
 
@@ -677,8 +677,8 @@ class RippleSettingsController extends Controller
             if ($validator->fails())
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
-        
-        
+
+
             // Check If campaign setting are there or not
             if (CampaignSettings::where('campaign_id', '=', $campaign_id)->count() > 0) {
 
@@ -697,22 +697,22 @@ class RippleSettingsController extends Controller
                 // SENDER
 
                 if($request->type == 1){
-                   
+
                     $updated_arr['s_eligible_user_option'] = $request->s_eligible_user_option;
                     $updated_arr['s_level_option_selected'] = $request->s_level_option_selected;
                     $updated_arr['s_user_ids'] = $request->s_user_ids;
                     $updated_arr['s_group_ids'] = $request->s_group_ids;
-                    
-                }
-                
-                if($request->type == 2){
-                   
-                    $updated_arr['receiver_users'] = $request->receiver_users;
-                    $updated_arr['receiver_group_ids'] = $request->receiver_group_ids;
-                
 
                 }
-               
+
+                if($request->type == 2){
+
+                    $updated_arr['receiver_users'] = $request->receiver_users;
+                    $updated_arr['receiver_group_ids'] = $request->receiver_group_ids;
+
+
+                }
+
                 CampaignSettings::where('campaign_id', $campaign_id)->update($updated_arr);
             }
 
