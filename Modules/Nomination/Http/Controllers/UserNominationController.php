@@ -839,7 +839,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     /****** Start Send ecrad ***********/
 
                     $image_url = [
-                                'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
+                                'banner_img_url' => env('APP_API_URL')."/img/emailBanner.jpg",
                             ];
 
                     $eCardDetails =  UsersEcards::select('users_ecards.new_image','users_ecards.image_path','users_ecards.image_message','ecards.card_title','ecards.card_image')
@@ -856,7 +856,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         'username' => $program_user_receiver->first_name.' '. $program_user_receiver->last_name,
                         'card_title' => $eCardDetails->card_title,
                         'sendername' => $program_user_sender->first_name.' '. $program_user_sender->last_name,
-                        'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
+                        'image' => env('APP_API_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
                         'image_message' => $eCardDetails->image_message,
                         'color_code' => "#e6141a",
                         'link_to_ecard' => $new_img_path
@@ -1159,10 +1159,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 /****** Start Send ecrad ***********/
 
                 $image_url = [
-                                'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-                                'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-                                'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-                                'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
+                                'blue_logo_img_url' => env('APP_API_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
+                                'smile_img_url' => env('APP_API_URL')."/img/".env('SMILE_IMG_URL'),
+                                'blue_curve_img_url' => env('APP_API_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
+                                'white_logo_img_url' => env('APP_API_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
                             ];
 
                $eCardDetails =  UsersEcards::select('users_ecards.image_message','ecards.card_title','ecards.card_image')
@@ -1176,7 +1176,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     'username' => $program_user_receiver->first_name.' '. $program_user_receiver->last_name,
                     'card_title' => $eCardDetails->card_title,
                     'sendername' => $program_user_sender->first_name.' '. $program_user_sender->last_name,
-                    'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
+                    'image' => env('APP_API_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
                     'image_message' => $eCardDetails->image_message,
                     'color_code' => "#e6141a",
                 ];
@@ -1726,7 +1726,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $message .="Your nomination  for the " . $user_nomination->project_name . " project has been successfully approved! As a result, " . $user_nomination->nominated_account->name . " has been successfully awarded with " . $user_nomination->value  . " to their Kafu account.";
 
-                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='".env('APP_URL')."/wall-of-fame'>here</a>.";
+                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='".env('APP_API_URL')."/wall-of-fame'>here</a>.";
 
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1740,7 +1740,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $message = "Dear " . $user_nomination->nominated_account->name ;
                 $message .="\n\r <br> Congratulations! \n\r <br> Your diligence and dedication towards the " . $user_nomination->project_name . " project, have played a tremendous role towards its success!";
                 $message .= "\n\r <br> As a sign of gratitude, you have been awarded with " . $user_nomination->value  . " to your Kafu account.";
-                $message .= "\n\r <br>  *Click <a href='".env('APP_URL')."/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='".env('APP_URL')."/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
+                $message .= "\n\r <br>  *Click <a href='".env('APP_API_URL')."/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='".env('APP_API_URL')."/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
                 $message .=" ";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1778,8 +1778,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='".env('APP_URL')."/wall-of-fame'>here</a>.";
-                //$message .="To view this award on the Kafu wall of fame, please <a href='".env('APP_URL')."/wall-of-fame'>Click here</a>.";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='".env('APP_API_URL')."/wall-of-fame'>here</a>.";
+                //$message .="To view this award on the Kafu wall of fame, please <a href='".env('APP_API_URL')."/wall-of-fame'>Click here</a>.";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
 
