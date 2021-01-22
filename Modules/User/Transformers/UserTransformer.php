@@ -31,8 +31,8 @@ class UserTransformer extends TransformerAbstract
         ->join('user_roles', 'user_roles.id', '=', 'users_group_list.user_role_id')
         ->where(['users_group_list.account_id' => $User->account_id])
         ->get();
-        
-        
+
+
         return [
             'id' => $User->id,
             'name' => $username,
@@ -67,6 +67,7 @@ class UserTransformer extends TransformerAbstract
             'vp_emp_number' => $User->vp_emp_number,
             'program_id' => $program_user_id->id,
             'last_login' => $last_login,
+            'country_id' => $User->country_id,
         ];
     }
 }
