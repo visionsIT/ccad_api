@@ -17,7 +17,7 @@ class Kernel extends HttpKernel
         Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         Middleware\TrustProxies::class,
-        //\Barryvdh\Cors\HandleCors::class,
+        \Barryvdh\Cors\HandleCors::class,
         Middleware\CheckKafuBackendAuthToken::class,
     ];
 
