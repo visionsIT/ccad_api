@@ -162,7 +162,7 @@ class Account extends Authenticatable
                         }else{
                             $finalArray[$campaign->name] = '0';
                         }
-                        
+
                     }else if($camSett->s_eligible_user_option == '2'){
                         #multiplt_user_groups
                         $usereligibility = 0;
@@ -179,7 +179,7 @@ class Account extends Authenticatable
                             #check_group_ids
                             $get_group_ids = $camSett->s_group_ids;
                             $groupIds = explode(',',$get_group_ids);
-                            
+
                             foreach($groupIds as $grpID){
                                 $check_grps = DB::table('users_group_list')->distinct('user_group_id')->select('user_group_id')->where(['account_id'=>$id,'user_role_id'=>$max_role_id,'user_group_id'=>$grpID])->get()->toArray();
 
@@ -187,27 +187,27 @@ class Account extends Authenticatable
                                     $usereligibility = '1';
                                 }
                             }
-                           
+
                         }
                         $finalArray[$campaign->name] = $usereligibility;
 
                     }else{
                         $finalArray[$campaign->name] = '0';
                     }
-                    
+
                 }#endif_camsett
 
-                
+
             }#foreach_ends
             $all_campaign[] = $finalArray;
-            
+
         }
 
 
-        
+
 
         return $all_campaign;
-        
-        
+
+
     }/**fn ends****/
 }
