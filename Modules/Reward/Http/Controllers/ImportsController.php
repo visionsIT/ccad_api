@@ -176,8 +176,8 @@ class ImportsController extends Controller
             $users = $users[0]->toArray();
 
             $rules = [
-                '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
-                '*.username' => "required|unique:program_users,username",
+                // '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
+                // '*.username' => "required|unique:program_users,username",
                 '*.communication_preference' => "in:email,sms",
                 '*.group_name' => 'required|exists:roles,name',
                 '*.role_name' => 'required|exists:user_roles,name',
@@ -189,77 +189,81 @@ class ImportsController extends Controller
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
             foreach ($users as $user){
-                $password = Str::random(8);
-                $account = Account::create([
-                    'email' => $user['email'],
-                    'name' => $user['first_name'] . ' ' . $user['last_name'],
-                    'password' => $user['password'] ?? $password,
-                    'contact_number' => $user['mobile'] ?? '',
-                    'def_dept_id' => null,
-                    'type' => 'user'
-                ]);
+                $accountExist = Account::where('email', $user['email'])->first();
 
-                $email = $user['email'];
-                $name = $user['first_name'] . ' ' . $user['last_name'];
+                if(empty($accountExist)){
+                    $password = Str::random(8);
+                    $account = Account::create([
+                        'email' => $user['email'],
+                        'name' => $user['first_name'] . ' ' . $user['last_name'],
+                        'password' => $user['password'] ?? $password,
+                        'contact_number' => $user['mobile'] ?? '',
+                        'def_dept_id' => null,
+                        'type' => 'user'
+                    ]);
 
-                $this->sendPasswordCodeToAccount($email,$name,$password);
+                    $email = $user['email'];
+                    $name = $user['first_name'] . ' ' . $user['last_name'];
 
-                $time = strtotime( $user['date_of_birth'] );
+                    //$this->sendPasswordCodeToAccount($email,$name,$password);
 
-                $newformat = date('Y-m-d',$time);
+                    $time = strtotime( $user['date_of_birth'] );
 
-                $programUser = ProgramUsers::create([
-                    'first_name'                => $user['first_name'] ?? '',
-                    'last_name'                 => $user['last_name'] ?? '',
-                    'email'                     => $user['email'],
-                    'username'                  => $user['username'],
-                    'title'                     => $user['title'] ?? '',
-                    'company'                   => $user['company'] ?? '',
-                    'job_title'                 => $user['job_title'] ?? '',
-                    'address_1'                 => $user['address_1'] ?? '',
-                    'address_2'                 => $user['address_2'] ?? '',
-                    'postcode'                  => $user['postcode'] ?? '',
-                    'country'                   => $user['country'] ?? '',
-                    'telephone'                 => $user['telephone'] ?? '',
-                    'mobile'                    => $user['mobile'] ?? '',
-                    'date_of_birth'             => $newformat   ,
-                    'communication_preference'  => $user['communication_preference'] ?? 'email',
-                    'language'                  => 'en',
-                    'town'                      =>  '',
-                    'account_id'                => $account->id,
-                    'program_id'                => $request->program_id,
-                    'emp_number'                => $user['emp_number'] ?? '',
-                    'vp_emp_number'             => $user['vp_emp_number'] ?? '',
-                ]);
+                    $newformat = date('Y-m-d',$time);
 
-                if($request->emp_type == 'lead'){
-                    $programUser->vp_emp_number = $programUser->id;
-                    $programUser->save();
-                }
+                    $programUser = ProgramUsers::create([
+                        'first_name'                => $user['first_name'] ?? '',
+                        'last_name'                 => $user['last_name'] ?? '',
+                        'email'                     => $user['email'],
+                        'username'                  => $user['username'],
+                        'title'                     => $user['title'] ?? '',
+                        'company'                   => $user['company'] ?? '',
+                        'job_title'                 => $user['job_title'] ?? '',
+                        'address_1'                 => $user['address_1'] ?? '',
+                        'address_2'                 => $user['address_2'] ?? '',
+                        'postcode'                  => $user['postcode'] ?? '',
+                        'country'                   => $user['country'] ?? '',
+                        'telephone'                 => $user['telephone'] ?? '',
+                        'mobile'                    => $user['mobile'] ?? '',
+                        'date_of_birth'             => $newformat   ,
+                        'communication_preference'  => $user['communication_preference'] ?? 'email',
+                        'language'                  => 'en',
+                        'town'                      =>  '',
+                        'account_id'                => $account->id,
+                        'program_id'                => $request->program_id,
+                        // 'emp_number'                => $user['emp_number'] ?? '',
+                        // 'vp_emp_number'             => $user['vp_emp_number'] ?? '',
+                    ]);
 
-                #get_group_id
-                $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
-                $groupId = $group_id->id;
+                    if($request->emp_type == 'lead'){
+                        $programUser->vp_emp_number = $programUser->id;
+                        $programUser->save();
+                    }
 
-                #get_role_id
-                $role_id = UserRoles::select('id')->where('name', 'like', '%' . $user['role_name'] . '%')->first();
-                $roleId = $role_id->id;
+                    #get_group_id
+                    $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
+                    $groupId = $group_id->id;
 
-                if ($groupId) {
-                    $account->assignRole(Role::findById($groupId));
-                }
+                    #get_role_id
+                    $role_id = UserRoles::select('id')->where('name', 'like', '%' . $user['role_name'] . '%')->first();
+                    $roleId = $role_id->id;
 
-                $date = date('Y-m-d h:i:s');
+                    if ($groupId) {
+                        $account->assignRole(Role::findById($groupId));
+                    }
 
-                $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->first();
-                if(empty($check_data)){
-                    $UsersGroupList = new UsersGroupList;
-                    $UsersGroupList->account_id = $account->id;
-                    $UsersGroupList->user_group_id = $groupId;
-                    $UsersGroupList->user_role_id = $roleId;
-                    $UsersGroupList->created_at = $date;
-                    $UsersGroupList->updated_at = $date;
-                    $UsersGroupList->save();
+                    $date = date('Y-m-d h:i:s');
+
+                    $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->first();
+                    if(empty($check_data)){
+                        $UsersGroupList = new UsersGroupList;
+                        $UsersGroupList->account_id = $account->id;
+                        $UsersGroupList->user_group_id = $groupId;
+                        $UsersGroupList->user_role_id = $roleId;
+                        $UsersGroupList->created_at = $date;
+                        $UsersGroupList->updated_at = $date;
+                        $UsersGroupList->save();
+                    }
                 }
             }
 
@@ -275,7 +279,7 @@ class ImportsController extends Controller
                 'error_file' => $th->getFile()
             ]);
         }
-        
+
     }/******import user ends*****/
 
     public function sendPasswordCodeToAccount($email,$name,$password)
@@ -305,7 +309,7 @@ class ImportsController extends Controller
                 'error_file' => $th->getFile()
             ]);
         }
-        
+
     }
 
     /*******************
@@ -314,7 +318,7 @@ class ImportsController extends Controller
     public function importOrderApi(Request $request){
         try {
             $file = $request->file('order_file');
- 
+
             $request->validate([
                 'order_file' => 'required|file',
             ]);
