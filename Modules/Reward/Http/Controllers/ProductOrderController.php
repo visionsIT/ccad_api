@@ -3,6 +3,9 @@
 use Illuminate\Http\Request;
 use Modules\Reward\Http\Services\ProductOrderService;
 use Modules\Reward\Transformers\ProductTransformer;
+use Modules\Reward\Models\Product;
+use Modules\Reward\Models\ProductOrder;
+use Modules\Reward\Models\ProductDenomination;
 use Modules\User\Http\Services\PointService;
 use Modules\User\Models\ProgramUsers;
 use Spatie\Fractal\Fractal;
@@ -78,9 +81,36 @@ class ProductOrderController extends Controller
      *
      * @return Fractal
      */
-    public function store(ProductOrderRequest $request): Fractal
+    public function store(Request $request)
     {
+        $get_points = ProductDenomination::select('points')->where('id',$request->value)->first();
+
+        $request['value'] = $get_points->points;
+        $request['denomination_id'] = $request->value;
+
+        $rules = [
+            'value'      => 'required|numeric',
+            'account_id' => 'required|exists:accounts,id',
+            'product_id' => 'required|exists:products,id',
+            'first_name' => 'required',
+            'last_name'  => 'required',
+            'email'      => 'required|email',
+            'phone'      => 'required',
+            'address'    => 'required',
+            'city'       => 'required',
+            'country'    => 'required',
+            'is_gift'    => 'required|bool',
+            'quantity'   => 'required',
+            'denomination_id'   => 'required|exists:product_denominations,id',
+        ];
+        $validator = \Validator::make($request->all(), $rules);
+
+        if ($validator->fails())
+            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
         $user = ProgramUsers::where('account_id', $request->account_id)->first();
+        
+        $request['value'] = $get_points->points * $request->quantity;
 
         $Category = $this->repository->create($request->all());
 

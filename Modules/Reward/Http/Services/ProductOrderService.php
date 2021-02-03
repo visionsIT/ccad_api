@@ -8,6 +8,9 @@ use Modules\Reward\Mails\OrderPlaced;
 use Modules\Reward\Repositories\ProductOrderRepository;
 use Modules\User\Models\UsersPoint;
 use Modules\User\Models\ProgramUsers;
+use Modules\Reward\Models\ProductOrder;
+use Modules\Reward\Models\ProductDenomination;
+use DB;
 
 /**
  * Class CatalogueService
@@ -35,7 +38,12 @@ class ProductOrderService
      */
     public function confirmOrder($id): bool
     {
-        $order = $this->repository->find($id);
+        //$order = $this->repository->find($id);
+        $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
+
+        $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
+        $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 1) {
             return FALSE;
@@ -56,9 +64,11 @@ class ProductOrderService
             'city'       => $order->city,
             'country'    => $order->country,
             'product_name'     => $order->product->name,
-            'value'    => $order->value,
+            'value'    => $value,
+            'quantity' => $order->quantity,
         ];
         Mail::send('emails.orderConfirmation', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+            $m->from('info@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Confirmation!');
         });
 
@@ -72,7 +82,12 @@ class ProductOrderService
      */
     public function shipOrder($id): bool
     {
-        $order = $this->repository->find($id);
+        //$order = $this->repository->find($id);
+        $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
+
+        $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
+        $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 2) {
             return FALSE;
@@ -92,9 +107,11 @@ class ProductOrderService
             'city'       => $order->city,
             'country'    => $order->country,
             'product_name'     => $order->product->name,
-            'value'    => $order->value,
+            'value'    => $value,
+            'quantity' => $order->quantity,
         ];
         Mail::send('emails.orderShipped', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+            $m->from('info@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Shipment!');
         });
 
@@ -110,7 +127,13 @@ class ProductOrderService
      */
     public function cancelOrder($id): bool
     {
-        $order = $this->repository->find($id);
+        //$order = $this->repository->find($id);
+        $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
+
+        $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
+        $value = $currency->code.' '.$actual_val->value;
+
         if ($order->status === 3 || $order->status === -1) {
             return FALSE;
         }
@@ -141,10 +164,12 @@ class ProductOrderService
             'email' => $order->email,
             'username' => $order->first_name.' '. $order->last_name,
             'product_name'     => $order->product->name,
-            'value'    => $order->value,
+            'value'    => $value,
+            'quantity' => $order->quantity,
         ];
 
         Mail::send('emails.orderCancellation', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+            $m->from('info@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Cancellation!');
         });
 
@@ -192,7 +217,12 @@ class ProductOrderService
     }
 
     public function placeOrder($id) {
-        $order = $this->repository->find($id);
+        //$order = $this->repository->find($id);
+        $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
+
+        $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
+        $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 1) {
             return FALSE;
@@ -213,9 +243,11 @@ class ProductOrderService
             'city'       => $order->city,
             'country'    => $order->country,
             'product_name'     => $order->product->name,
-            'value'    => $order->value,
+            'value'    => $value,
+            'quantity' => $order->quantity,
         ];
         Mail::send('emails.orderPlaced', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+            $m->from('info@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Placed!');
         });
 

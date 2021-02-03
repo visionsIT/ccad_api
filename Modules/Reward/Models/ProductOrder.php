@@ -9,7 +9,7 @@ use Modules\User\Models\ProgramUsers;
 
 class ProductOrder extends Model
 {
-    protected $fillable = ['value','status','product_id','account_id' , 'first_name' , 'last_name' , 'email' , 'phone' , 'address' , 'city' , 'country' , 'is_gift' , 'comment'];
+    protected $fillable = ['value','status','product_id','account_id' , 'first_name' , 'last_name' , 'email' , 'phone' , 'address' , 'city' , 'country' , 'is_gift' , 'comment','quantity','denomination_id'];
 
 
     /**
