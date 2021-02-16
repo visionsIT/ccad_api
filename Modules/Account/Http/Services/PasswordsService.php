@@ -30,14 +30,14 @@ class PasswordsService
      *
      * @throws \Exception
      */
-    public function resetPassword($email): void
+    public function resetPassword($email,$status): void
     {
         $account = $this->account_repository->findAccountByEmail($email);
         // $password = Str::random(8);
         // $account->password = $password;
         // $account->update();
         // $this->token_service->sendResetPasswordCodeToAccount($account,$password);
-        $this->token_service->sendResetPasswordLink($account);
+        $this->token_service->sendResetPasswordLink($account,$status);
     }
 
     /**

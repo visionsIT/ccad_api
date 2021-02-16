@@ -12,15 +12,17 @@ class ProgramUsersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => 'required',
-            'last_name' => 'required',
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
             'email' => 'required|email|unique:program_users,email|unique:accounts,email',
-            'username' => 'required|unique:program_users,username|unique:accounts,email',
+            'username' => 'required|string|unique:program_users,username|unique:accounts,email',
             'group_id' => 'required|exists:roles,id',
             'role_id' => 'required|exists:user_roles,id',
             'password' => 'required',
             'language' => 'required',
             'company' => 'required',
+            //'vp_emp_number' => 'required|exists:accounts,id',
+
         ];
     }
 

@@ -42,7 +42,7 @@ class SendMail extends Mailable
         $this->view('emails.test')
             ->to($this->email)
             ->subject($this->subject)
-            ->from(config('sendgrid.emails.no-reply-email'))
+            ->from('customerexperience@meritincentives.com','Merit Incentives')
             ->with([ 'mes' => $this->message, 'image_url' => $image_url ]);
             // ->sendgrid([
             //     'template_id' => config('sendgrid.templates._reset_password_code'),

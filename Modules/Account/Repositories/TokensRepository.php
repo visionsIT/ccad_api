@@ -19,7 +19,13 @@ class TokensRepository
      */
     public function create($data)
     {
-        return DB::table('tokens')->insert($data + [ 'created_at' => Carbon::now() ]);
+        $check_existing_token = DB::table('tokens')->where($data)->first();
+        if(!empty($check_existing_token)){
+            return DB::table('tokens')->where($data)->update([ 'created_at' => Carbon::now() ]);
+        }else{
+            return DB::table('tokens')->insert($data + [ 'created_at' => Carbon::now() ]);
+        }
+        
     }
 
     /**

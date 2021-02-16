@@ -177,7 +177,7 @@ class NominationService
 
         if($search === NULL) {
 
-            return UserNomination::where(function($q){
+            return UserNomination::select('user_nominations.*')->where(function($q){
                     $q->where(function($query){
                         $query->where('user_nominations.level_1_approval', '1')
                         ->where('user_nominations.level_2_approval', '2');
@@ -195,14 +195,14 @@ class NominationService
                         ->where('user_nominations.level_2_approval', '1');
                     });
                 })
-                ->join('value_sets', 'user_nominations.campaign_id', '=', 'value_sets.id')
-                ->join('campaign_settings', 'user_nominations.campaign_id', '=', 'campaign_settings.campaign_id')
+                ->leftJoin('value_sets', 'user_nominations.campaign_id', '=', 'value_sets.id')
+                ->leftJoin('campaign_settings', 'user_nominations.campaign_id', '=', 'campaign_settings.campaign_id')
                 ->where('value_sets.status','1')
                 ->where('campaign_settings.wall_settings','1')
-                ->orderByDesc('user_nominations.id')->paginate(10);
+                ->orderByDesc('user_nominations.created_at')->paginate(10);
         }else{
 
-            return UserNomination::select('user_nominations.*','value_sets.*','campaign_settings.*')->where(function($q){
+            return UserNomination::select('user_nominations.*')->where(function($q){
                     $q->where(function($query){
                         $query->where('user_nominations.level_1_approval', '1')
                         ->where('user_nominations.level_2_approval', '2');
@@ -227,10 +227,10 @@ class NominationService
                 ->where('campaign_settings.wall_settings','1')
                 ->where('program_users.first_name', 'LIKE', "%{$search}%")
                 ->orWhere('program_users.last_name', 'LIKE', "%{$search}%")
-                ->orderByDesc('user_nominations.id')->paginate(10);
+                ->orderByDesc('user_nominations.created_at')->paginate(10);
 
         }
-        
+
     }
 
     public function getCampaignEcards($search = NULL){
@@ -271,7 +271,7 @@ class NominationService
             }
             return $data;
 
-            
+
         }else{
 
             $data = UsersEcards::select("users_ecards.id as cardid", "users_ecards.ecard_id","users_ecards.campaign_id","users_ecards.image_message","users_ecards.sent_to","users_ecards.sent_by","users_ecards.points","users_ecards.send_type","users_ecards.new_image","users_ecards.image_path","users_ecards.created_at as card_create" )->join('value_sets', 'users_ecards.campaign_id', '=', 'value_sets.id')
@@ -284,7 +284,7 @@ class NominationService
                 ->orWhere('users_ecards.campaign_id', '=', $search)
                 ->orderByDesc('users_ecards.created_at')
                 ->paginate(10);
-                
+
             foreach($data as $key => $value){
                 $user_ecard_id = $value->ecard_id;
                 $get_nomination = UserNomination::where(function($q){
@@ -330,7 +330,7 @@ class NominationService
             ->where('value_sets.status','1')
             ->where('campaign_settings.wall_settings','1')
             ->where('user_nominations.level_1_approval', 1)->orderByDesc('user_nominations.id')->paginate(10);
-            
+
             //return $nomination->user_nomination()->where('user_nominations.level_1_approval', 1)->orderByDesc('user_nominations.id')->paginate(10);
         } else {
             return $nomination
@@ -442,9 +442,9 @@ class NominationService
     public function sendmail($email,$subject,$message): void
     {
         $token = $this->generateVerificationToken();
-        
+
             Mail::send(new \Modules\Nomination\Mails\SendMail($email,$token,$message,$subject));
-       
-    }   
+
+    }
 
 }

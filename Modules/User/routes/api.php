@@ -1,4 +1,4 @@
-<?php
+<?php 
 Route::get('user/user_percentage', 'UserController@feedPieChart');
 Route::get('users/{user_id}', 'UserController@show');
 Route::resource('program/{program}/users', 'UserController');
@@ -64,3 +64,10 @@ Route::get('get_group_leads/{group_id?}', 'UserController@getGroupLeadUsers');
 ##########Upload profile pic of user############
 Route::post('/upload_profile_pic','UserController@uploadUserProfilePic');
 Route::get('/get_profile_pic/{account_id}','UserController@getUserProfilePic');
+/******block/unblock user*****/
+Route::get('user_unblock/{b_status}/{user_id}','UserController@userBlockUnblock');
+
+####Admin_Lisitng########
+Route::get('user_listing/{admin}','UserController@getUserListing');
+######Count Blocked, last_login#################
+Route::get('count_users','UserController@countUsersBlockedAndLogin'); 

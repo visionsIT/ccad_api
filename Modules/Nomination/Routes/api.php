@@ -40,7 +40,6 @@ Route::get('getNominationData/{id}', 'UserNominationController@getNominationData
 Route::get('icons', 'NominationController@NominationValuesIcons');
 Route::get('icons2', 'NominationController@NominationValuesIcons2');
 
-
 Route::put('update/level/one/{userNominationId}', 'UserNominationController@updateLevelOne');
 Route::put('update/level/two/{userNominationId}', 'UserNominationController@updateLevelTwo');
 Route::put('update/points/{userNominationId}', 'UserNominationController@updatePoints');
@@ -48,12 +47,10 @@ Route::put('update/points/{userNominationId}', 'UserNominationController@updateP
 Route::get('testMail', 'UserNominationController@testMail');
 Route::get('approvers/{id}', 'UserNominationController@list_first_approvers');
 
-
 Route::get('nominations/{nomination_id}/users', 'NominationController@users');
 
 Route::get('nomination/report', 'UserNominationController@report');
 Route::get('nomination/getAllReport', 'UserNominationController@reportToGetAllNominationDetails');
-
 
 Route::post('team_nominations/create', 'UserNominationController@teamNomination');
 Route::get('team_nominations/pending-approvals/{id}', 'UserNominationController@pendingApprovals');
@@ -94,3 +91,5 @@ Route::post('save_wall_settings', 'NominationController@saveWallSettings');
 Route::get('get_wall_settings/{campaign_id}', 'NominationController@getWallSettings');
 Route::post('user/campaign_report', 'UserNominationController@getCampaignReport');
 Route::post('user/campaign_report_specific', 'UserNominationController@getCampaignReport_count');
+
+Route::post('import_user_nominations','UserNominationController@importUserNominations');

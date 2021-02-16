@@ -25,6 +25,13 @@ class AccountTransformer extends TransformerAbstract
         Account::where('id',$account->id)->update(['last_login'=>$dubai_time]);
         
         $userCountry = ProgramUsers::select('country','country_id')->where('account_id',$account->id)->get()->toArray();
+
+        if($account->last_login != null || $account->last_login != ''){
+            $last_login = date('M d, Y g:i a', strtotime($account->last_login));
+        }else{
+            $last_login = null;
+        }
+
         return [
             'id'              => $account->id,
             'name'            => ucfirst($account->user->first_name).' '.ucfirst($account->user->last_name),
@@ -33,7 +40,7 @@ class AccountTransformer extends TransformerAbstract
             'user_id'         => optional($account->user)->id,
             'title'           => optional($account->user)->title,
             'program_id'      => $account->client_admins->client->programs->id ?? $account->user->program_id, //TODO WTF REALLY
-            'last_login'      => $account->last_login,
+            'last_login'      => $last_login,
             'job_title'       => optional($account->user)->job_title,
             'login_ip'        => $account->login_ip,
             'contact_number'  => $account->contact_number,

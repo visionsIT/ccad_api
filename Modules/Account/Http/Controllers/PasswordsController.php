@@ -1,12 +1,14 @@
 <?php namespace Modules\Account\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Modules\Account\Http\Requests\ChangeOldPasswordRequest;
 use Modules\Account\Http\Requests\CreatePasswordRequest;
 use Modules\Account\Http\Requests\ResetPasswordRequest;
 use Modules\Account\Http\Services\PasswordsService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Response;
+use Illuminate\Http\Request;
+use Modules\Account\Http\Repositories\AccountRepository;
+use Modules\User\Models\UsersGroupList;
 
 /**
  * Class PasswordController
@@ -22,9 +24,10 @@ class PasswordsController extends Controller
      *
      * @param PasswordsService $password_service
      */
-    public function __construct(PasswordsService $password_service)
+    public function __construct(PasswordsService $password_service,AccountRepository $account_repository)
     {
         $this->password_service = $password_service;
+        $this->account_repository = $account_repository;
     }
 
     /**
@@ -33,9 +36,31 @@ class PasswordsController extends Controller
      * @return Response
      * @throws \Exception
      */
-    public function resetPassword(ResetPasswordRequest $request): Response
+    public function resetPassword(ResetPasswordRequest $request,$status = null): Response
     {
-        $this->password_service->resetPassword($request->email);
+
+        $account = $this->account_repository->findAccountByEmail($request->email);
+
+        if($account->login_attempts >= 3){
+            return response(['message'=>'Sorry, your account is blocked. Please contact your program manager.','status'=>'error']);
+        }
+
+        if($status == 0){ //admin
+            $check_admin = UsersGroupList::where('account_id',$account->id)->where('user_role_id',4)->first();
+
+            if(empty($check_admin)){
+                return response(['message'=>'This is not an admin user.','status'=>'error']);
+            }
+        }else{
+            //users
+            $check_admin = UsersGroupList::where('account_id',$account->id)->where('user_role_id','!=',4)->first();
+
+            if(empty($check_admin)){
+                return response(['message'=>'This is not a Frontend user.','status'=>'error']);
+            }
+        }
+
+        $this->password_service->resetPassword($request->email,$status);
 
         return response([ 'message' => 'The token has been sent to your mail successfully' ]);
     }
@@ -81,4 +106,5 @@ class PasswordsController extends Controller
 
         return response([ 'message' => __('The password has changed successfully') ]);
     }
+
 }

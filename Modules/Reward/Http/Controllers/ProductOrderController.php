@@ -3,6 +3,9 @@
 use Illuminate\Http\Request;
 use Modules\Reward\Http\Services\ProductOrderService;
 use Modules\Reward\Transformers\ProductTransformer;
+use Modules\Reward\Models\Product;
+use Modules\Reward\Models\ProductOrder;
+use Modules\Reward\Models\ProductDenomination;
 use Modules\User\Http\Services\PointService;
 use Modules\User\Models\ProgramUsers;
 use Spatie\Fractal\Fractal;
@@ -11,6 +14,7 @@ use Illuminate\Routing\Controller;
 use Modules\Reward\Http\Requests\ProductOrderRequest;
 use Modules\Reward\Transformers\ProductOrderTransformer;
 use Modules\Reward\Repositories\ProductOrderRepository;
+use Modules\User\Models\UsersGroupList;
 
 class ProductOrderController extends Controller
 {
@@ -28,7 +32,7 @@ class ProductOrderController extends Controller
      */
     public function index(): Fractal
     {
-        $Categorys = $this->repository->paginate(12);
+        $Categorys = $this->repository->getOrders();
 
         return fractal($Categorys, new ProductOrderTransformer);
     }
@@ -78,9 +82,36 @@ class ProductOrderController extends Controller
      *
      * @return Fractal
      */
-    public function store(ProductOrderRequest $request): Fractal
+    public function store(Request $request)
     {
+        $get_points = ProductDenomination::select('points')->where('id',$request->value)->first();
+
+        $request['value'] = $get_points->points;
+        $request['denomination_id'] = $request->value;
+
+        $rules = [
+            'value'      => 'required|numeric',
+            'account_id' => 'required|exists:accounts,id',
+            'product_id' => 'required|exists:products,id',
+            'first_name' => 'required',
+            'last_name'  => 'required',
+            'email'      => 'required|email',
+            'phone'      => 'required',
+            'address'    => 'required',
+            'city'       => 'required',
+            'country'    => 'required',
+            'is_gift'    => 'required|bool',
+            'quantity'   => 'required',
+            'denomination_id'   => 'required|exists:product_denominations,id',
+        ];
+        $validator = \Validator::make($request->all(), $rules);
+
+        if ($validator->fails())
+            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
         $user = ProgramUsers::where('account_id', $request->account_id)->first();
+
+        $request['value'] = $get_points->points * $request->quantity;
 
         $Category = $this->repository->create($request->all());
 
@@ -182,5 +213,35 @@ class ProductOrderController extends Controller
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()]);
         }
     }
+
+    /****************************
+    fn to delete all test orders
+    *****************************/
+    public function deleteTestOrders(Request $request){
+
+        $rules = [
+            'group_id' => 'required|exists:roles,id',
+        ];
+        $validator = \Validator::make($request->all(), $rules);
+
+        if ($validator->fails())
+            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+        $get_group_users = UsersGroupList::select('account_id')->where(['user_group_id'=>$request->group_id])->get();
+
+        if(!empty($get_group_users)){
+            $count_deleted = 0;
+            foreach($get_group_users as $key=>$value){
+                $delete = ProductOrder::where('account_id', $value->account_id)->delete();
+                if($delete){
+                    $count_deleted++;
+                }
+            }
+            return response()->json(['message'=>'Orders of this group users has been deleted','deleted_orders'=>$count_deleted]);
+        }else{
+            return response()->json(['message' => 'No user found in this group']);
+        }
+
+    }/******fn ends******/
 
 }

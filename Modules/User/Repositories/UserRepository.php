@@ -123,9 +123,7 @@ class UserRepository extends Repository
 
             $feedback_create = UsersFeedback::create([
                 'user_id' => $data['user_id']?$data['user_id']:null,
-                'name' => $data['name']?$data['name']:null,
                 'email' => $data['email'],
-                'phone' => $data['phone']?$data['phone']:null,
                 'feedback' => $data['feedback']
             ]);
             return response()->json(['status' => true, 'message' => 'Your order has been placed successfully and will be shipped soon.' ]);

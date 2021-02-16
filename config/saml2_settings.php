@@ -43,7 +43,6 @@ return $settings = array(
     /**
      * Where to redirect after logout
      */
-    //'logoutRoute' => 'https://ccad.takreem.ae/login',
     'logoutRoute' => '/',
 
     /**

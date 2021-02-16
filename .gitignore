@@ -12,7 +12,7 @@ npm-debug.log
 yarn-error.log
 .idea
 composer.lock
-#public/img/*
+public/img/*
 public/nomination_reports/*
 public/uploaded/*
 public/uploaded/instant_reward/*

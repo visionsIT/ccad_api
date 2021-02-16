@@ -26,32 +26,40 @@ class UserService
 
         if(!empty($param)){
             $search = $param['search'];
-            $userdata = UsersGroupList::with(['account']);
-            if($search != ''){
-                $userdata = $userdata->whereHas('account',function($q) use ($search){
-                        $q->where( function ($q) use ($search) {
-                        $q->where('name', 'like', '%' . $search . '%')
-                        ->orWhere('email', 'like', '%' . $search . '%');
-                        });
-                    });
-            }
+            // $userdata = UsersGroupList::with(['account']);
+            // if($search != ''){
+            //     $userdata = $userdata->whereHas('account',function($q) use ($search){
+            //             $q->where( function ($q) use ($search) {
+            //             $q->where('name', 'like', '%' . $search . '%')
+            //             ->orWhere('email', 'like', '%' . $search . '%');
+            //             });
+            //         });
+            // }
+
+            $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->where(['users_group_list.user_role_id'=>$role_id,'users_group_list.user_group_id'=>$group_id])->join('accounts','users_group_list.account_id','accounts.id');
 
             if($role_id == 1){
-                $userdata = $userdata->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20);
-        
+                $userdata = $userdata->where( function ($q) use ($search) {
+                        $q->where('accounts.name', 'like', '%' . $search . '%')
+                        ->orWhere('accounts.email', 'like', '%' . $search . '%');
+                        })->paginate(20);
+
             }else{
-                $userdata = $userdata->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->get()->sortBy('account.name',SORT_NATURAL|SORT_FLAG_CASE);
+                $userdata = $userdata->where( function ($q) use ($search) {
+                        $q->where('accounts.name', 'like', '%' . $search . '%')
+                        ->orWhere('accounts.email', 'like', '%' . $search . '%');
+                        })->get()->sortBy('accounts.name',SORT_NATURAL|SORT_FLAG_CASE);
             }
 
             return $userdata;
         } else {
 
             if($role_id == 1){
-                $userdata = UsersGroupList::with(['account'])->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20);
+                $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20);
             }else{
-                $userdata = UsersGroupList::with(['account'])->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->get()->sortBy('account.name',SORT_NATURAL|SORT_FLAG_CASE);
+                $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->get()->sortBy('account.name',SORT_NATURAL|SORT_FLAG_CASE);
             }
-           
+
             return $userdata;
         }
     }
@@ -71,14 +79,19 @@ class UserService
             $column = $param['column'];
             $order = $param['order'];
 
-            $getUserList = ProgramUsers::where('first_name', 'like', '%' . $search . '%');
+            $getUserList = ProgramUsers::leftJoin('accounts', 'accounts.id', '=', 'program_users.account_id')->select('program_users.*')->where('program_users.first_name', 'like', '%' . $search . '%');
                 if($search != ''){
-                    $getUserList = $getUserList->orwhere('last_name', 'like', '%' . $search . '%')
-                    ->orwhere('email', 'like', '%' . $search . '%')
-                    ->orwhere('job_title', 'like', '%' . $search . '%');
+                    $getUserList = $getUserList->orwhere('program_users.last_name', 'like', '%' . $search . '%')
+                    ->orwhere('program_users.email', 'like', '%' . $search . '%')
+                    ->orwhere('program_users.job_title', 'like', '%' . $search . '%');
                 }
-            $getUserList = $getUserList->orderBy($column, $order)->paginate(12);
 
+            if($column == 'last_login'){
+                $getUserList = $getUserList->orderBy('accounts.'.$column, $order)->paginate(12);
+            }else{
+                $getUserList = $getUserList->orderBy('program_users.'.$column, $order)->paginate(12);
+            }
+            
             return $getUserList;
         } else {
             return $this->repository->paginate(12);
@@ -90,29 +103,36 @@ class UserService
 
         if($campaign_id){
 
-           $get_campaign_setting = CampaignSettings::select('receiver_users','receiver_group_ids')->where('campaign_id', $campaign_id)->first()->toArray();
+            $useraccount = \Auth::user();
+            $accountID =  $useraccount->id;
 
-           if($get_campaign_setting['receiver_users'] == 1){
+            $get_campaign_setting = CampaignSettings::select('receiver_users','receiver_group_ids')->where('campaign_id', $campaign_id)->first()->toArray();
+
+            if($get_campaign_setting['receiver_users'] == 1){
                 $group_ids = $get_campaign_setting['receiver_group_ids'];
                 $group_ids = explode(',', $group_ids);
-    
+
                 return ProgramUsers::join('users_group_list as t1', "t1.account_id","=","program_users.account_id")
+                ->select('program_users.*')
                 ->whereIn('t1.user_group_id', $group_ids)
+                ->where('t1.account_id','!=',$accountID)
                 ->where('t1.user_role_id','1')
                 ->where('t1.status','1')
                 ->get();
 
             } else {
                 return ProgramUsers::join('users_group_list as t1', "t1.account_id","=","program_users.account_id")
+                ->select('program_users.*')
                 ->where('t1.user_role_id','1')
+                ->where('t1.account_id','!=',$accountID)
                 ->where('t1.status','1')
                 ->get();
             }
         }
-      
+
 
         if(!empty($param)){
-            
+
             $search = $param['search'];
             $column = $param['column'];
             $order = $param['order'];
@@ -127,7 +147,7 @@ class UserService
 
             return $getUserList;
         } else {
-             
+
             return $this->repository->get();
         }
     }
@@ -139,8 +159,9 @@ class UserService
      * @return mixed
      */
     public function store(Program $program, ProgramUsersRequest $request)
-    { 
+    {
         try {
+
             $account = Account::create([
                 'name'              => $request->username,
                 'email'             => $request->email,
@@ -188,7 +209,7 @@ class UserService
 
             $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->first();
             if(empty($check_data)){
-                
+
                 $UsersGroupList = new UsersGroupList;
                 $UsersGroupList->account_id = $account->id;
                 $UsersGroupList->user_group_id = $request->group_id;
@@ -197,24 +218,22 @@ class UserService
                 $UsersGroupList->updated_at = $date;
                 $UsersGroupList->save();
             }
-            if($request->vp_emp_number != ''){
-                $check_lead_data = UsersGroupList::where(['account_id'=>$request->vp_emp_number,'user_group_id'=>$request->group_id,'user_role_id'=>'2'])->first();
-           
-                if(empty($check_lead_data)){
-                    $UsersGroupList = new UsersGroupList;
-                    $UsersGroupList->account_id = $request->vp_emp_number;
-                    $UsersGroupList->user_group_id = $request->group_id;
-                    $UsersGroupList->user_role_id = '2';
-                    $UsersGroupList->created_at = $date;
-                    $UsersGroupList->updated_at = $date;
-                    $UsersGroupList->save();
-                }
-            }
 
+            $check_lead_data = UsersGroupList::where(['account_id'=>$request->vp_emp_number,'user_group_id'=>$request->group_id,'user_role_id'=>'2'])->first();
+
+            if(empty($check_lead_data)){
+                $UsersGroupList = new UsersGroupList;
+                $UsersGroupList->account_id = $request->vp_emp_number;
+                $UsersGroupList->user_group_id = $request->group_id;
+                $UsersGroupList->user_role_id = '2';
+                $UsersGroupList->created_at = $date;
+                $UsersGroupList->updated_at = $date;
+                $UsersGroupList->save();
+            }
             return $programUser;
-            
+
             // if(isset($request->emp_type)){
-            
+
             // }
         } catch (\Throwable $th) {
             echo $th->getMessage();
@@ -267,7 +286,7 @@ class UserService
     public function assignUserToGroup(Request $request)
     {
         $role = Role::findById($request->role_id);
-       
+
         $user = ProgramUsers::find($request->user_id);
 
         if (empty($user))

@@ -15,8 +15,14 @@ class UserGroupTransformer extends TransformerAbstract
      */
     public function transform(UsersGroupList $User): array
     {
-        return [ 
-            'id' => $User->id,
+
+        $id = $User->uglId;
+        if($id == '' || $id == null){
+            $id = $User->id;
+        }
+
+        return [
+            'id' => $id,
             'group_id' => $User->user_group_id,
             'role_id' => $User->user_role_id,
             'account_id' => $User->account_id,
@@ -29,7 +35,11 @@ class UserGroupTransformer extends TransformerAbstract
             'last_login' => $User->account->last_login,
             'email_verified_at' => $User->account->email_verified_at,
             'login_ip' => $User->account->login_ip,
-            'programUserData' => $User->programUserData
+            'programUserData' => $User->programUserData,
+            'company' => $User->programUserData->company,
+            'country' => $User->programUserData->country,
+            'country_id' => $User->programUserData->country_id
         ];
+
     }
 }

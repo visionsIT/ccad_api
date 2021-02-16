@@ -20,6 +20,9 @@ class ProductOrderRepository extends Repository
      *
      * @return mixed
      */
+    public function getOrders(){
+        return $this->modeler->orderBy('created_at', 'DESC')->paginate(12);
+    }
     public function UserOrders($account_id)
     {
         return ProductOrder::where('account_id', $account_id)->get();

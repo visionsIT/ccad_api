@@ -51,7 +51,7 @@ class EventServiceProvider extends ServiceProvider
                 'assertion' => $user->getRawSamlAssertion()
             ];
             //$username = $userData['attributes']['http://schemas.microsoft.com/identity/claims/displayname'][0];
-            $useremail = $userData['attributes']['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'][0];
+            $useremail = $userData['attributes']['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
 
             // $accountArray = [
             //     'id' => $userData['id'],
@@ -64,49 +64,27 @@ class EventServiceProvider extends ServiceProvider
 
             if(!empty($account)){
                 if($account->status == 1){
-                    $roleInfo =  DB::table('model_has_roles')->select('roles.*')->join('roles', 'roles.id', '=', 'model_has_roles.role_id')->where(['model_has_roles.model_id' => $account->id])->get()->first();
+                    //$roleInfo =  DB::table('model_has_roles')->select('roles.*')->join('roles', 'roles.id', '=', 'model_has_roles.role_id')->where(['model_has_roles.model_id' => $account->id])->get()->first();
                     $userInfo = DB::table('program_users')->where('account_id', $account->id)->first();
-                    if(count($roleInfo)>0 && $roleInfo->general_permission == 0 && $userInfo->id != $userInfo->vp_emp_number ){
-                        header("Location: https://ccad.takreem.ae/login/not-allowed");
+                    if(empty($userInfo)){
+                        header("Location: ".env('FRONT_APP_URL')."/login/not-allowed");
                         exit;
                     } else {
                         $successToken =  $account->createToken('userToken'.$account->id)->accessToken;
-                        header("Location: https://ccad.takreem.ae/login/".$successToken);
+                        header("Location: ".env('FRONT_APP_URL')."/login/".$successToken);
                     }
                 } else {
-                    header("Location: https://ccad.takreem.ae/login/not-active");
+                    header("Location: ".env('FRONT_APP_URL')."/login/not-active");
                     exit;
                 }
             } else {
-                // if($_SERVER['REMOTE_ADDR'] == '112.196.30.104'){
-                //     echo "<pre>";
-                //     //print_r($user);
-                //     print_r($user->getSessionIndex());
-                //     print_r($user->getAttribute('displayname'));
-                //     die();
-
-                //     $expectedReturnTo = 'https://ccad.takreem.ae/login/error';
-                //     $expectedSessionIndex = $user->getSessionIndex();
-                //     $expectedNameId = $userData['id'];
-                //     $expectedNameIdFormat = 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent';
-                //     $expectedStay = true;
-                //     $expectedNameIdNameQualifier = $user->getAttribute('NameQualifier');
-
-                //     /*$auth = m::mock('OneLogin\Saml2\Auth');
-                //     $saml2 = new Saml2Auth($auth);
-                //     $auth->shouldReceive('logout')
-                //         ->with($expectedReturnTo, [], $expectedNameId, $expectedSessionIndex, $expectedStay, $expectedNameIdFormat, $expectedNameIdNameQualifier)
-                //         ->once();
-                //     $saml2->logout($expectedReturnTo, $expectedNameId, $expectedSessionIndex, $expectedNameIdFormat, $expectedStay, $expectedNameIdNameQualifier);*/
-                //     //$event->logout($returnTo, $nameId,'', '', false, '');
-                // }
-                header("Location: https://ccad.takreem.ae/login/not-exist");
+               header("Location: ".env('FRONT_APP_URL')."/login/not-exist");
             }
             exit();
         });
 
         Event::listen('Aacotroneo\Saml2\Events\Saml2LogoutEvent', function ($event) {
-           header("Location: https://ccad.takreem.ae/login/");
+           header("Location: ".env('FRONT_APP_URL')."/login/");
            exit();
             // Auth::logout();
             // Session::save();

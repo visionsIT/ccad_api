@@ -28,6 +28,7 @@ use Modules\User\Exports\UserExport;
 use Validator;
 use DB;
 use File;
+use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
@@ -36,7 +37,8 @@ class UserController extends Controller
     public function __construct(UserService $service)
     {
         $this->service = $service;
-        $this->middleware('auth:api', ['paginatedUsers','getGroupLeadUsers']);
+        // $this->middleware(['paginatedUsers','getGroupLeadUsers']);
+        // $this->middleware('auth:api', ['paginatedUsers','getGroupLeadUsers']);
     }
 
 
@@ -500,12 +502,21 @@ class UserController extends Controller
 
     public function updateUserInfo(Request $request, $id){
         try {
+
+            $request['first_name'] = filter_var($request->first_name, FILTER_SANITIZE_STRING);
+            $request['last_name'] = filter_var($request->last_name, FILTER_SANITIZE_STRING);
+            $request['job_title'] = filter_var($request->job_title, FILTER_SANITIZE_STRING);
+
+            if(isset($request->username)){
+                $request['username'] = filter_var($request->username, FILTER_SANITIZE_STRING);
+            }
+
             $rules = [
-                'first_name' => 'required',
-                'last_name' => 'required',
+                'first_name' => 'required|string',
+                'last_name' => 'required|string',
                 'language' => 'required',
                 //'company' => 'required',
-                //'job_title' => 'required',
+                'job_title' => 'required|string',
                 //'vp_emp_number' => 'required|integer|exists:accounts,id',
             ];
 
@@ -520,9 +531,9 @@ class UserController extends Controller
             $updateInfo = ['name' => $request->first_name.' '.$request->last_name];
             DB::table('accounts')->where('id', $programUser->account_id)->update($updateInfo);
 
-            return response()->json([ 'message' => 'Data has been updated successfully' ]);
+            return response()->json([ 'message' => 'Data has been updated successfully','status'=>'Success' ]);
         }  catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+            return response()->json(['message' => 'Something get wrong! Please try again.','status'=>'error', 'errors' => $th->getMessage()], 402);
         }
     }
 
@@ -629,13 +640,11 @@ class UserController extends Controller
         }
     }/****fn_ends****/
 
-
-
     /**********************
     upload user profile pic
     **********************/
     public function uploadUserProfilePic(Request $request){
-        
+
         $rules = [
             'account_id' => 'required|integer|exists:accounts,id',
             'profile_pic' => 'required',
@@ -679,7 +688,7 @@ class UserController extends Controller
             return response()->json(['message'=>'Profile Image saved successfully.', 'status'=>'success']);exit;
         }else{
             return response()->json(['message'=>'please provide Profile Image.', 'status'=>'error']);exit;
-        }  
+        }
 
 
     }/****fn_ends_here***/
@@ -703,5 +712,103 @@ class UserController extends Controller
 
         return response()->json(['message'=>'Image not Found.', 'status'=>'error']);exit;
     }/******fn_ends_here******/
+
+    public function userBlockUnblock($b_status = null, $account_id = null){
+
+        try{
+            if($b_status == null || $account_id == null){
+                return response()->json(['message'=>'Please provide user id and block status.', 'status'=>'error']);exit;
+            }else{
+                $account = ProgramUsers::where('account_id',$account_id)->first();
+                if(!empty($account)){
+
+                    $image_url = [
+                        'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
+                        'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
+                        'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
+                        'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
+                        'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
+                    ];
+
+                    $data = [
+                        'email' => $account->email,
+                        'name' => $account->first_name,
+                    ];
+
+                    if($b_status == 0){
+                        Account::where('id',$account_id)->update(['login_attempts'=>0]);
+
+                        Mail::send('emails.UserUnBlockMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                            $m->from('customerexperience@meritincentives.com','Merit Incentives');
+                            $m->to($data["email"])->subject('Account Unblocked');
+                        });
+
+                        return response()->json(['message'=>'User Un-Blocked Successfully.', 'status'=>'success']);exit;
+                    }else{
+                        Account::where('id',$account_id)->update(['login_attempts'=>3]);
+
+                        Mail::send('emails.AdminBlockUserMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                            $m->from('customerexperience@meritincentives.com','Merit Incentives');
+                            $m->to($data["email"])->subject('Account Suspended');
+                        });
+
+                        return response()->json(['message'=>'User Blocked Successfully.', 'status'=>'success']);exit;
+                    }
+                }else{
+                    return response()->json(['message'=>'Wrong account id.', 'status'=>'error']);exit;
+                }
+
+            }
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+
+
+    }#unblock_fn_ends
+
+    /************************
+    fn to get All Admin Users
+    ************************/
+    public function getUserListing($admin = null){
+        try{
+            if($admin == null){
+                return response()->json(['message'=>'Please provide 1 for admin']);
+            }else{
+                if($admin == 1){
+                    $get_users = UsersGroupList::where('user_role_id','4')->orWhere('user_role_id','5')->paginate(20);
+                }else{
+                    $get_users = UsersGroupList::where('user_role_id','!=','4')->where('user_role_id','!=','5')->get();
+                }
+                $userList = fractal($get_users, new UserGroupTransformer());
+                return $userList;
+            }
+
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+    }/****admin_user_api_ends***/
+
+    /************************
+    fn to count logged in and
+    blocked users
+    ************************/
+    public function countUsersBlockedAndLogin(){
+        try{
+            $users = array();
+            $count_blocked = Account::where('login_attempts',3)->count();
+            $count_login = Account::whereNotNull('last_login')->count();
+            $notAdmin = UsersGroupList::select('account_id')->distinct('account_id')->where('user_role_id','!=',4)->count();
+            $users['blocked_users'] = $count_blocked;
+            $users['login_users'] = $count_login;
+            $users['not_admin'] = $notAdmin;
+
+            return response()->json(['message' => 'Count Get Successfully', 'status'=>'success','data'=>$users]);
+
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+    }/*****count_fn_ends_here****/
 
 }

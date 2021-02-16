@@ -50,3 +50,4 @@ Route::resource('reward_setting', 'RewardController');
 Route::get('countries_list', 'RewardController@getCountries');
 Route::post('change_country_delivery', 'RewardController@changeDeliveryStatus');
 // Route::post('change_ecards_permission', 'RewardController@ecardPermission');
+Route::post('delete_testing_products','ProductOrderController@deleteTestOrders');

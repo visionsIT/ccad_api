@@ -5,6 +5,7 @@ use Modules\User\Models\ProgramUsers;
 use Modules\User\Models\UsersPoint;
 use Modules\Reward\Models\ProductOrder;
 use DB;
+
 class UserTransformer extends TransformerAbstract
 {
     /**
@@ -18,7 +19,7 @@ class UserTransformer extends TransformerAbstract
         $program_user_id = ProgramUsers::select('id')->where('account_id', $User->account_id)->first();
 
         if($User->account->last_login != null || $User->account->last_login != ''){
-            $last_login = date('M d,Y g:i a', strtotime($User->account->last_login));
+            $last_login = date('M d, Y g:i a', strtotime($User->account->last_login));
         }else{
             $last_login = null;
         }
@@ -31,12 +32,6 @@ class UserTransformer extends TransformerAbstract
         ->join('user_roles', 'user_roles.id', '=', 'users_group_list.user_role_id')
         ->where(['users_group_list.account_id' => $User->account_id])
         ->get();
-
-        $user_profile_img = '';
-        if($User->profile_image != '' && $User->profile_image != null && $User->profile_image != 'null'){
-            $profile_img = '/'.$User->image_path.$User->profile_image;
-            $user_profile_img = url($profile_img);
-        }
 
 
         return [
@@ -63,7 +58,6 @@ class UserTransformer extends TransformerAbstract
             'town' => $User->town,
             'postcode' => $User->postcode,
             'country' => $User->country,
-            'country_id' => $User->country_id,
             'telephone' => $User->telephone,
             'mobile' => $User->mobile,
             'date_of_birth' => $User->date_of_birth,
@@ -74,7 +68,8 @@ class UserTransformer extends TransformerAbstract
             'vp_emp_number' => $User->vp_emp_number,
             'program_id' => $program_user_id->id,
             'last_login' => $last_login,
-            'profile_image' => $user_profile_img,
+            'country_id' => $User->country_id,
+            'login_attempt' => $User->account->login_attempts,
         ];
     }
 }

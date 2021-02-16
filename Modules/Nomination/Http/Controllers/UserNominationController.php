@@ -15,6 +15,7 @@ use Modules\Nomination\Http\Services\NominationService;
 use Modules\Nomination\Http\Services\UserNominationService;
 use Modules\Nomination\Models\Nomination;
 use Modules\Nomination\Models\UserNomination;
+use Modules\Nomination\Models\CreateNominationTeam;
 use Modules\Nomination\Models\UserClaim;
 use Modules\User\Http\Services\UserService;
 use Spatie\Fractal\Fractal;
@@ -46,7 +47,11 @@ use Modules\Program\Models\UsersEcards;
 use Illuminate\Support\Facades\Mail;
 use Modules\User\Models\UsersGroupList;
 use Modules\CommonSetting\Models\PointRateSettings;
+use Modules\Nomination\Imports\UserNominationImport;
 use DB;
+use File;
+use Modules\Nomination\Models\NominationType;
+
 class UserNominationController extends Controller
 {
     private $repository;
@@ -255,6 +260,9 @@ class UserNominationController extends Controller
 
 
          if(!empty($receiverIds)){
+            if($request->project_name){
+                $teamData = CreateNominationTeam::create();
+            }
             foreach ($receiverIds as $key => $receiverid_v) {
 
                 $program_user_receiver = ProgramUsers::select('id')->where('account_id', $receiverid_v)->first();
@@ -332,6 +340,7 @@ class UserNominationController extends Controller
                                 'attachments' => $newname,
                                 'project_name' => $request->project_name ? $request->project_name : '',
                                 'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+                                'team_id' => $request->project_name ? $teamData->id : '',
                                 'nominee_function' => $request->nominee_function,
                                 'personal_message' => $request->personal_message
                             ]);
@@ -357,6 +366,7 @@ class UserNominationController extends Controller
                                 'attachments' => $newname,
                                 'project_name' => $request->project_name ? $request->project_name : '',
                                 'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+                                'team_id' => $request->project_name ? $teamData->id : '',
                                 'nominee_function' => $request->nominee_function,
                                 'personal_message' => $request->personal_message
                             ]);
@@ -431,6 +441,7 @@ class UserNominationController extends Controller
                             'attachments' => $newname,
                             'project_name' => $request->project_name ? $request->project_name : '',
                             'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+                            'team_id' => $request->project_name ? $teamData->id : '',
                             'nominee_function' => $request->nominee_function,
                             'personal_message' => $request->personal_message
                         ]);
@@ -469,7 +480,36 @@ class UserNominationController extends Controller
                             }
 
                         } else {
-                            $accounts = UsersGroupList::where('user_group_id', $groupId)
+
+                            $l1_id = $sendToUser->vp_emp_number;
+                            if($l1_id != ''){
+
+                                $l1_account_data = ProgramUsers::select('first_name','email')->where('account_id',$l1_id)->first();
+
+                                if(!empty($l1_account_data)){
+                                    $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
+
+                                    $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
+                                    $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                                    $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+
+                                    $message = "<p>You have a nomination waiting for approval.</p>";
+                                    $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+                                    $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+                                    $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+                                    $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+                                    $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
+                                    $message .= "<strong>Reason: </strong>{$request->reason}<br>";
+
+                                    $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+
+                                    $this->nomination_service->sendmail($l1_account_data->email,$subject,$message);
+
+                                }
+                            }else{
+                                return response()->json(['message'=>"L1 is not assigned", 'status'=>'error']);
+                            }
+                            /*$accounts = UsersGroupList::where('user_group_id', $groupId)
                                 ->where('user_role_id', '2')
                                 ->where('status', '1')
                                 ->get();
@@ -498,7 +538,7 @@ class UserNominationController extends Controller
                             foreach ($l1User as $account)
                             {
                                 $this->nomination_service->sendmail($account->email,$subject,$message);
-                            }
+                            }*/
                         }
 
                         DB::commit();
@@ -1327,7 +1367,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
                     }
-                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
+                    /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
+                    $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
 
 
                     $result = $approved->paginate(12);
@@ -1347,7 +1388,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
                     }
-                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
+                    /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
+                    $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
 
                     $result = $approved->paginate(12);
 
@@ -1379,7 +1421,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         });
 
                     }
-                    $approved->where('user_nominations.account_id', '!=' , $logged_user_id)->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
+                    /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
+                    $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
 
                     $result = $approved->paginate(12);
             }
@@ -1719,7 +1762,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                 $message .="Your nomination  for the " . $user_nomination->project_name . " project has been successfully approved! As a result, " . $user_nomination->nominated_account->name . " has been successfully awarded with " . $user_nomination->value  . " to their Kafu account.";
 
-                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='https://ccad.takreem.ae/wall-of-fame'>here</a>.";
+                $message .="\n\r <br> To view this award on the Kafu wall of fame, please Click  <a href='".env('APP_URL')."/wall-of-fame'>here</a>.";
 
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1733,7 +1776,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $message = "Dear " . $user_nomination->nominated_account->name ;
                 $message .="\n\r <br> Congratulations! \n\r <br> Your diligence and dedication towards the " . $user_nomination->project_name . " project, have played a tremendous role towards its success!";
                 $message .= "\n\r <br> As a sign of gratitude, you have been awarded with " . $user_nomination->value  . " to your Kafu account.";
-                $message .= "\n\r <br>  *Click <a href='https://ccad.takreem.ae/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='https://ccad.takreem.ae/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
+                $message .= "\n\r <br>  *Click <a href='".env('APP_URL')."/wall-of-fame'>here</a> to view more details on why you have been awarded, and <a href='".env('APP_URL')."/page/rewards'>here</a>  to spend your points towards an exciting catalogue of rewards!*";
                 $message .=" ";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
@@ -1771,8 +1814,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $subject ="Cleveland Clinic Abu Dhabi - Your nomination was declined !";
                 $message = "Dear " . $user_nomination->account->name ;
                 $message .="\n\r <br> Your nomination " . $user_nomination->nominated_account->name . " for the " . $user_nomination->project_name . " project has been declined for the following reason: " . $request->reason ." .";
-                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='https://ccad.takreem.ae/wall-of-fame'>here</a>.";
-                //$message .="To view this award on the Kafu wall of fame, please <a href='https://ccad.takreem.ae/wall-of-fame'>Click here</a>.";
+                $message .="\n\r <br> We encourage you to continue nominating your peers on Kafu, to help spread a positive and empowering culture in AD Ports. You may login and nominate by clicking <a href='".env('APP_URL')."/wall-of-fame'>here</a>.";
+                //$message .="To view this award on the Kafu wall of fame, please <a href='".env('APP_URL')."/wall-of-fame'>Click here</a>.";
 
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
 
@@ -2230,6 +2273,142 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()]);
         }
     }
+
+    /***********************************
+    fn to import user nominations record
+    ***********************************/
+    public function importUserNominations(Request $request){
+        try{
+            $file = $request->file('nomination_file');
+            $request->validate([
+                'nomination_file' => 'required|file',
+            ]);
+
+            if (!file_exists(public_path('uploaded/nomination_import_file/'))) {
+                mkdir(public_path('uploaded/nomination_import_file/'), 0777, true);
+            }
+
+            $uploaded = $file->move(public_path('uploaded/nomination_import_file/'), $file->getClientOriginalName());
+            $nominations = Excel::toCollection(new UserNominationImport(), $uploaded->getRealPath());
+            $nominations = $nominations[0]->toArray();
+
+            $not_found = array();
+            $not_found1 = array();
+            $not_found2 = array();
+            $not_found3 = array();
+            $user_not_found = array();
+            foreach ($nominations as $key => $nomination){
+                if($key === 0) continue;
+
+                $created_at = date('Y-m-d h:i:s', strtotime($nomination[12]));
+                $updated_at = date('Y-m-d h:i:s', strtotime($nomination[13]));
+
+                $sender_account_id = Account::select('id')->where('email',trim($nomination[1]))->first();
+                if(empty($sender_account_id)){
+                    $not_found[$key] = $nomination[1];
+                }
+
+                $receiver_account_id = Account::select('id')->where('email',trim($nomination[2]))->first();
+                if(empty($receiver_account_id)){
+                    $not_found1[$key] = $nomination[2];
+                }
+
+                $l1_account_id = Account::select('id')->where('email',trim($nomination[3]))->first();
+                if(empty($l1_account_id)){
+                    $not_found2[$key] = $nomination[3];
+                }
+
+                $l2_account_id = Account::select('id')->where('email',trim($nomination[4]))->first();
+                if(empty($l2_account_id)){
+                    $not_found3[$key] = $nomination[4];
+                }
+
+                if(empty($sender_account_id) || empty($receiver_account_id) ||empty($l1_account_id) ||empty($l2_account_id) ){
+                    continue;
+                }
+
+                $rejecter_account_id = Null;
+                $l2_approver_account = Null;
+                $l1_approver_account = Null;
+                $reject_reason = Null;
+                if($nomination[9] == 'approved_l2'){
+                    $update_vale_l1 = 1;
+                    $update_vale_l2 = 1;
+                    $l2_approver_account = $l2_account_id->id;
+                    $l1_approver_account = $l1_account_id->id;
+                }
+
+                if($nomination[9] == 'declined_l1'){
+                    $update_vale_l1 = -1;
+                    $update_vale_l2 = 0;
+                    $rejecter_account_id = $l1_account_id->id;
+                    $reject_reason = $nomination[11];
+                }
+
+                if($nomination[9] == 'pending_l1'){
+                    $update_vale_l1 = 0;
+                    $update_vale_l2 = 0;
+                }
+
+                if($nomination[9] == 'pending_l2'){
+                    $update_vale_l1 = 1;
+                    $update_vale_l2 = 0;
+                    $l1_approver_account = $l1_account_id->id;
+                }
+
+                $value_id = NominationType::select('id')->where('name', trim($nomination[6]))->first();
+                if(empty($value_id)){
+                    $value_id = NominationType::create([
+                            'name' => trim($nomination[6]),
+                            'description' => '',
+                            'logo' => '',
+                            'featured' => '0',
+                            'value_set' => $nomination[0]
+                        ]);
+                }
+                UserNomination::create([
+                        'user'   => $receiver_account_id->id, // Receiver
+                        'account_id' => $sender_account_id->id, // Sender
+                        'group_id' => $nomination[5],
+                        'campaign_id' => $nomination[0],
+                        'rajecter_account_id'=>$rejecter_account_id,
+                        'l2_approver_account_id'=>$l2_approver_account,
+                        'approver_account_id' => $l1_approver_account,
+                        'nomination_id' => 1,
+                        'level_1_approval' => $update_vale_l1,
+                        'level_2_approval' => $update_vale_l2,
+                        'point_type' => 2,
+                        'reason' => $nomination[8],
+                        'value' => $value_id->id,
+                        'points'  => $nomination[7],
+                        'reject_reason' => $reject_reason,
+                        'attachments' => '',
+                        'project_name' => '',
+                        'team_nomination' => 0,
+                        'nominee_function' => '',
+                        'personal_message' => '',
+                        'created_at' => $created_at,
+                        'updated_at' => $updated_at
+                    ]);
+            }
+
+            return response()->json([
+                'not_found_sender' => $not_found,
+                'not_found_receiver' => $not_found1,
+                'l1' => $not_found2,
+                'l2' => $not_found3,
+                'user_not_found' => $user_not_found,
+                'uploaded_file' => url('uploaded/nomination_import_file/'.$uploaded->getFilename()),
+                'message' => 'Data Imported Successfully'
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error_message' => $th->getMessage(),
+                'error_line' => $th->getLine(),
+                'error_file' => $th->getFile()
+            ]);
+        }
+    }/**********fn ends**********/
 
 
 }

@@ -31,7 +31,7 @@ Route::post('change_permission_status', 'PermissionController@changePermissionSt
 
 {
     /*  Passwords routes */
-    Route::post('password/reset', [ 'uses' => 'PasswordsController@resetPassword', 'as' => 'password.reset' ]); // TODO  'middleware' => 'throttle:5,1',
+    Route::post('password/reset/user/{status}', [ 'uses' => 'PasswordsController@resetPassword', 'as' => 'password.reset' ]); // TODO  'middleware' => 'throttle:5,1',
     Route::post('password/reset/{token}', [ 'uses' => 'PasswordsController@confirmResetPassword', 'as' => 'confirmResetPassword' ]);
     Route::post('password/create', [ 'uses' => 'PasswordsController@createNewPassword', 'as' => 'createNewPassword' ]);
     Route::post('password/change/{account_id}', [ 'uses' => 'PasswordsController@changeOldPassword', 'as' => 'changeOldPassword' ]); // need auth middleware

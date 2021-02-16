@@ -236,7 +236,33 @@ class UserManageController extends Controller
             $groupCount = Role::where('program_id', $program_id)->where('parent_id', 0)->count();
 
             $ordersCount = ProductOrder::where('status' , 1)->count();
-            $recentFiveOrders = ProductOrder::select('product_orders.id', 'first_name', 'last_name', 'email', 'product_orders.value', 'product_orders.status', 'products.name')->where('product_orders.status' , 1)->join('products', 'products.id', '=' ,'product_orders.product_id')->orderBy('product_orders.id', 'desc')->limit(5)->get();
+            $recentFiveOrders = ProductOrder::select('product_orders.id', 'first_name', 'last_name', 'email', 'product_orders.status', 'products.name','product_orders.created_at','product_denominations.value as price', 'product_orders.quantity','product_denominations.points','currencies.code')->where('product_orders.status' , 1)->join('products', 'products.id', '=' ,'product_orders.product_id')->join('product_denominations', 'product_denominations.id', '=' ,'product_orders.denomination_id')->join('currencies', 'currencies.id', '=' ,'products.currency_id')->orderBy('product_orders.id', 'desc')->limit(5)->get();
+
+            $recentFiveOrders_Arr = array();
+            foreach($recentFiveOrders as $key=>$recentOrder){
+                $recentFiveOrders_Arr[$key]['id'] = $recentOrder['id'];
+                /****status****/
+                $currentOrderStatus = 'Pending'; //status === 1 means pending
+                if($recentOrder['status'] === 3){
+                    $currentOrderStatus = 'Shipped';
+                } elseif($recentOrder['status'] === 2){
+                    $currentOrderStatus = 'Confirmed';
+                } elseif($recentOrder['status'] === -1){
+                    $currentOrderStatus = 'Cancelled';
+                }
+                $recentFiveOrders_Arr[$key]['current_status'] = $currentOrderStatus;
+                $recentFiveOrders_Arr[$key]['order_number'] = 'ccad-00'.$recentOrder['id'];
+                $recentFiveOrders_Arr[$key]['value'] = $recentOrder['code'].' '.$recentOrder['price'];
+                $recentFiveOrders_Arr[$key]['points'] = $recentOrder['points'];
+                $recentFiveOrders_Arr[$key]['quantity'] = $recentOrder['quantity'];
+                $recentFiveOrders_Arr[$key]['first_name'] = $recentOrder['first_name'];
+                $recentFiveOrders_Arr[$key]['last_name'] = $recentOrder['last_name'];
+                $recentFiveOrders_Arr[$key]['email'] = $recentOrder['email'];
+                $recentFiveOrders_Arr[$key]['name'] = $recentOrder['name'];
+                $recentFiveOrders_Arr[$key]['created_at'] = date('F j, Y g:i a', strtotime($recentOrder['created_at']));
+            }
+
+            $recentFiveOrders = $recentFiveOrders_Arr;
 
             $approved = UserNomination::where(['level_1_approval' => 1])->orWhere(['level_2_approval' => 1])->count();
             $decline = UserNomination::where(['level_1_approval' => -1])->orWhere(['level_2_approval' => -1])->count();

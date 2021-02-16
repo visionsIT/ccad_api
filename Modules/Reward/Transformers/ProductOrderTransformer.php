@@ -3,6 +3,7 @@
 use League\Fractal\TransformerAbstract;
 use Modules\Reward\Models\ProductOrder;
 use Modules\User\Models\ProgramUsers;
+use DB;
 
 class ProductOrderTransformer extends TransformerAbstract
 {
@@ -21,9 +22,13 @@ class ProductOrderTransformer extends TransformerAbstract
         } elseif($ProductOrder->status === -1){
             $currentOrderStatus = 'Cancelled';
         }
+
         return [
             'id'         => $ProductOrder->id,
-            'value'      => $ProductOrder->value,
+            'order_number'=> 'ccad-00'.$ProductOrder->id,
+            'value'      => $ProductOrder->product->currency->code.' '.$ProductOrder->denomination->value,
+            'quantity'   => $ProductOrder->quantity,
+            'points'     => $ProductOrder->denomination->points,
             'product'    => optional($ProductOrder->product)->name,
             'image'      => optional($ProductOrder->product)->image,
             'name'       => optional($ProductOrder->account)->name,
@@ -41,7 +46,7 @@ class ProductOrderTransformer extends TransformerAbstract
             'status'     => $ProductOrder->status,
             'current_status'     => $currentOrderStatus,
             'is_gift'     => $ProductOrder->is_gift,
-            'created_at'     => date('F j, Y', strtotime($ProductOrder->created_at)),
+            'created_at'     => date('F j, Y g:i a', strtotime($ProductOrder->created_at)),
         ];
     }
 }

@@ -33,7 +33,7 @@ class ResetPassword extends Mailable implements ShouldQueue
         $this
             ->view([])
             ->to($this->account->email)
-            ->from(config('sendgrid.emails.no-reply-email'))
+            ->from('customerexperience@meritincentives.com','Merit Incentives')
             ->sendgrid([
                 'content' => [
                     [
