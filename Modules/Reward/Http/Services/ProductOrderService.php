@@ -42,7 +42,7 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 1) {
@@ -66,10 +66,9 @@ class ProductOrderService
             'product_name'     => $order->product->name,
             'value'    => $value,
             'quantity' => $order->quantity,
-            'order_number' => 'ccad-00'.$order->id,
         ];
         Mail::send('emails.orderConfirmation', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('customerexperience@meritincentives.com','Merit Incentives');
+            $m->from('info@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Confirmation!');
         });
 
@@ -87,7 +86,7 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 2) {
@@ -110,10 +109,9 @@ class ProductOrderService
             'product_name'     => $order->product->name,
             'value'    => $value,
             'quantity' => $order->quantity,
-            'order_number' => 'ccad-00'.$order->id,
         ];
         Mail::send('emails.orderShipped', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('customerexperience@meritincentives.com','Merit Incentives');
+            $m->from('info@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Shipment!');
         });
 
@@ -133,7 +131,7 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status === 3 || $order->status === -1) {
@@ -168,11 +166,10 @@ class ProductOrderService
             'product_name'     => $order->product->name,
             'value'    => $value,
             'quantity' => $order->quantity,
-            'order_number' => 'ccad-00'.$order->id,
         ];
 
         Mail::send('emails.orderCancellation', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('customerexperience@meritincentives.com','Merit Incentives');
+            $m->from('info@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Cancellation!');
         });
 
@@ -224,7 +221,7 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 1) {
@@ -248,10 +245,9 @@ class ProductOrderService
             'product_name'     => $order->product->name,
             'value'    => $value,
             'quantity' => $order->quantity,
-            'order_number' => 'ccad-00'.$order->id,
         ];
         Mail::send('emails.orderPlaced', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('customerexperience@meritincentives.com','Merit Incentives');
+            $m->from('info@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Placed!');
         });
 

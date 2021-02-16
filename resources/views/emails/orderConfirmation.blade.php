@@ -13,6 +13,7 @@
 			<div>
 				<div><b>Product Name: </b> {{ $data['product_name'] }}</div>
 				<div><b>Value: </b> {{ $data['value'] }}</div>
+				<div><b>Quantity: </b> {{ $data['quantity'] }}</div>
 				<div><b>City: </b> {{ $data['city'] }}</div>
 				<div><b>Country: </b> {{ $data['country'] }}</div>
 			</div>

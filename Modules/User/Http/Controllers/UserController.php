@@ -516,7 +516,7 @@ class UserController extends Controller
                 'last_name' => 'required|string',
                 'language' => 'required',
                 //'company' => 'required',
-                'job_title' => 'required|string',
+                'job_title' => 'required',
                 //'vp_emp_number' => 'required|integer|exists:accounts,id',
             ];
 

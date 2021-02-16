@@ -36,13 +36,10 @@ class UserService
             //         });
             // }
 
-            $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->where(['users_group_list.user_role_id'=>$role_id,'users_group_list.user_group_id'=>$group_id])->join('accounts','users_group_list.account_id','accounts.id');
+            $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where('name', 'like', '%' . $search . '%')->orWhere('email', 'like', '%' . $search . '%');
 
             if($role_id == 1){
-                $userdata = $userdata->where( function ($q) use ($search) {
-                        $q->where('accounts.name', 'like', '%' . $search . '%')
-                        ->orWhere('accounts.email', 'like', '%' . $search . '%');
-                        })->paginate(20);
+                $userdata = $userdata->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20);
 
             }else{
                 $userdata = $userdata->where( function ($q) use ($search) {
