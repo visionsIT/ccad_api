@@ -23,12 +23,16 @@ class ProductOrderTransformer extends TransformerAbstract
             $currentOrderStatus = 'Cancelled';
         }
 
+        $pointss = $ProductOrder->value / $ProductOrder->quantity;
+
         return [
             'id'         => $ProductOrder->id,
             'order_number'=> 'ccad-00'.$ProductOrder->id,
             'value'      => $ProductOrder->product->currency->code.' '.$ProductOrder->denomination->value,
+            'denomination_value' =>$ProductOrder->denomination->value,
+            'order_value'=> $ProductOrder->value,
             'quantity'   => $ProductOrder->quantity,
-            'points'     => $ProductOrder->denomination->points,
+            'points'     => (string)$pointss,
             'product'    => optional($ProductOrder->product)->name,
             'image'      => optional($ProductOrder->product)->image,
             'name'       => optional($ProductOrder->account)->name,

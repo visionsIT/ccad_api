@@ -15,8 +15,14 @@ class UserGroupTransformer extends TransformerAbstract
      */
     public function transform(UsersGroupList $User): array
     {
+
+        $id = $User->uglId;
+        if($id == '' || $id == null){
+            $id = $User->id;
+        }
+
         return [
-            'id' => $User->uglId,
+            'id' => $id,
             'group_id' => $User->user_group_id,
             'role_id' => $User->user_role_id,
             'account_id' => $User->account_id,

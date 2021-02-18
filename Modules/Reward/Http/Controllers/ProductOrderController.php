@@ -110,8 +110,6 @@ class ProductOrderController extends Controller
             return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
         $user = ProgramUsers::where('account_id', $request->account_id)->first();
-        
-        $request['value'] = $get_points->points * $request->quantity;
 
         $request['value'] = $get_points->points * $request->quantity;
 

@@ -69,6 +69,7 @@ class UserTransformer extends TransformerAbstract
             'program_id' => $program_user_id->id,
             'last_login' => $last_login,
             'country_id' => $User->country_id,
+            'login_attempt' => $User->account->login_attempts,
         ];
     }
 }
