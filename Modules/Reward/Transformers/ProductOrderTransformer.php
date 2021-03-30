@@ -28,8 +28,8 @@ class ProductOrderTransformer extends TransformerAbstract
         return [
             'id'         => $ProductOrder->id,
             'order_number'=> 'ccad-00'.$ProductOrder->id,
-            'value'      => $ProductOrder->product->currency->code.' '.$ProductOrder->denomination->value,
-            'denomination_value' =>$ProductOrder->denomination->value,
+            'value'      => $ProductOrder->product->currency->code.' '.$ProductOrder->order_denomination->value,
+            'denomination_value' =>$ProductOrder->order_denomination->value,
             'order_value'=> $ProductOrder->value,
             'quantity'   => $ProductOrder->quantity,
             'points'     => (string)$pointss,

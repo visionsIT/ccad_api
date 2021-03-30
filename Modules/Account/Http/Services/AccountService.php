@@ -79,4 +79,10 @@ class AccountService
         $this->account_repository->syncPermissions($account, $data);
     }
 
+    public function filterAccountData($data) {
+        $record = $this->account_repository->getFilteredAccountData($data);
+
+        return $record;
+    }
+
 }

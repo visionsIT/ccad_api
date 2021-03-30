@@ -13,6 +13,7 @@ Route::get('get_user_roles', 'UserManageController@getUserRoles');
 Route::post('program/users/import', 'UserManageController@import');
 Route::get('program/users/download/{program_id}', 'UserManageController@download');
 Route::get('program/users/export/{program_id}', 'UserManageController@export');
+Route::get('program/searchUsers', 'UserController@getSearchedUsers');
 
 /* --------------- users Points --------------- */
 Route::resource('programs/{id}/users/{user_id}/points', 'PointController', [ 'except' => 'show' ]);
@@ -71,3 +72,7 @@ Route::get('user_unblock/{b_status}/{user_id}','UserController@userBlockUnblock'
 Route::get('user_listing/{admin}','UserController@getUserListing');
 ######Count Blocked, last_login#################
 Route::get('count_users','UserController@countUsersBlockedAndLogin'); 
+Route::get('user_notifications/{user_id}','UserController@userNotifications');
+Route::post('notification_status','UserController@userNotificationsStatus');
+Route::get('count_notifications/{account_id}','UserController@countUserNotifications');
+Route::get('notification_detail/{notification_id}','UserController@notificationDetail');

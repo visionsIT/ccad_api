@@ -13,6 +13,7 @@ use Spatie\Fractal\Fractal;
 use Spatie\Permission\Models\Role;
 use Modules\User\Models\UsersGroupList;
 use Modules\Nomination\Models\CampaignSettings;
+use DB;
 class UserService
 {
     public $repository;
@@ -150,6 +151,45 @@ class UserService
 
             return $this->repository->get();
         }
+    }
+
+    private function getCampaignSettings($campaignId) {
+        $get_campaign_setting = CampaignSettings::select('receiver_users','receiver_group_ids')->where('campaign_id', $campaignId)->first()->toArray();
+
+        if($get_campaign_setting['receiver_users'] == 1){
+            $group_ids = $get_campaign_setting['receiver_group_ids'];
+            $group_ids = explode(',', $group_ids);
+
+            return $group_ids;
+        } else {
+            return array();
+        }
+    }
+
+    public function getSearchedUsers($request) {
+        $search = trim($_REQUEST['keyword']);
+        $campaignId = $_REQUEST['campaign_id'];
+
+        $useraccount = \Auth::user();
+        $accountID =  $useraccount->id;
+
+        $group_ids = $this->getCampaignSettings($campaignId);
+
+        $data = ProgramUsers::select('program_users.id', 'program_users.account_id', 'first_name', 'last_name', 'email', 'profile_image', 'image_path')
+        ->where('program_users.account_id','!=',$accountID)
+        ->where(['program_users.is_active' => 1])
+        ->Where('first_name', 'Like', '%' . $search . '%')
+        ->orWhere('last_name', 'Like', '%' . $search . '%')
+        ->orWhere('email', 'Like', '%' . $search . '%')
+        ->leftJoin('users_group_list as t1', "t1.account_id","=","program_users.account_id")
+        ->where('t1.account_id','!=',$accountID)
+        ->where('t1.user_role_id','1')
+        ->where('t1.status','1');
+        if (count($group_ids) > 0) {
+            $data->whereIn('t1.user_group_id', $group_ids);
+        }
+
+        return $data->distinct()->get();
     }
 
     /**

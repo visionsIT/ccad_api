@@ -51,6 +51,8 @@ use Modules\Nomination\Imports\UserNominationImport;
 use DB;
 use File;
 use Modules\Nomination\Models\NominationType;
+use Modules\Program\Models\Ecards;
+use Modules\User\Http\Services\UserNotificationService;
 
 class UserNominationController extends Controller
 {
@@ -60,12 +62,13 @@ class UserNominationController extends Controller
     private $user_nomination_service, $nomination_repository, $user_service;
     private $account_service;
 
-    public function __construct(UserNominationRepository $repository,PointService $point_service,NominationRepository $nomination_repository,NominationService $nominationService,UserNominationService $user_nomination_service, UserService $user_service, AccountService $account_service, RippleSettingsRepository $ripple_repository)
+    public function __construct(UserNominationRepository $repository,PointService $point_service,NominationRepository $nomination_repository,NominationService $nominationService,UserNominationService $user_nomination_service, UserService $user_service, AccountService $account_service, RippleSettingsRepository $ripple_repository,UserNotificationService $userNotificationService)
     {
         $this->repository = $repository;
         $this->nomination_repository = $nomination_repository;
         $this->nomination_service = $nominationService;
         $this->user_nomination_service = $user_nomination_service;
+        $this->notification_service = $userNotificationService;
         $this->user_service = $user_service;
         $this->point_service = $point_service;
         $this->account_service = $account_service;
@@ -380,6 +383,7 @@ class UserNominationController extends Controller
                         $updateReciverBudget = UsersPoint::create([
                             'value'    => $inputPoint, // +/- point
                             'user_id'    => $receiverid, // Receiver
+                            'user_nominations_id' => $user_nomination->id,
                             'transaction_type_id'    => 10,  // For Ripple
                             'description' => '',
                             'balance'    => $finalPoints, // After +/- final balnce
@@ -397,6 +401,10 @@ class UserNominationController extends Controller
                         $message .= "<p>Keep up the good work.</p>";
 
                         $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
+
+                        $mail_content = "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
+                        $mail_content .= "<p>Keep up the good work.</p>";
+                        $saveNotification = $this->notification_service->creat_notification($sendToUser->account_id,$request->account_id, $user_nomination->id, Null, '10', $mail_content);
 
                         DB::commit();
                     }
@@ -477,6 +485,9 @@ class UserNominationController extends Controller
                             foreach ($l2User as $account)
                             {
                                 $this->nomination_service->sendmail($account->email,$subject,$message);
+
+                                $mail_content = "<p>You have a nomination waiting for approval.</p>";
+                                $saveNotification = $this->notification_service->creat_notification($account->account_id,$request->account_id, $user_nomination->id, Null, '5', $mail_content);
                             }
 
                         } else {
@@ -504,6 +515,9 @@ class UserNominationController extends Controller
                                     $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
 
                                     $this->nomination_service->sendmail($l1_account_data->email,$subject,$message);
+
+                                    $mail_content = "<p>You have a nomination waiting for approval.</p>";
+                                    $saveNotification = $this->notification_service->creat_notification($l1_id,$request->account_id, $user_nomination->id, Null, '5', $mail_content);
 
                                 }
                             }else{
@@ -832,6 +846,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $updateReciverBudget = UsersPoint::create([
                         'value'    => $points_update, // +/- point
                         'user_id'    => $receiver_program_id, // Receiver
+                        'user_nominations_id' => $user_nomination->id,
                         'transaction_type_id'    => 10,  // For Ripple
                         'description' => '',
                         'balance'    => $finalPoints, // After +/- final balnce
@@ -853,6 +868,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
 
+                    $mail_content = "<p>Your nomination has been approved!.</p>";
+                    $saveNotification = $this->notification_service->creat_notification($user_nomination->account_id,$request->approver_account_id, $user_nomination->id, Null, '8', $mail_content);
 
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
 
@@ -864,6 +881,12 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $message .= "<p>Keep up the good work.</p>";
 
                     $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
+
+
+                    $mail_content =  "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+                    $mail_content .= "<p>Keep up the good work.</p>";
+            
+                    $saveNotification = $this->notification_service->creat_notification($receiver_account_id,$user_nomination->account_id, $user_nomination->id, Null, '5', $mail_content);
 
                 } // Close Campiagn type condition
 
@@ -899,6 +922,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
                             $m->to($data["email"])->subject($data["card_title"].' Ecard!');
                         });
+
+                        $mail_content = "<p>You have received an E-Card from ".$data['sendername']."</p>";
+
+                        $saveNotification = $this->notification_service->creat_notification($receiver_account_id,$user_nomination->account_id, $user_nomination->id, Null, '5', $mail_content);
 
 
                     } catch (\Exception $e) {
@@ -936,10 +963,12 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
 
-
+                    $mail_content = "<p>You have a nomination waiting for approval.</p>";
                     foreach ($l2User as $account)
                     {
                         $this->nomination_service->sendmail($account->email,$subject,$message);
+                        $saveNotification = $this->notification_service->creat_notification($account->account_id,$user_nomination->account_id, $user_nomination->id, Null, '5', $mail_content);
+
                     }
                 }
             }
@@ -992,6 +1021,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $updateReciverBudget = UsersPoint::create([
                         'value'    => $points_update, // +/- point
                         'user_id'    => $sender_program_id, // Receiver
+                        'user_nominations_id' => $user_nomination->id,
                         'transaction_type_id'    => 10,  // For Ripple
                         'description' => 'Refund as request declined',
                         'balance'    => $finalPoints, // After +/- final balnce
@@ -1007,6 +1037,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $message = "<p>Dear {$program_user_sender->first_name},</p>";
                 $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
                 $this->nomination_service->sendmail($sender_email,$subject,$message);
+
+                $mail_content = "<p>Your nomination to " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
+                $saveNotification = $this->notification_service->creat_notification($program_user_sender->account_id,$request->approver_account_id,$user_nomination->id, Null, '6', $mail_content);
             }
 
             $msgResponse ="Nomination has been declined successfully.";
@@ -1179,6 +1212,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $updateReciverBudget = UsersPoint::create([
                 'value'    => $points_update, // +/- point
                 'user_id'    => $receiver_program_id, // Receiver
+                'user_nominations_id' => $user_nomination->id,
                 'transaction_type_id'    => 10,  // For Ripple
                 'description' => '',
                 'balance'    => $finalPoints, // After +/- final balnce
@@ -1219,6 +1253,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         $m->to($data["email"])->subject($data["card_title"].' Ecard!');
                     });
 
+                    $mail_content = "<p>You have received an E-Card from ".$data['sendername']."</p>";
+
+                    $saveNotification = $this->notification_service->creat_notification($program_user_receiver->account_id,$program_user_sender->account_id,$user_nomination->id, Null, '5', $mail_content);
+
                 } catch (\Exception $e) {
 
                    return response()->json(['message'=> $e->getMessage(), 'status'=>'error']);
@@ -1244,6 +1282,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
 
+                    $mail_content = "<p>Your nomination has been approved!.</p>";
+                    $saveNotification = $this->notification_service->creat_notification($program_user_sender->account_id,$request->approver_account_id,$user_nomination->id, Null, '5', $mail_content);
 
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
 
@@ -1255,6 +1295,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $message .= "<p>Keep up the good work.</p>";
 
                     $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
+
+                    $mail_content = "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+                    $mail_content .= "<p>Keep up the good work.</p>";
+                    $saveNotification = $this->notification_service->creat_notification($program_user_receiver->account_id,$program_user_sender->account_id,$user_nomination->id, Null, '5', $mail_content);
 
                 }
             } else if ($request->level_2_approval == -1 ) {
@@ -1298,6 +1342,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                 $updateReciverBudget = UsersPoint::create([
                                     'value'    => $points_update, // +/- point
                                     'user_id'    => $sender_program_id, // Receiver
+                                    'user_nominations_id' => $user_nomination->id,
                                     'transaction_type_id'    => 10,  // For Ripple
                                     'description' => 'Refund as request declined',
                                     'balance'    => $finalPoints, // After +/- final balnce
@@ -1312,6 +1357,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $message = "<p>Dear {$program_user_sender->first_name},</p>";
                     $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
                     $this->nomination_service->sendmail($sender_email,$subject,$message);
+
+                    $mail_content = "<p>Your nomination to " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
+                    $saveNotification = $this->notification_service->creat_notification($program_user_sender->account_id,$request->approver_account_id,$user_nomination->id, Null, '7', $mail_content);
                 }
             }
 
@@ -2323,7 +2371,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $not_found3[$key] = $nomination[4];
                 }
 
-                if(empty($sender_account_id) || empty($receiver_account_id) ||empty($l1_account_id) ||empty($l2_account_id) ){
+                if(empty($sender_account_id) || empty($receiver_account_id) ){
                     continue;
                 }
 
@@ -2331,10 +2379,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $l2_approver_account = Null;
                 $l1_approver_account = Null;
                 $reject_reason = Null;
-                if($nomination[9] == 'approved_l2'){
+               
+
+                if($nomination[9] == 'approved_l1'){
                     $update_vale_l1 = 1;
-                    $update_vale_l2 = 1;
-                    $l2_approver_account = $l2_account_id->id;
+                    $update_vale_l2 = 0;
                     $l1_approver_account = $l1_account_id->id;
                 }
 
@@ -2409,6 +2458,234 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             ]);
         }
     }/**********fn ends**********/
+
+    /*****************
+    import user ecards
+    ******************/
+    public function importUserEcards(Request $request){
+      
+        try{
+            $file = $request->file('ecards_file');
+            $request->validate([
+                'ecards_file' => 'required|file',
+            ]);
+
+            if (!file_exists(public_path('uploaded/ecards_import_file/'))) {
+                mkdir(public_path('uploaded/ecards_import_file/'), 0777, true);
+            }
+
+            $uploaded = $file->move(public_path('uploaded/ecards_import_file/'), $file->getClientOriginalName());
+            $nominations = Excel::toCollection(new UserNominationImport(), $uploaded->getRealPath());
+            $nominations = $nominations[0]->toArray();
+
+            $not_found = array();
+            $not_found1 = array();
+            $not_found2 = array();
+            $not_found3 = array();
+            $user_not_found = array();
+            foreach ($nominations as $key => $nomination){
+                if($key === 0) continue;
+
+                $created_at = date('Y-m-d h:i:s', strtotime($nomination[10]));
+                $scheduled = date('Y-m-d h:i:s', strtotime($nomination[11]));
+
+                $sender_account_id = Account::select('id')->where('email',trim($nomination[1]))->first();
+                if(empty($sender_account_id)){
+                    $not_found[$key] = $nomination[1];
+                }
+
+                $receiver_account_id = Account::select('id')->where('email',trim($nomination[2]))->first();
+                if(empty($receiver_account_id)){
+                    $not_found1[$key] = $nomination[2];
+                }
+
+
+                if(empty($receiver_account_id) ){
+                    continue;
+                }
+
+                $receiverid = ProgramUsers::where('account_id',$receiver_account_id->id)->first();
+                if(!empty($sender_account_id)){
+                    $senderId = ProgramUsers::where('account_id',$sender_account_id->id)->first();
+                }else{
+                    $senderId = Null;
+                    $sender_account_id->id = Null;
+                }
+
+                $update_vale_l1 = 2;
+                $update_vale_l2 = 2;
+
+                $str =  filter_var($nomination[8], FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
+                $str = str_replace("_x005F_x000D_","",$str);
+                $str = str_replace("_x000D_","",$str);
+                $str = str_replace("_x005F","",$str);
+                $str = str_replace("&#39;","",$str);
+                $str = html_entity_decode($str, ENT_QUOTES);
+                
+                if($nomination[9] == 'Sent'){
+                    $sent_status = 1;
+                }else{
+                    $sent_status = 0;
+                }
+                $user_nomination_data  = UserNomination::create([
+                    'user'   => $receiver_account_id->id, // Receiver
+                    'account_id' => $sender_account_id->id, // Sender
+                    'group_id' => $nomination[5],
+                    'points'  => $nomination[7],
+                    'campaign_id' => $nomination[0],
+                    'is_active'     => 1,
+                    'level_1_approval' => $update_vale_l1,
+                    'level_2_approval' => $update_vale_l2,
+                    'point_type' => 2,
+                    'created_at' => $created_at,
+                    //'nomination_id' => $campaign_id,
+                ]);
+                $user_nomin_inserted_id = $user_nomination_data->id;
+
+                $EcardDataCreated = UsersEcards::create([
+                    'ecard_id' => $nomination[6],
+                    'sent_to' => $receiverid->id,
+                    'campaign_id' => $nomination[0],
+                    'image_message' => $str,
+                    'sent_by' => $senderId->id,
+                    'send_type' => 'schedule',
+                    'sent_status' => $sent_status,
+                    'send_datetime' => $scheduled,
+                    'send_timezone' => 'Asia/Dubai',
+                    'created_at' => $created_at,
+                ]);
+                $ecard_lat_inserted_id = $EcardDataCreated->id;
+
+                if(isset($user_nomin_inserted_id)){
+                    UserNomination::where([
+                        'id' => $user_nomin_inserted_id
+                    ])->update(['ecard_id' => $ecard_lat_inserted_id ]);
+                }
+
+                $eCardDetails = Ecards::find($nomination[6]);
+
+                $path = public_path().'/uploaded/e_card_images/new';
+                if(!File::exists($path)) {
+                    File::makeDirectory($path, $mode = 0777, true, true);
+                }
+                $randm = rand(100,1000000);
+                $newImage = $randm.time().'-'.$eCardDetails->card_image;
+                $file_path = "/uploaded/e_card_images/new";
+
+                $prev_img = '/uploaded/e_card_images/'.$eCardDetails->card_image;
+                $prev_img_path = url($prev_img);
+                //$prev_img_path = env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image;
+
+                $update = UsersEcards::where('id',$ecard_lat_inserted_id)->update(['new_image'=>$newImage,'image_path'=>$file_path]);
+
+                if($update === 1){
+                    $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
+
+                    $image_mesaage = str_replace(" ","%20",$str);#bcs_send_in_url
+                    $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
+                    $conv = new \Anam\PhantomMagick\Converter();
+                    $options = [
+                        'width' => 640,'quality' => 90
+                    ];
+                   // $imageNAme = 'ripple_e_cardVodafone_Congrats_ecards20.jpg';
+                    $conv->source(url('/newImage/'.$eCardDetails->card_image.'/'.$image_mesaage))
+                        ->toPng($options)
+                        ->save($destinationPath);
+                }
+
+                $new_img = '/uploaded/e_card_images/new/'.$newImage;
+                $new_img_path = url($new_img);
+
+
+            }
+
+            return response()->json([
+                'not_found_sender' => $not_found,
+                'not_found_receiver' => $not_found1,
+                'l1' => $not_found2,
+                'l2' => $not_found3,
+                'user_not_found' => $user_not_found,
+                'uploaded_file' => url('uploaded/nomination_import_file/'.$uploaded->getFilename()),
+                'message' => 'Data Imported Successfully'
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error_message' => $th->getMessage(),
+                'error_line' => $th->getLine(),
+                'error_file' => $th->getFile()
+            ]);
+        }
+        
+    }/*******fn_ends*******/
+
+    /**************************
+    fn to get scheduled ecards
+    **************************/
+    public function getScheduledEcards(){
+
+        $pending_ecards = UsersEcards::whereNotNull('send_datetime')
+                ->where(function($q){
+                    $q->where('sent_status','=','0')
+                        ->orWhereNull('sent_status');
+                })
+                ->where('send_type','schedule')
+                ->get()
+                ->groupBy('send_timezone');
+
+        if(!empty($pending_ecards)){
+            foreach($pending_ecards as $timezone=>$timezoneData){
+                if($timezone == ''){
+                    $timezone = 'Asia/Dubai';
+                }
+
+                foreach($timezoneData as $key=>$ecards){
+
+                    date_default_timezone_set($timezone);
+                    $select_timezone = date('Y-m-d H:i:s');  
+                    $current_time = date('H:i:s');
+                    $plus5_min_time = Date("Y-m-d H:i:s", strtotime("5 minutes", strtotime($current_time)));
+
+                    if (($ecards->send_datetime >= $select_timezone) && ($ecards->send_datetime <= $plus5_min_time)){
+
+                        $image_url = [
+                            'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
+                        ];
+
+                        $sendToUser = ProgramUsers::find($ecards->sent_to);
+                        $senderUser = ProgramUsers::find($ecards->sent_by);
+                        $eCardDetails = Ecards::find($ecards->ecard_id);
+                        $new_img = '/uploaded/e_card_images/new/'.$ecards->new_image;
+                        $new_img_path = url($new_img);
+
+                        $data = [
+                            'email' => $sendToUser->email,
+                            'username' => $sendToUser->first_name.' '. $sendToUser->last_name,
+                            'card_title' => $eCardDetails->card_title,
+                            'sendername' => $senderUser->first_name.' '. $senderUser->last_name,
+                            'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
+                            'image_message' => $ecards->image_message,
+                            'color_code' => "#e6141a",
+                            'new_image' => $ecards->new_image,
+                            'file_path' => $ecards->image_path,
+                            'full_img_path' => $new_img_path,
+                            'link_to_ecard' => $new_img_path
+                        ];
+                        
+                        Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                            $m->from('customerexperience@meritincentives.com','noreply');    
+                            $m->to($data["email"])->subject($data["card_title"].' Ecard!');
+                        });
+
+                        #change_status_sent
+                        UsersEcards::where('id',$ecards->id)->update(['sent_status'=>'1']);
+                    }
+
+                }#foreach_ends
+            }#end_foreach
+        }
+
+        
+    }/***********fn_ends_here**********/
 
 
 }

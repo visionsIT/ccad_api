@@ -93,3 +93,6 @@ Route::post('user/campaign_report', 'UserNominationController@getCampaignReport'
 Route::post('user/campaign_report_specific', 'UserNominationController@getCampaignReport_count');
 
 Route::post('import_user_nominations','UserNominationController@importUserNominations');
+Route::post('import_user_ecards','UserNominationController@importUserEcards');
+
+Route::get('user/schedule-ecards','UserNominationController@getScheduledEcards');

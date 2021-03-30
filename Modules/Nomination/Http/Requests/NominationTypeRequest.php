@@ -13,7 +13,7 @@ class NominationTypeRequest extends FormRequest
     {
         return [
             'value_set' => 'required|exists:value_sets,id',
-            'name' => 'required|unique:nomination_types',
+            'name' => 'required',
             'points' => 'required|integer',
         ];
     }

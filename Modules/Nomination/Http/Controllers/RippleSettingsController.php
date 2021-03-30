@@ -23,6 +23,8 @@ use Modules\User\Models\UserCampaignsBudgetLogs;
 use DB;
 use Illuminate\Support\Facades\Mail;
 use File;
+use Carbon\Carbon;
+use Modules\User\Http\Services\UserNotificationService;
 
 class RippleSettingsController extends Controller
 {
@@ -30,9 +32,10 @@ class RippleSettingsController extends Controller
 
     private $repository;
 
-    public function __construct(RippleSettingsRepository $repository)
+    public function __construct(RippleSettingsRepository $repository,UserNotificationService $userNotificationService)
     {
         $this->repository = $repository;
+        $this->notification_service = $userNotificationService;
     }
 
     /**
@@ -97,6 +100,7 @@ class RippleSettingsController extends Controller
                     'min_point' => $request->min_point,
                     'max_point' => $request->max_point,
                     'points_allowed' => $request->points_allowed,
+                    'ecard_scheduler' => $request->scheduler_allowed
                  ]);
 
             }else{
@@ -109,6 +113,7 @@ class RippleSettingsController extends Controller
                     'level_2_approval' => $request->level_2_approval,
                     'budget_type' => $request->budget_type,
                     'points_allowed' => $request->points_allowed,
+                    'ecard_scheduler' => $request->scheduler_allowed
                 ]);
 
             }
@@ -439,6 +444,79 @@ class RippleSettingsController extends Controller
                     } // End Ripple Budget
 
 
+                    
+
+                    /********************* If Approval Required ***************************/
+
+                    //if($approval_request == 1 && $points_allowed == 1){
+
+                        $groupData = $this->repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+
+
+                        // Get lowest role of receiver
+                        $groupId  = $groupData['user_group_id'];
+
+
+                         if($level_1_approval == 0){
+                            $update_vale_l1 = 2;
+                         }else{
+                            $update_vale_l1 = 0;
+                         }
+
+                         if($level_2_approval == 0){
+                            $update_vale_l2 = 2;
+                         }else{
+                            $update_vale_l2 = 0;
+                         }
+
+                        // Update User Nomination table so that L1 or L2 can approve
+
+                        $user_nomination_data  = UserNomination::create([
+
+                            'user'   => $sendToUser->account_id, // Receiver
+                            'account_id' => $senderUser->account_id, // Sender
+                            'group_id' => $groupId,
+                            'points'  => $inputPoint,
+                            'campaign_id' => $campaign_id,
+                            'is_active'     => 1,
+                            'level_1_approval' => $update_vale_l1,
+                            'level_2_approval' => $update_vale_l2,
+                            'point_type' => $budget_type
+                            //'nomination_id' => $campaign_id,
+                        ]);
+                        $user_nomin_inserted_id = $user_nomination_data->id;
+
+                    //}
+
+                    if($request->send_type == 'schedule'){
+                        $dateTime = \Carbon\Carbon::parse($request->schedule_date.' '.date("h:i:sa"))->format('Y-m-d H:i:s');
+                        $timeone = $request->timezone;
+                    }else{
+                        $dateTime = \Carbon\Carbon::parse($request->schedule_date.' '.$request->schedule_time)->format('Y-m-d H:i:s');
+                        $timeone = Null;
+                    }
+                    
+
+                    $EcardDataCreated = UsersEcards::create([
+                        'ecard_id' => $request->ecard_id,
+                        'sent_to' => $receiverid,
+                        'campaign_id' => $campaign_id,
+                        'image_message' => $request->image_message,
+                        'sent_by' => $request->sender_id,
+                        'points' => $inputPoint,
+                        'send_type' => $request->send_type,
+                        'send_datetime' => $dateTime,
+                        'send_timezone' => $timeone
+                    ]);
+                    $ecard_lat_inserted_id = $EcardDataCreated->id;
+
+
+                    if(isset($user_nomin_inserted_id)){
+                        UserNomination::where([
+                            'id' => $user_nomin_inserted_id
+                        ])->update(['ecard_id' => $ecard_lat_inserted_id ]);
+                    }
+
                     if($budget_type == 2 && $points_allowed == 1){ // For Overall Balance
                         $current_budget_bal = UsersPoint::select('balance')->where('user_id',$request->sender_id)->latest()->first();
                         $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
@@ -447,6 +525,7 @@ class RippleSettingsController extends Controller
                         $updateSenderBudget = UsersPoint::create([
                             'value'    => -$inputPoint, // +/- point
                             'user_id'    => $request->sender_id, // Receiver
+                            'user_nominations_id' => $user_nomination_data->id,
                             'transaction_type_id'    => 10,  // For Ripple
                             'description' => '',
                             'balance'    => $finalBud, // After +/- final balnce
@@ -487,6 +566,7 @@ class RippleSettingsController extends Controller
                         $updateReciverBudget = UsersPoint::create([
                             'value'    => $inputPoint, // +/- point
                             'user_id'    => $receiverid, // Receiver
+                            'user_nominations_id' => $user_nomination_data->id,
                             'transaction_type_id'    => 10,  // For Ripple
                             'description' => '',
                             'balance'    => $finalPoints, // After +/- final balnce
@@ -494,67 +574,6 @@ class RippleSettingsController extends Controller
                         ]);
 
 
-                    }
-
-                    /********************* If Approval Required ***************************/
-
-                    if($approval_request == 1 && $points_allowed == 1){
-
-                        $groupData = $this->repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
-
-
-                        // Get lowest role of receiver
-                        $groupId  = $groupData['user_group_id'];
-
-
-                         if($level_1_approval == 0){
-                            $update_vale_l1 = 2;
-                         }else{
-                            $update_vale_l1 = 0;
-                         }
-
-                         if($level_2_approval == 0){
-                            $update_vale_l2 = 2;
-                         }else{
-                            $update_vale_l2 = 0;
-                         }
-
-                        // Update User Nomination table so that L1 or L2 can approve
-
-                        $user_nomination_data  = UserNomination::create([
-
-                            'user'   => $sendToUser->account_id, // Receiver
-                            'account_id' => $senderUser->account_id, // Sender
-                            'group_id' => $groupId,
-                            'points'  => $inputPoint,
-                            'campaign_id' => $campaign_id,
-                            'is_active'     => 1,
-                            'level_1_approval' => $update_vale_l1,
-                            'level_2_approval' => $update_vale_l2,
-                            'point_type' => $budget_type
-                            //'nomination_id' => $campaign_id,
-                        ]);
-                        $user_nomin_inserted_id = $user_nomination_data->id;
-
-                    }
-
-                    $EcardDataCreated = UsersEcards::create([
-                        'ecard_id' => $request->ecard_id,
-                        'sent_to' => $receiverid,
-                        'campaign_id' => $campaign_id,
-                        'image_message' => $request->image_message,
-                        'sent_by' => $request->sender_id,
-                        'points' => $inputPoint,
-                        'send_type' => $request->send_type,
-
-                    ]);
-                    $ecard_lat_inserted_id = $EcardDataCreated->id;
-
-
-                    if(isset($user_nomin_inserted_id)){
-                        UserNomination::where([
-                            'id' => $user_nomin_inserted_id
-                        ])->update(['ecard_id' => $ecard_lat_inserted_id ]);
                     }
 
 
@@ -621,6 +640,9 @@ class RippleSettingsController extends Controller
                                 $m->to($data["email"])->subject($data["card_title"].' Ecard!');
                             });
 
+                            $mail_content = "<p>You have received an E-Card from ".$data['sendername']." </p>";
+
+                            $saveNotification = $this->notification_service->creat_notification($sendToUser->account_id,$senderUser->account_id, $user_nomination_data->id, Null, '5', $mail_content);
 
                             DB::commit();
                         } catch (\Exception $e) {

@@ -109,18 +109,25 @@ class NominationTypeController extends Controller
             $file->move($destinationPath, $notActiveUrl);
         }
 
-        $data = [
-            'value_set' => $request->value_set,
-            'name' => $request->name,
-            'description' => $request->description,
-            'points' => $request->points,
-            'not_active_url' => ($notActiveUrl!='')?$imgUrl.$notActiveUrl:'',
-            'active_url' => ($newname!='')?$imgUrl.$newname:'',
-            'logo' => ($newname!='')?$imgUrl.$newname:''
-        ];
+        $check_data = NominationType::where(['name'=>$request->name,'value_set'=>$request->value_set])->first();
 
-        $nomination_types = $this->repository->create($data);
-        return fractal($nomination_types, new NominationTypeTransformer);
+        if(!empty($check_data)){
+            return response()->json(['message' => 'The name has already been taken in this campaign.','status'=>'error']);
+        }else{
+
+            $data = [
+                'value_set' => $request->value_set,
+                'name' => $request->name,
+                'description' => $request->description,
+                'points' => $request->points,
+                'not_active_url' => ($notActiveUrl!='')?$imgUrl.$notActiveUrl:'',
+                'active_url' => ($newname!='')?$imgUrl.$newname:'',
+                'logo' => ($newname!='')?$imgUrl.$newname:''
+            ];
+
+            $nomination_types = $this->repository->create($data);
+            return fractal($nomination_types, new NominationTypeTransformer);
+        }
     }
 
 
@@ -160,6 +167,7 @@ class NominationTypeController extends Controller
         }else{
             $this->repository->update($request->all(), $id);
             return response()->json(['message' => 'Category Updated Successfully']);
+            
         }
     }
 
@@ -223,6 +231,11 @@ class NominationTypeController extends Controller
 
         if ($validator->fails())
             return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+        $check_data = NominationType::where(['name'=>$request->name,'value_set'=>$request->value_set])->where('id','!=',$id)->first();
+        if(!empty($check_data)){
+            return response()->json(['message' => 'The name has already been taken in this campaign.','status'=>'error']);
+        }
 
         $data = [
             'value_set' => $request->value_set,

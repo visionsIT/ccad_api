@@ -114,10 +114,12 @@ class UserRepository extends Repository
 
             //thank you mail to user
             Mail::send('emails.feedbackEmail', ['user' => $data["user_id"], 'image_url'=>$image_url], function ($m) use($data) {
+                $m->from('customerexperience@meritincentives.com','Takreem');
                 $m->to($data["email"])->subject('Thanks');
             });
             //mail send to admin
             Mail::send('emails.feedbackEmailToAdmin', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+                $m->from('customerexperience@meritincentives.com','Takreem');
                 $m->to(env('FEEDBACK_SEND_TO'))->subject('New Feedback');
             });
 
@@ -126,7 +128,7 @@ class UserRepository extends Repository
                 'email' => $data['email'],
                 'feedback' => $data['feedback']
             ]);
-            return response()->json(['status' => true, 'message' => 'Your order has been placed successfully and will be shipped soon.' ]);
+            return response()->json(['status' => true, 'message' => 'Thank you for your valuable feedback.' ]);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage() ]);
         }

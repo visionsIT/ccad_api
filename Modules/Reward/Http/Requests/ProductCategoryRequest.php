@@ -12,9 +12,9 @@ class ProductCategoryRequest extends FormRequest
      * @return array
      */
     public function rules(): array
-    {
+    { 
         return [
-            'name' => 'required|string|unique:product_categories,name,'.$this->category // regex:( /^[\w-]*$/ ) if you want include numbers
+            'name' => 'required|string'// regex:( /^[\w-]*$/ ) if you want include numbers
         ];
     }
 

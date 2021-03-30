@@ -29,6 +29,9 @@ use Validator;
 use DB;
 use File;
 use Illuminate\Support\Facades\Mail;
+use Modules\User\Models\UserNotifications;
+use Modules\User\Transformers\UserNotificationTransformer;
+use Modules\User\Transformers\UserNotificationDetailTransformer;
 
 class UserController extends Controller
 {
@@ -77,6 +80,13 @@ class UserController extends Controller
         } else {
             return $userList;
         }
+    }
+
+    public function getSearchedUsers(Request $request) {
+        $data = $this->service->getSearchedUsers($request);
+        return  response()->json([
+                    'users' => $data,
+                ]);
     }
 
     /**
@@ -516,7 +526,7 @@ class UserController extends Controller
                 'last_name' => 'required|string',
                 'language' => 'required',
                 //'company' => 'required',
-                'job_title' => 'required|string',
+                //'job_title' => 'required|string',
                 //'vp_emp_number' => 'required|integer|exists:accounts,id',
             ];
 
@@ -799,10 +809,14 @@ class UserController extends Controller
             $users = array();
             $count_blocked = Account::where('login_attempts',3)->count();
             $count_login = Account::whereNotNull('last_login')->count();
-            $notAdmin = UsersGroupList::select('account_id')->distinct('account_id')->where('user_role_id','!=',4)->count();
+
+            $notAdmin = ProgramUsers::select('program_users.account_id')->join('accounts', 'program_users.account_id', '=', 'accounts.id')->join('users_group_list', 'accounts.id', '=', 'users_group_list.account_id')->where('users_group_list.user_role_id','!=',4)->groupBy('users_group_list.account_id')->get();
+
+            $count_notAdmin = count($notAdmin);
+
             $users['blocked_users'] = $count_blocked;
             $users['login_users'] = $count_login;
-            $users['not_admin'] = $notAdmin;
+            $users['not_admin'] = $count_notAdmin;
 
             return response()->json(['message' => 'Count Get Successfully', 'status'=>'success','data'=>$users]);
 
@@ -810,5 +824,76 @@ class UserController extends Controller
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
         }
     }/*****count_fn_ends_here****/
+
+    public function userNotifications($account_id = null)
+    {
+        try{
+            if($account_id == null || $account_id == ''){
+                return response()->json(['message' => 'Please provide account id.','status'=>'error']);
+            }
+
+            $getUserNotifications = UserNotifications::where('receiver_account_id', $account_id)->orderBy('id', 'desc')->get();
+            return fractal($getUserNotifications, new UserNotificationTransformer());
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+    }
+
+    /******************************************
+    fn to change status of notification to read
+    *******************************************/
+    public function userNotificationsStatus(Request $request){
+        try{
+
+            $rules = [
+                'notification_id' => 'required|integer|exists:user_notifications,id',
+            ];
+
+            $validator = \Validator::make($request->all(), $rules);
+
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+            $getUserNotifications = UserNotifications::where('id', $request->notification_id)->update(['read_status'=>'1']);
+            return response()->json(['message' => 'Status Changed Successfully.', 'status' => 'success']);
+
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+    }/****fn_ends*****/
+
+    /************************
+    fn to count notifications
+    *************************/
+    public function countUserNotifications($account_id = null){
+        try{
+            if($account_id == null || $account_id == ''){
+                return response()->json(['message' => 'Please provide account id.','status'=>'error']);
+            }
+
+            $count_Notifications = UserNotifications::where('receiver_account_id', $account_id)->count();
+            return response()->json(['data'=>$count_Notifications,'message' => 'Get count Successfully.', 'status' => 'success']);
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+    }/***fn_ends_here***/
+
+    /**notification details**/
+    public function notificationDetail($notification_id = null){
+        try{
+
+            if($notification_id == null || $notification_id == ''){
+                return response()->json(['message' => 'Please provide notification id.','status'=>'error']);
+            }
+
+            $notification_detail = UserNotifications::where('id', $notification_id)->first();
+
+            return fractal($notification_detail, new UserNotificationDetailTransformer());
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+    }/******fn_ends*******/
 
 }

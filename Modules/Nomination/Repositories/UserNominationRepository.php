@@ -62,6 +62,7 @@ class UserNominationRepository extends Repository
         $col = $data['col'];
         $from = $data['from'];
         $to = $data['to'] . ' 23:59:00';
+        $campaignID = ($data['campaignID'])?$data['campaignID']:'';
 
         $query = UserNomination::join('program_users as t1', "t1.account_id","=","user_nominations.account_id")
             ->join('program_users as t2', "t2.account_id","=","user_nominations.user")
@@ -75,6 +76,10 @@ class UserNominationRepository extends Repository
                 ->orWhere('t2.first_name', 'LIKE', "%{$search}%")
                 ->orWhere('t2.email', 'LIKE', "%{$search}%");
             });
+        }
+
+        if($campaignID!=''){
+            $query->where('user_nominations.campaign_id', $campaignID);
         }
 
         if(isset($from) && isset($to)) {

@@ -11,6 +11,7 @@ use Modules\User\Models\ProgramUsers;
 use Modules\Reward\Models\ProductOrder;
 use Modules\Reward\Models\ProductDenomination;
 use DB;
+use Modules\User\Http\Services\UserNotificationService;
 
 /**
  * Class CatalogueService
@@ -26,9 +27,10 @@ class ProductOrderService
      *
      * @param ProductOrderRepository $repository
      */
-    public function __construct(ProductOrderRepository $repository)
+    public function __construct(ProductOrderRepository $repository,UserNotificationService $userNotificationService)
     {
         $this->repository = $repository;
+        $this->notification_service = $userNotificationService;
     }
 
     /**
@@ -72,6 +74,15 @@ class ProductOrderService
             $m->from('customerexperience@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Confirmation!');
         });
+
+        $message = "<p>Hello ".$data['username'].",</p>";
+        $message .= "<p>Your order has been confirmed.</p>";
+        $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
+        $message .= "<p><b>Value: </b>".$data['value']."</p>";
+        $message .= "<p><b>City: </b>".$data['city']."</p>";
+        $message .= "<p><b>Country: </b>".$data['country']."</p>";
+
+        $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '4', $message);
 
         return TRUE;
     }
@@ -118,6 +129,16 @@ class ProductOrderService
         });
 
         //Mail::send(new OrderShipping($order, $order->account, $order->product));
+
+        $message = "<p>Hello ".$data['username'].",</p>";
+        $message .= "<p>Your order has been shipped.</p>";
+        $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
+        $message .= "<p><b>Value: </b>".$data['value']."</p>";
+        $message .= "<p><b>City: </b>".$data['city']."</p>";
+        $message .= "<p><b>Country: </b>".$data['country']."</p>";
+
+
+        $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '3', $message);
 
         return TRUE;
     }
@@ -177,6 +198,13 @@ class ProductOrderService
         });
 
         //Mail::send(new OrderCancellation($order, $order->account, $order->product));
+
+        $message = "<p>Hello ".$data['username'].",</p>";
+        $message .= "<p>We have to cancel your order because the product is out of stock.</p>";
+        $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
+        $message .= "<p><b>Value: </b>".$data['value']."</p>";
+
+        $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '2', $message);
 
         return TRUE;
     }
@@ -254,6 +282,15 @@ class ProductOrderService
             $m->from('customerexperience@meritincentives.com','Merit Incentives');
             $m->to($data["email"])->subject('Order Placed!');
         });
+
+        $message = "<p>Hello ".$data['username'].",</p>";
+        $message .= "<p>Your order has been placed.</p>";
+        $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
+        $message .= "<p><b>Value: </b>".$data['value']."</p>";
+        $message .= "<p><b>City: </b>".$data['city']."</p>";
+        $message .= "<p><b>Country: </b>".$data['country']."</p>";
+
+        $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null,$order->id, '1', $message);
 
         return TRUE;
     }

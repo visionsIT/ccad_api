@@ -86,8 +86,8 @@ class ProductOrderController extends Controller
     {
         $get_points = ProductDenomination::select('points')->where('id',$request->value)->first();
 
-        $request['value'] = $get_points->points;
         $request['denomination_id'] = $request->value;
+        $request['value'] = $get_points->points;
 
         $rules = [
             'value'      => 'required|numeric',

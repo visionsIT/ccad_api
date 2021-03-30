@@ -14,7 +14,7 @@ class ProductCatalogRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|unique:product_catalogs,name,'.$this->catalog // regex:( /^[\w-]*$/ ) if you want include numbers
+            'name' => 'required|string|unique:product_catalogs,name,' // regex:( /^[\w-]*$/ ) if you want include numbers
         ];
     }
 
