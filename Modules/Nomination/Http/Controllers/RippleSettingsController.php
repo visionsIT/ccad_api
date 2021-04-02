@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Mail;
 use File;
 use Carbon\Carbon;
 use Modules\User\Http\Services\UserNotificationService;
+use Helper;
 
 class RippleSettingsController extends Controller
 {
@@ -635,10 +636,13 @@ class RippleSettingsController extends Controller
                         ];
                         try {
 
-                            Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                                $m->from('customerexperience@meritincentives.com','CCAD');
-                                $m->to($data["email"])->subject($data["card_title"].' Ecard!');
-                            });
+                            $link_to_ecard = $data['link_to_ecard'];        
+                            $link_to_ecard = str_replace('https://', '', $link_to_ecard);
+                            $link_to_ecard = str_replace('http://', '', $link_to_ecard);
+                            $emailcontent["template_type_id"] =  '7';
+                            $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
+                            $emailcontent["email_to"] = $data["email"];
+                            $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
                             $mail_content = "<p>You have received an E-Card from ".$data['sendername']." </p>";
 

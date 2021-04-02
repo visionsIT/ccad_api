@@ -96,3 +96,5 @@ Route::post('import_user_nominations','UserNominationController@importUserNomina
 Route::post('import_user_ecards','UserNominationController@importUserEcards');
 
 Route::get('user/schedule-ecards','UserNominationController@getScheduledEcards');
+
+Route::get('generateCertificateImage/', 'UserNominationController@generateCertificateImage');

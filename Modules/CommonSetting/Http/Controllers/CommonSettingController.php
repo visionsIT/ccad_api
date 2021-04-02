@@ -1135,6 +1135,16 @@ class CommonSettingController extends Controller
                     $l2admin_email = $l2_admin->email;
                 }
                             
+                if(strpos($value["campaignid"]["name"], "E-CARDS") !== false){
+                    $l1admin_first_name = "";
+                    $l1admin_last_name = "";
+                    $l1admin_email = "";
+
+                    $l2admin_first_name = "";
+                    $l2admin_last_name = "";
+                    $l2admin_email = "";
+                    $l1admin_group_name = "";
+                }
 
                 fputcsv($new_csv, array( $value["campaignid"]["name"],$value["user_account"]["first_name"],$value["user_account"]["last_name"],$value["user_account"]["email"],$value["nominee_account"]["first_name"],$value["nominee_account"]["last_name"],$value["nominee_account"]["email"],$value["nominee_function"],$value["group_name"]["name"],$l1admin_first_name,$l1admin_last_name,$l1admin_email,$l1admin_group_name,$l2admin_first_name,$l2admin_last_name,$l2admin_email,$value["value_category"]["name"],$level_name,$value["points"],$value_points,$value["reason"],$status_by,$value["reject_reason"],$value["created_at"],$value["updated_at"] ));
 

@@ -10,6 +10,7 @@ use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Mail;
 use DB;
 use App;
+use Helper;
 //use Mail;
 
 class UserRepository extends Repository
@@ -105,29 +106,52 @@ class UserRepository extends Repository
 
     public function createNewFeedback($data) {
         try {
-            $image_url = [
-                'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-                'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-                'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-                'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-            ];
+            
+            if(isset($data['email'])){
+                $data['email'] = $data['email'];
+            }else{
+
+                $emailData = ProgramUsers::select('email')->where('id', $data['user_id'])->first();
+                $data['email'] = $emailData->email;
+            }
+
+            if(isset($data['name'])){
+                $data['name'] = $data['name'];
+            }else{
+
+                $emailData = ProgramUsers::select('first_name','last_name')->where('id', $data['user_id'])->first();
+                $data['name'] = $emailData->first_name.' '.$emailData->last_name;
+            }
+
+            if(isset($data['phone'])){
+                $data['phone'] = $data['phone'];
+            }else{
+
+                $emailData = ProgramUsers::select('mobile')->where('id', $data['user_id'])->first();
+                $data['phone'] = $emailData->mobile;
+            }
 
             //thank you mail to user
-            Mail::send('emails.feedbackEmail', ['user' => $data["user_id"], 'image_url'=>$image_url], function ($m) use($data) {
-                $m->from('customerexperience@meritincentives.com','Takreem');
-                $m->to($data["email"])->subject('Thanks');
-            });
+            $email_content["template_type_id"] =  '2';
+            $email_content["dynamic_code_value"] = array();
+            $email_content["email_to"] = $data["email"];
+            $email_data = Helper::emailDynamicCodesReplace($email_content);
+            
             //mail send to admin
-            Mail::send('emails.feedbackEmailToAdmin', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                $m->from('customerexperience@meritincentives.com','Takreem');
-                $m->to(env('FEEDBACK_SEND_TO'))->subject('New Feedback');
-            });
+            $emailcontent["template_type_id"] =  '1';
+            $emailcontent["dynamic_code_value"] = array($data['name'],$data['phone'],$data['feedback'],$data['email']);
+            $emailcontent["email_to"] = env('FEEDBACK_SEND_TO');
+            $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
 
             $feedback_create = UsersFeedback::create([
-                'user_id' => $data['user_id']?$data['user_id']:null,
+                'user_id' => isset($data['user_id']) ? $data['user_id'] : NULL,
+                'name' => isset($data['name']) ? $data['name'] : NULL,
                 'email' => $data['email'],
+                'phone' => isset($data['phone']) ? $data['phone']: NULL,
                 'feedback' => $data['feedback']
             ]);
+
             return response()->json(['status' => true, 'message' => 'Thank you for your valuable feedback.' ]);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage() ]);

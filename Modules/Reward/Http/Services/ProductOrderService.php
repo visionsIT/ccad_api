@@ -12,6 +12,7 @@ use Modules\Reward\Models\ProductOrder;
 use Modules\Reward\Models\ProductDenomination;
 use DB;
 use Modules\User\Http\Services\UserNotificationService;
+use Helper;
 
 /**
  * Class CatalogueService
@@ -54,12 +55,7 @@ class ProductOrderService
         $this->repository->update([ 'status' => 2 ], $id);
 
         //Mail::send(new OrderConfirmation($order, $order->account, $order->product));
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
+        
         $data = [
             'email' => $order->email,
             'username' => $order->first_name.' '. $order->last_name,
@@ -70,10 +66,11 @@ class ProductOrderService
             'quantity' => $order->quantity,
             'order_number' => 'ccad-00'.$order->id,
         ];
-        Mail::send('emails.orderConfirmation', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('customerexperience@meritincentives.com','Merit Incentives');
-            $m->to($data["email"])->subject('Order Confirmation!');
-        });
+        
+        $emailcontent["template_type_id"] =  '4';
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country']);
+        $emailcontent["email_to"] = $data["email"];
+        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
         $message = "<p>Hello ".$data['username'].",</p>";
         $message .= "<p>Your order has been confirmed.</p>";
@@ -107,12 +104,7 @@ class ProductOrderService
 
         $this->repository->update([ 'status' => 3 ], $id);
 
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
+        
         $data = [
             'email' => $order->email,
             'username' => $order->first_name.' '. $order->last_name,
@@ -123,10 +115,11 @@ class ProductOrderService
             'quantity' => $order->quantity,
             'order_number' => 'ccad-00'.$order->id,
         ];
-        Mail::send('emails.orderShipped', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('customerexperience@meritincentives.com','Merit Incentives');
-            $m->to($data["email"])->subject('Order Shipment!');
-        });
+        
+        $emailcontent["template_type_id"] =  '5';
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country']);
+        $emailcontent["email_to"] = $data["email"];
+        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
         //Mail::send(new OrderShipping($order, $order->account, $order->product));
 
@@ -177,12 +170,7 @@ class ProductOrderService
                 'created_by_id' => $user_points->created_by_id
             ]);
 
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
+        
         $data = [
             'email' => $order->email,
             'username' => $order->first_name.' '. $order->last_name,
@@ -192,10 +180,10 @@ class ProductOrderService
             'order_number' => 'ccad-00'.$order->id,
         ];
 
-        Mail::send('emails.orderCancellation', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('customerexperience@meritincentives.com','Merit Incentives');
-            $m->to($data["email"])->subject('Order Cancellation!');
-        });
+        $emailcontent["template_type_id"] =  '6';
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value']);
+        $emailcontent["email_to"] = $data["email"];
+        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
         //Mail::send(new OrderCancellation($order, $order->account, $order->product));
 
@@ -262,12 +250,7 @@ class ProductOrderService
         // $this->repository->update([ 'status' => 2 ], $id);
 
         //Mail::send(new OrderConfirmation($order, $order->account, $order->product));
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
+        
         $data = [
             'email' => $order->email,
             'username' => $order->first_name.' '. $order->last_name,
@@ -278,10 +261,10 @@ class ProductOrderService
             'quantity' => $order->quantity,
             'order_number' => 'ccad-00'.$order->id,
         ];
-        Mail::send('emails.orderPlaced', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('customerexperience@meritincentives.com','Merit Incentives');
-            $m->to($data["email"])->subject('Order Placed!');
-        });
+        $emailcontent["template_type_id"] =  '3';
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country']);
+        $emailcontent["email_to"] = $data["email"];
+        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
         $message = "<p>Hello ".$data['username'].",</p>";
         $message .= "<p>Your order has been placed.</p>";

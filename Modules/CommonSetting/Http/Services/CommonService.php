@@ -396,6 +396,9 @@ class CommonService
         $status_percentage_nominations['label'] = 'Status of nominations';
         $status_percentage_nominations['label_value'] = $status_nominations['total_nominations_count']." nominations";
 
+        #get_colors
+        $campaign_colors = $this->common_repository->getCampaignColors();
+
         #Cost_of_award_as_per_campaign
         //$overall_nominations
         //$overall_nominationPoints
@@ -406,11 +409,13 @@ class CommonService
                 if($overall_nominationPoints->total_count == 0){
                     $campaing_point_percentage[$count]['name'] = $camp_name;
                     $campaing_point_percentage[$count]['points_percentage'] = 0;
-                    $campaing_point_percentage[$count]['color'] = '#'.substr(md5(rand()), 0, 6);
+                    $campaing_point_percentage[$count]['color'] = $campaign_colors[$camp_name];
+                    //$campaing_point_percentage[$count]['color'] = '#'.substr(md5(rand()), 0, 6);
                 }else{
                     $campaing_point_percentage[$count]['name'] = $camp_name;
                     $campaing_point_percentage[$count]['points_percentage'] = round($camp_value/$overall_nominationPoints->total_count * 100,2);
-                    $campaing_point_percentage[$count]['color'] = '#'.substr(md5(rand()), 0, 6);
+                    $campaing_point_percentage[$count]['color'] = $campaign_colors[$camp_name];
+                    //$campaing_point_percentage[$count]['color'] = '#'.substr(md5(rand()), 0, 6);
                 }
                 $count++;
             }#end_foreach

@@ -30,6 +30,7 @@ use Modules\User\Models\UsersPoint;
 use Modules\User\Transformers\UserCampaignTransformer;
 use DB;
 use Modules\User\Models\UsersGroupList;
+use Helper;
 
 class UserManageController extends Controller
 {

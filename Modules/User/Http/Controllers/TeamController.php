@@ -105,6 +105,11 @@ class TeamController extends Controller
             'email'    => 'required|email',
             'feedback' => 'required|string|min:5|max:600',
         ];
+
+        if(isset($request->user_id)){
+            $rules['user_id'] = 'required|integer|exists:program_users,id';
+        }
+
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {

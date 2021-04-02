@@ -23,6 +23,7 @@ use Modules\User\Models\UserRoles;
 use Modules\User\Imports\UserImport;
 use Modules\Reward\Imports\OrderImport;
 use Modules\CommonSetting\Models\PointRateSettings;
+use Helper;
 
 class ImportsController extends Controller
 {
@@ -285,13 +286,6 @@ class ImportsController extends Controller
     public function sendPasswordCodeToAccount($email,$name,$password)
     {
 
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
-
         $data = [
             'email' => $email,
             'name' => $name,
@@ -299,9 +293,10 @@ class ImportsController extends Controller
         ];
 
         try{
-            Mail::send('emails.UserWelcomeMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                $m->to($data["email"])->subject('Cleveland Clinic Abu Dhabi - New Account');
-            });
+            $emailcontent["template_type_id"] =  '13';
+            $emailcontent["dynamic_code_value"] = array($data['name'],$data['password']);
+            $emailcontent["email_to"] = $data["email"];
+            $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
         }catch(\Throwable $th){
             return response()->json([
                 'error_message' => $th->getMessage(),

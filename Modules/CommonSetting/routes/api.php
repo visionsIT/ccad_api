@@ -42,3 +42,11 @@ Route::post('rewards_report','CommonSettingController@rewardsReport');
 Route::post('product_report_csv','CommonSettingController@productReportCsv');
 Route::post('product_overall_report','CommonSettingController@productOverallReport');
 Route::post('popular_reward_csv','CommonSettingController@popularRewardCsv');
+/***********Api's for email templates************/
+Route::get('email_template_types','EmailTemplatesController@emailTemplateTypes');
+Route::get('email_templates','EmailTemplatesController@emailTemplates');
+Route::post('emailSettings/status','EmailTemplatesController@emailTemplateStatusChange');
+
+
+Route::post('emailSettings/saveEmailTemplateContent', 'EmailTemplatesController@saveDynamicEmailContent');
+Route::get('emailSettings/getEmailTemplate/{template_id}', 'EmailTemplatesController@getEmailTemplateByID');

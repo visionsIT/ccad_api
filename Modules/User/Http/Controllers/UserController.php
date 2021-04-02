@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\Mail;
 use Modules\User\Models\UserNotifications;
 use Modules\User\Transformers\UserNotificationTransformer;
 use Modules\User\Transformers\UserNotificationDetailTransformer;
+use Helper;
 
 class UserController extends Controller
 {
@@ -732,14 +733,6 @@ class UserController extends Controller
                 $account = ProgramUsers::where('account_id',$account_id)->first();
                 if(!empty($account)){
 
-                    $image_url = [
-                        'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-                        'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-                        'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-                        'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-                        'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
-                    ];
-
                     $data = [
                         'email' => $account->email,
                         'name' => $account->first_name,
@@ -748,19 +741,19 @@ class UserController extends Controller
                     if($b_status == 0){
                         Account::where('id',$account_id)->update(['login_attempts'=>0]);
 
-                        Mail::send('emails.UserUnBlockMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                            $m->from('customerexperience@meritincentives.com','Merit Incentives');
-                            $m->to($data["email"])->subject('Account Unblocked');
-                        });
+                        $emailcontent["template_type_id"] =  '12';
+                        $emailcontent["dynamic_code_value"] = array($data['name']);
+                        $emailcontent["email_to"] = $data["email"];
+                        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
                         return response()->json(['message'=>'User Un-Blocked Successfully.', 'status'=>'success']);exit;
                     }else{
                         Account::where('id',$account_id)->update(['login_attempts'=>3]);
 
-                        Mail::send('emails.AdminBlockUserMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                            $m->from('customerexperience@meritincentives.com','Merit Incentives');
-                            $m->to($data["email"])->subject('Account Suspended');
-                        });
+                        $emailcontent["template_type_id"] =  '11';
+                        $emailcontent["dynamic_code_value"] = array($data['name']);
+                        $emailcontent["email_to"] = $data["email"];
+                        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
                         return response()->json(['message'=>'User Blocked Successfully.', 'status'=>'success']);exit;
                     }

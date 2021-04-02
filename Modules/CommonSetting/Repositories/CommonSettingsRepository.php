@@ -183,7 +183,7 @@ class CommonSettingsRepository extends Repository
 
     public function getFinalAllDatesNominations($nomination_approved_graphData,$pdf_filter,$from,$to,$year_for_week){
         //echo "<pre>";print_r($nomination_approved_graphData);die;
-
+        $campaign_colors = $this->getCampaignColors();
         $new_array = array();
         foreach($nomination_approved_graphData as $key=>$value){
             // get missing dates in list -- code start here
@@ -242,7 +242,8 @@ class CommonSettingsRepository extends Repository
 
                 $value['nomination_point_label'] = $nomination_point_label;
                 $value['nomination_point_count'] = $nomination_point_count;
-                $value['color'] = '#'.substr(md5(rand()), 0, 6);
+                $value['color'] = $campaign_colors[$key];
+                //$value['color'] = '#'.substr(md5(rand()), 0, 6);
                 
                 
             }else if(isset($pdf_filter) && $pdf_filter == 1){
@@ -277,7 +278,8 @@ class CommonSettingsRepository extends Repository
                 
                 $value['nomination_point_label'] = $nomination_point_label;
                 $value['nomination_point_count'] = $nomination_point_count;
-                $value['color'] = '#'.substr(md5(rand()), 0, 6);
+                $value['color'] = $campaign_colors[$key];
+                //$value['color'] = '#'.substr(md5(rand()), 0, 6);
                 
             }else if(isset($pdf_filter) && $pdf_filter == 2){
 
@@ -304,7 +306,8 @@ class CommonSettingsRepository extends Repository
                 
                 $value['nomination_point_label'] = $nomination_point_label;
                 $value['nomination_point_count'] = $nomination_point_count;
-                $value['color'] = '#'.substr(md5(rand()), 0, 6);
+                $value['color'] = $campaign_colors[$key];
+                //$value['color'] = '#'.substr(md5(rand()), 0, 6);
                 
             }
             // get missing dates in list -- code end here
@@ -484,5 +487,26 @@ class CommonSettingsRepository extends Repository
 
         return $finalData;
     }
+
+    /************************
+    get colors for campaigns
+    ************************/
+    public function getCampaignColors(){
+
+        $colors = array('#E6B0AA','#C39BD3','#A9CCE3','#A2D9CE','#FAD7A0','#E59866','#CCD1D1','#922B21','#1F618D','#138D75','#B7950B','#E67E22','#34495E','#0E6251','#40E0D0','#DE3163','#FA8072','#CCCCFF','#FF0000','#00FF00','#0000FF','#800080','#808000','#808080','#000000','#999999','#FAD7A0');
+
+        $campaign_colors = array();
+        $campaign_names = ValueSet::select('id','name')->get();
+        if(!empty($campaign_names)){
+            foreach($campaign_names as $key=>$value){
+                if (array_key_exists($key,$colors)){
+                    $campaign_colors[$value->name] = $colors[$key];
+                }else{
+                    $campaign_colors[$value->name] = '#784212';
+                }
+            }
+        }
+        return $campaign_colors;
+    }/*********fn_ends_here********/
     
 }
