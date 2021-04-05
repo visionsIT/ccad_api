@@ -14,7 +14,7 @@ Route::put('update/badge', 'NominationTypeController@updateBadges');
 Route::get('badges/{account_id}', 'NominationTypeController@NominationBadges');
 Route::get('nominations/{nomination_id}/values', 'NominationController@NominationValues');
 //Route::get('nominations/{nomination_id}/wall', 'NominationController@NominationWall');
-Route::get('nominations/campaign/wall', 'NominationController@NominationCampaignWall');
+Route::get('nominations/campaign/wall/{campaign_id?}', 'NominationController@NominationCampaignWall');
 Route::get('nomination/ecards_wall', 'NominationController@NominationEcardWall');
 Route::get('badges/wall', 'NominationController@NominationBadgesWall');
 Route::resource('nominations/{id}/decline', 'NominationDeclineController');

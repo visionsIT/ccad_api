@@ -93,9 +93,10 @@ final class TokensService
             DB::table('tokens')->where([ 'account_id' => $account->id, 'type' => 0 ])->update(['token' => $token]);
         }
         $this->tokens_repository->create([ 'account_id' => $account->id, 'token' => $token, 'type' => 0 ]);
-        $resetlink = env('frontendLink').'/reset-password/'.$token.'?p='.$status;
+        $resetlink = env('frontendURL').'/reset-password/'.$token.'?p='.$status;
 
         $name = $account->user->first_name.' '.$account->user->last_name;
+        $resetlink = "<a href=".$resetlink.">Click here</a>";
         $emailcontent["template_type_id"] =  '22';
         $emailcontent["dynamic_code_value"] = array($name,$resetlink);
         $emailcontent["email_to"] = $account->email;

@@ -54,7 +54,7 @@ class CommonSettingsRepository extends Repository
         $activeUser = [];
         $inactiveUser = [];
         for($i = 0; $i < $total_registrations; $i++) {
-            $account_id = $data[$i]->account_id;
+            $account_id = $data[$i]->id;
             $user_login = Account::select('last_login')->where('id',$account_id)->first();
             if($user_login->last_login != ''){
                 $last_login = date('Y-m-d', strtotime($user_login->last_login));
@@ -87,7 +87,7 @@ class CommonSettingsRepository extends Repository
         //$main_array = array();
         if(!empty($accounts)){
             foreach($accounts as $key=>$account){
-                $account_id[] = $account['account_id'];
+                $account_id[] = $account['id'];
             }
         }
 

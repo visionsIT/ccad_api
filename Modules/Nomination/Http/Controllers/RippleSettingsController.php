@@ -637,8 +637,7 @@ class RippleSettingsController extends Controller
                         try {
 
                             $link_to_ecard = $data['link_to_ecard'];        
-                            $link_to_ecard = str_replace('https://', '', $link_to_ecard);
-                            $link_to_ecard = str_replace('http://', '', $link_to_ecard);
+                            $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
                             $emailcontent["template_type_id"] =  '7';
                             $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
                             $emailcontent["email_to"] = $data["email"];

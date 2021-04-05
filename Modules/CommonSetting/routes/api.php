@@ -37,6 +37,7 @@ Route::post('login_visit_csv', 'CommonSettingController@loginVisitCsv');
 Route::post('active-user-csv', 'CommonSettingController@activeInactive');
 Route::get('campaign_list','CommonSettingController@getCampaignList');
 Route::post('nomination_point_csv', 'CommonSettingController@nominationPointsCsv');
+Route::post('nomination_status_csv', 'CommonSettingController@nominationStatusCsv');
 Route::post('award_cost_csv', 'CommonSettingController@awardCostCsv');
 Route::post('rewards_report','CommonSettingController@rewardsReport');
 Route::post('product_report_csv','CommonSettingController@productReportCsv');

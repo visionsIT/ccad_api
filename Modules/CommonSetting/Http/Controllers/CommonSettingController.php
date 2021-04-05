@@ -578,7 +578,7 @@ class CommonSettingController extends Controller
             $request['account_id'] = $request->account_id;
             $rules = [
                 //'account_id' => 'required|integer|exists:accounts,id',
-                'page_name' => 'required'
+                'page_name' => 'required|in:login,my_activity,rewards'
             ];
 
             $validator = \Validator::make($request->all(), $rules);
@@ -589,7 +589,7 @@ class CommonSettingController extends Controller
             $ip_address = $request->ip();
             // $ip_address = '127.0.1';
 
-            if(isset($request->account_id)){
+            if(isset($request->account_id) && !empty($request->account_id)){
                 $count = DB::table('page_visits')->where('account_id',$request->account_id)->where('page_name',$request->page_name)->where('created_at', 'like', date('Y-m-d%'))->count();
                 $old_count = DB::table('page_visits')->where('account_id',$request->account_id)->where('page_name',$request->page_name)->count();
                 $account_id = $request->account_id;
@@ -1301,6 +1301,197 @@ class CommonSettingController extends Controller
         }
 
     }
+
+
+
+    /**************************Nomination status csv******************/
+    public function nominationStatusCsv(Request $request){
+        try{
+            $from = $request['from'] . ' 00:00:01';
+            $to = $request['to'] . ' 23:59:59';
+            $group_id = array();
+
+            if (!file_exists('reports')) {
+                File::makeDirectory(public_path('reports'));
+            }
+            $file_name = "/reports/nomination_status.csv";
+            $file_link = env('APP_URL').$file_name;
+
+
+            $account_id = $request->account_id;
+            if($request->user_group == 0){
+                $groupData = $this->common_repository->getUserGroups($account_id);
+                if(!empty($groupData)){
+                    foreach($groupData as $groups){
+                        $group_id[] = $groups["user_group_id"];
+                    }
+                }
+            }else{
+                $group_id = array($request->user_group);
+            }
+            $pdf_filter = $request->pdf_filter;
+
+
+            $nomination_data = UserNomination::whereIn('group_id',$group_id)->whereBetween('created_at', [$from, $to])->with(['nominee_account','user_account','campaignid','groupName','valueCategory']);
+            if($request->campaign_id != '0'){
+                $nomination_data = $nomination_data->where('campaign_id',$request->campaign_id);
+            }
+            
+            $final_data = $nomination_data->get()->toArray();
+
+            
+            // dd($final_data);
+            $columns = array('Campaign Name','Nominator First Name','Nominator Surname', 'Nominator Email','Nominee First Name','Nominee Surname','Nominee Email','Nominee Function','Nominee User Group','L1AdminFirst Name','L1Admin Surname','L1Admin Email','L1Admin User Group','L2Admin First Name','L2Admin Surname','L2Admin Email','Value Category Name','Level Name','Requested Value','Value','Reason For Nomination','Status','Reason For Decline','Created On','Updated On');
+            $new_csv = fopen(public_path($file_name) , 'w');
+            fputcsv($new_csv, $columns);
+            foreach($final_data as $key => $value) {
+
+                // dd($value);
+                if($value["ecard_id"] != ''){
+                        $type = "Ecard";
+                    }
+                else{
+                    $type = "Nomination";
+                }
+
+                if($value["points"] == ''){
+                    $value["points"] = 0;
+                }
+
+                $l1admin_first_name = "N/A";
+                $l1admin_last_name = "N/A";
+                $l1admin_email = "N/A";
+
+                $l2admin_first_name = "";
+                $l2admin_last_name = "";
+                $l2admin_email = "";
+                $l1admin_group_name = "";
+                $cnt = 0;
+                $level_name = "Nomination";
+
+
+                if($value["nominee_account"]["vp_emp_number"] != ''){
+
+                    $adminL1_data = DB::table("users_group_list") 
+                                    ->select("users_group_list.user_group_id","users_group_list.account_id","roles.name","program_users.first_name","program_users.last_name","program_users.email")
+                                    ->leftJoin('roles','users_group_list.user_group_id','=','roles.id')
+                                    ->leftJoin('program_users','users_group_list.account_id','=','program_users.account_id')
+                                    ->where(["users_group_list.account_id" => $value["nominee_account"]["vp_emp_number"],"users_group_list.user_role_id" => 2])->get()->toArray();
+                                    // dd($adminL1_data);
+
+                                
+                    if(count($adminL1_data) > 0){
+                        foreach($adminL1_data as $key1 => $value1){
+                            $l1admin_first_name = $value1->first_name;
+                            $l1admin_last_name = $value1->last_name;
+                            $l1admin_email = $value1->email;
+                            if($cnt == 0){
+                                $l1admin_group_name = $l1admin_group_name.$value1->name;
+                            }
+                            else{
+                                $l1admin_group_name = $l1admin_group_name.", ".$value1->name;
+                            }
+                            $cnt++;
+                        }
+                    }
+                    
+                    
+                }
+                
+                if(!isset($value["value_category"]["name"])){
+                    $value["value_category"]["name"] = "N/A";
+                }
+                
+                if($value["ecard_id"] != ''){
+                    $level_name = "Ecard";
+                }
+
+                if($value["level_1_approval"] == 2 && $value["level_2_approval"] == 2 || $value["level_1_approval"] == 1 && $value["level_2_approval"]== 1 || $value["level_1_approval"] == 1 && $value["level_2_approval"] == 2 || $value["level_1_approval"] == 2 && $level_2_approval == 1 ){
+                    $status_by = "Approved";
+                }
+                else if($value["level_1_approval"] == "-1" || $value["level_2_approval"] == "-1" ){
+                    if($value["level_1_approval"] == "-1"){
+                        $status_by = "Declined_l1";
+                    }
+                    else{
+                        $status_by = "Declined_l2";
+                    }
+                }
+                else if($value["level_1_approval"] == "0"){
+                    $status_by = "Pending_l1";
+                }
+                else{
+                    $status_by = "Pending_l2";
+                }
+
+                if($status_by == "Approved"){
+                    $value_points = $value["points"];
+                }
+                else{
+                    $value_points = "";
+                }
+                
+                if($value["group_id"] != '' && strpos($value["campaignid"]["name"], "Excellence Award") !== false){
+
+                    $l2_admin = DB::table("program_users")
+                                ->select("program_users.first_name","program_users.last_name","program_users.email","users_group_list.id")
+                                ->leftJoin("users_group_list","program_users.account_id","=","users_group_list.account_id")
+                                ->where(["user_group_id" => $value["group_id"],"user_role_id" => '3'])
+                                ->first();
+                    
+                    $l2admin_first_name = $l2_admin->first_name;
+                    $l2admin_last_name = $l2_admin->last_name;
+                    $l2admin_email = $l2_admin->email;
+                }
+                            
+                if($type == 'Ecard'){
+                    $l1admin_first_name = "";
+                    $l1admin_last_name = "";
+                    $l1admin_email = "";
+
+                    $l2admin_first_name = "";
+                    $l2admin_last_name = "";
+                    $l2admin_email = "";
+                    $l1admin_group_name = "";
+                    $status_by = "Sent";
+
+                    $ecard_id = $value["ecard_id"];
+
+                    $ecard_detail = DB::table('users_ecards')
+                    ->select("users_ecards.id","users_ecards.image_message","ecards.card_title")
+                    ->leftJoin("ecards","users_ecards.ecard_id","=","ecards.id")
+                    ->where('users_ecards.id',$ecard_id)
+                    ->first();
+                    $value["reason"] = $ecard_detail->image_message;
+                    $value["value_category"]["name"] = $ecard_detail->card_title;
+
+                }
+
+                fputcsv($new_csv, array( $value["campaignid"]["name"],$value["user_account"]["first_name"],$value["user_account"]["last_name"],$value["user_account"]["email"],$value["nominee_account"]["first_name"],$value["nominee_account"]["last_name"],$value["nominee_account"]["email"],$value["nominee_function"],$value["group_name"]["name"],$l1admin_first_name,$l1admin_last_name,$l1admin_email,$l1admin_group_name,$l2admin_first_name,$l2admin_last_name,$l2admin_email,$value["value_category"]["name"],$level_name,$value["points"],$value_points,$value["reason"],$status_by,$value["reject_reason"],$value["created_at"],$value["updated_at"] ));
+
+                
+            }
+
+            fclose($new_csv);
+            return response()->json(['message' => 'success', 'status'=>'success', 'link' =>$file_link]);
+        }
+        catch (\Throwable $th) {
+            // return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
+
+            if (!file_exists('reports')) {
+                File::makeDirectory(public_path('reports'));
+            }
+            $file_name = "/reports/nomination_status.csv";
+            $file_link = env('APP_URL').$file_name;
+            $columns = array('Campaign Name','Nominator First Name','Nominator Surname', 'Nominator Email','Nominee First Name','Nominee Surname','Nominee Email','Nominee Function','Nominee User Group','L1AdminFirst Name','L1Admin Surname','L1Admin Email','L1Admin User Group','Value Category Name','Level Name','Requested Value','Value','Reason For Nomination','Status','Reason For Decline','Created On','Updated On');
+            $new_csv = fopen(public_path($file_name) , 'w');
+            fputcsv($new_csv, $columns);
+            fclose($new_csv);
+            return response()->json(['message' => 'No record found', 'status'=>'success', 'link' =>$file_link]);
+
+        }
+    }
+    /**************************END Nomination status csv******************/
 
 
     /***********************

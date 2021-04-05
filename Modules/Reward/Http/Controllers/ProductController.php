@@ -22,6 +22,7 @@ use Modules\Reward\Exports\RewardsExports;
 use Modules\CommonSetting\Models\PointRateSettings;
 use Modules\Reward\Models\ProductsCountries;
 use Modules\User\Models\ProgramUsers;
+use Modules\User\Http\Requests\ProgramUsersRequest;
 use Throwable;
 use DB;
 class ProductController extends Controller
@@ -70,9 +71,15 @@ class ProductController extends Controller
      */
     public function show($id): Fractal
     {
+        
         $product = $this->repository->find($id);
-
-        ProductsAccountsSeen::firstOrCreate([ 'account_id' => 1, 'product_id' => $product->id ]);
+        $useraccount = \Auth::user();
+        $accountID =  $useraccount->id;
+        
+        ProductsAccountsSeen::create([
+                'account_id' => $accountID,
+                'product_id' => $product->id
+            ]);
 
         return fractal($product, new ProductsTransformer);
     }

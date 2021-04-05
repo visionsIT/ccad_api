@@ -73,6 +73,8 @@ class CommonService
             }
         }
 
+        $total_register = Account::whereIn('id',$account_id)->whereBetween('created_at', [$from, $to])->get();
+
         if($pdf_filter == 'month'){
             $registered_data_pdf_filter = Account::select(DB::raw("COUNT( 'created_at' ) AS entries"), DB::raw("CONCAT_WS('-',MONTH(created_at),YEAR(created_at)) as monthyear"))->whereIn('id',$account_id)->whereBetween('created_at', [$from, $to])->groupBy('monthyear')->get();
         }else{
@@ -135,11 +137,11 @@ class CommonService
         $website_visit['website_visit_data'] = $website_visit_data;
         $website_visit['website_visit_unique_data'] = $website_visit_unique_data;
 
-        $final_array['total_registrations'] = count($overview_data);
+        $final_array['total_registrations'] = count($total_register);
 
-        $users = $this->common_repository->getActiveInActiveUsers($final_array['total_registrations'], $overview_data);
+        $users = $this->common_repository->getActiveInActiveUsers($final_array['total_registrations'], $total_register);
 
-        $website_visits = $this->common_repository->getTotalWebsiteVisitedCount($overview_data,$from,$to);
+        $website_visits = $this->common_repository->getTotalWebsiteVisitedCount($total_register,$from,$to);
 
         $active_user_visits = $this->common_repository->getTotalWebsiteVisitedCount($users['active_users'],$from,$to);
         $avg_visit = $this->common_repository->getAvgVisitPerActiveUser($users['count_active_users'],$active_user_visits);
@@ -544,11 +546,18 @@ class CommonService
 
 
         #points_redeemed/not redeemed percenatge
-        $points_status['points_redeemed_percentage'] = ($total_points_shipped->total_count != "")?round($total_points_shipped->total_count/$total_points_orders->total_count * 100 ,2):0;
         $point_not_redeemed = $total_points_orders->total_count - $total_points_shipped->total_count;
-        $points_status['points_not_redeemed_percentage'] = ($point_not_redeemed!='')?round($point_not_redeemed/$total_points_orders->total_count * 100 ,2):0;
         $points_status['label'] = 'Points awarded';
         $points_status['label_value'] = $total_points_orders->total_count;
+        if($total_points_orders->total_count == 0){
+            $points_status['points_redeemed_percentage'] = 0;
+            $points_status['points_not_redeemed_percentage'] = 0;
+        }else{
+            $points_status['points_redeemed_percentage'] = ($total_points_shipped->total_count != "")?round($total_points_shipped->total_count/$total_points_orders->total_count * 100 ,2):0;
+            $point_not_redeemed = $total_points_orders->total_count - $total_points_shipped->total_count;
+            $points_status['points_not_redeemed_percentage'] = ($point_not_redeemed!='')?round($point_not_redeemed/$total_points_orders->total_count * 100 ,2):0;
+        }
+
 
         #status_of_redemptions
         $cancel_orders = ProductOrder::join('products_countries','products_countries.product_id','product_orders.product_id')->where('products_countries.country_id',$user_country)->where('product_orders.status','-1')->whereIn('product_orders.account_id',$account_id)->whereBetween('product_orders.created_at', [$from, $to])->selectRaw('COUNT(product_orders.created_at) AS total_count')->first();
@@ -560,10 +569,17 @@ class CommonService
         $shipped_order = $this->common_repository->getOrderShippedQuery($account_id,$from,$to,$user_country);
         $shipped_order = $shipped_order->selectRaw('COUNT(product_orders.created_at) AS total_count')->first();
 
-        $redemption_status['cancelled_orders'] = ($cancel_orders->total_count)?round($cancel_orders->total_count/$total_order_placed * 100 ,2):0;
-        $redemption_status['shipped_orders'] = ($shipped_order->total_count)?round($shipped_order->total_count/$total_order_placed * 100 ,2):0;
-        $redemption_status['confirmed_order'] = ($confirmed_order->total_count)?round($confirmed_order->total_count/$total_order_placed * 100 ,2):0;
-        $redemption_status['pending_orders'] = ($pending_order->total_count)?round($pending_order->total_count/$total_order_placed * 100 ,2):0;
+        if($total_order_placed == 0){
+            $redemption_status['cancelled_orders'] = 0;
+            $redemption_status['shipped_orders'] = 0;
+            $redemption_status['confirmed_order'] = 0;
+            $redemption_status['pending_orders'] = 0;
+        }else{
+            $redemption_status['cancelled_orders'] = ($cancel_orders->total_count)?round($cancel_orders->total_count/$total_order_placed * 100 ,2):0;
+            $redemption_status['shipped_orders'] = ($shipped_order->total_count)?round($shipped_order->total_count/$total_order_placed * 100 ,2):0;
+            $redemption_status['confirmed_order'] = ($confirmed_order->total_count)?round($confirmed_order->total_count/$total_order_placed * 100 ,2):0;
+            $redemption_status['pending_orders'] = ($pending_order->total_count)?round($pending_order->total_count/$total_order_placed * 100 ,2):0;
+        }
         $redemption_status['label'] = 'Status of redemptions';
 
         #rewards_available_percentage_data
@@ -582,9 +598,15 @@ class CommonService
         $overall_order_placed = count($order_placed_overall);
 
         $rewards_available_status['total_rewards'] = $total_rewards;
-        $rewards_available_status['ordered_percentage'] = ($overall_order_placed)?round($overall_order_placed/$total_rewards * 100 ,2):0;
-        $rewards_available_status['viewed_percentage'] = ($overall_order_placed)?round(($total_viewed-$overall_order_placed)/$total_rewards * 100 ,2):0;
-        $rewards_available_status['never_viewed_percentage'] = ($overall_order_placed)?round(($total_rewards-$total_viewed)/$total_rewards * 100 ,2):0;
+        if($total_rewards == 0){
+            $rewards_available_status['ordered_percentage'] = 0;
+            $rewards_available_status['viewed_percentage'] = 0;
+            $rewards_available_status['never_viewed_percentage'] = 0;
+        }else{
+            $rewards_available_status['ordered_percentage'] = round($overall_order_placed/$total_rewards * 100 ,2);
+            $rewards_available_status['viewed_percentage'] = round(($total_viewed-$overall_order_placed)/$total_rewards * 100 ,2);
+            $rewards_available_status['never_viewed_percentage'] = round(($total_rewards-$total_viewed)/$total_rewards * 100 ,2);
+        }
         $rewards_available_status['label'] = 'Rewards available';
         $rewards_available_status['label_value'] = $total_rewards." rewards";
 

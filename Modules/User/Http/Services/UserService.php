@@ -170,26 +170,42 @@ class UserService
         $search = trim($_REQUEST['keyword']);
         $campaignId = $_REQUEST['campaign_id'];
 
-        $useraccount = \Auth::user();
-        $accountID =  $useraccount->id;
+        if($campaignId) {
+            $useraccount = \Auth::user();
+            $accountID =  $useraccount->id;
 
-        $group_ids = $this->getCampaignSettings($campaignId);
+            $group_ids = $this->getCampaignSettings($campaignId);
 
-        $data = ProgramUsers::select('program_users.id', 'program_users.account_id', 'first_name', 'last_name', 'email', 'profile_image', 'image_path')
-        ->where('program_users.account_id','!=',$accountID)
-        ->where(['program_users.is_active' => 1])
-        ->Where('first_name', 'Like', '%' . $search . '%')
-        ->orWhere('last_name', 'Like', '%' . $search . '%')
-        ->orWhere('email', 'Like', '%' . $search . '%')
-        ->leftJoin('users_group_list as t1', "t1.account_id","=","program_users.account_id")
-        ->where('t1.account_id','!=',$accountID)
-        ->where('t1.user_role_id','1')
-        ->where('t1.status','1');
-        if (count($group_ids) > 0) {
-            $data->whereIn('t1.user_group_id', $group_ids);
+            $data = ProgramUsers::select('program_users.id', 'program_users.account_id', 'first_name', 'last_name', 'email', 'profile_image', 'image_path')
+            ->where('program_users.account_id','!=',$accountID)
+            ->where(['program_users.is_active' => 1])
+            ->where(function($query) use ($search){
+                $query->where('first_name', 'LIKE', "%{$search}%")
+                ->orWhere('last_name', 'LIKE', "%{$search}%")
+                ->orWhere('email', 'Like', "%{$search}%")
+                ->orWhereRaw("concat(program_users.first_name, ' ', program_users.last_name) like '%{$search}%' ");
+            })
+            ->leftJoin('users_group_list as t1', "t1.account_id","=","program_users.account_id")
+            ->where('t1.account_id','!=',$accountID)
+            ->where('t1.user_role_id','1')
+            ->where('t1.status','1');
+            if (count($group_ids) > 0) {
+                $data->whereIn('t1.user_group_id', $group_ids);
+            }
+
+            return $data->distinct()->get();
+        } else {
+            $data = ProgramUsers::select('program_users.id', 'program_users.account_id', 'first_name', 'last_name', 'email', 'profile_image', 'image_path')
+            ->where(['program_users.is_active' => 1])
+            ->where(function($query) use ($search){
+                $query->where('first_name', 'LIKE', "%{$search}%")
+                ->orWhere('last_name', 'LIKE', "%{$search}%")
+                ->orWhere('email', 'LIKE', "%{$search}%")
+                ->orWhereRaw("concat(first_name, ' ', last_name) LIKE '%{$search}%' ");
+            });
+
+            return $data->distinct()->get();
         }
-
-        return $data->distinct()->get();
     }
 
     /**

@@ -559,12 +559,13 @@ class UserNominationController extends Controller
 
                                 $subject = "TAKREEM - Notification of nomination";
                     
-                                $link = env('frontendLink')."/page/campaign/".$user_nomination->campaign_id;
+                                $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
                                 $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                                 $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
                         
                                 foreach ($l2User as $account)
                                 {
+                                    $link = "Please <a href=".$link.">click here</a>";
                                     $emailcontent["template_type_id"] = '23';
                                     $emailcontent["dynamic_code_value"] = array($account->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$request->reason,$link);
                                     $emailcontent["email_to"] = $account->email;
@@ -587,10 +588,11 @@ class UserNominationController extends Controller
                                     if(!empty($l1_account_data)){
                                         $subject = "TAKREEM - Notification of nomination";
                         
-                                        $link = env('frontendLink')."/page/campaign/".$user_nomination->campaign_id;
+                                        $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
                                         $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                                         $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
-                                
+                                    
+                                        $link = "Please <a href=".$link.">click here</a>";
                                         //L1_is_required
                                         if($level_2_approval == 0){
                                             //L2_not_required_for_this_nomination
@@ -1396,8 +1398,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     try {
 
                         $link_to_ecard = $data['link_to_ecard'];        
-                        $link_to_ecard = str_replace('https://', '', $link_to_ecard);
-                        $link_to_ecard = str_replace('http://', '', $link_to_ecard);
+                        $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
                         $emailcontent["template_type_id"] = '7';
                         $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
                         $emailcontent["email_to"] = $data["email"];
@@ -1430,13 +1431,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
 
-                    $link = env('frontendLink')."/page/campaign/".$user_nomination->campaign_id;
+                    $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
                     $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
                     $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
 
                     $mail_content = "<p>You have a nomination waiting for approval.</p>";
                     foreach ($l2User as $account)
                     {
+                        $link = "Please <a href=".$link.">click here</a>";
                         $emailcontent["template_type_id"] = '23';
                         $emailcontent["dynamic_code_value"] = array($account->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$user_nomination->reason,$link);
                         $emailcontent["email_to"] = $account->email;
@@ -1729,9 +1731,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 try {
 
                     $link_to_ecard = $data['link_to_ecard'];        
-                    $link_to_ecard = str_replace('https://', '', $link_to_ecard);
-                    $link_to_ecard = str_replace('http://', '', $link_to_ecard);
-
+                    $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
                     $emailcontent["template_type_id"] = '7';
                     $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
                     $emailcontent["email_to"] = $data["email"];
@@ -3157,9 +3157,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         ];
                         
                         $link_to_ecard = $data['link_to_ecard'];        
-                        $link_to_ecard = str_replace('https://', '', $link_to_ecard);
-                        $link_to_ecard = str_replace('http://', '', $link_to_ecard);
-                        
+                        $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
                         $emailcontent["template_type_id"] = '7';
                         $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
                         $emailcontent["email_to"] = $data["email"];
@@ -3179,8 +3177,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
     /**********  Generate existing nominations certificates script  ******* */
     public function generateCertificateImage()
     { 
-       $user_nomination = UserNomination::where("is_active", 1)->get();
-    //    $user_nomination = UserNomination::whereNull("certificate_image_path")->get();
+       $user_nomination = UserNomination::where("is_active",1)->get();
        if(!empty($user_nomination))
        {
            $path = public_path('/uploaded/certificate_images/');
@@ -3198,38 +3195,40 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                        $certificate_image_path = $path.$certificate_image;
                        $certificate_image_url = $urlPath.$certificate_image;
                        
-                        if(File::exists($certificate_image_path)) {
+                       if(File::exists($certificate_image_path)) {
 
-                            $randm = rand(100,1000000);
-                            $newImage = $randm.time().'_'.$certificate_image;
-                            
-                            $image_mesaage = $user_nomination[$i]->reason;
-                            $destinationPath = $path.$newImage;
-                    
-                            $conv = new \Anam\PhantomMagick\Converter();
-                            $options = [
-                                'width' => 800,'quality' => 90
-                            ];
-                            
-                            $sendToUser = ProgramUsers::find($user_nomination[$i]->user);
+                           $randm = rand(100,1000000);
+                           $newImage = $randm.time().'-'.$certificate_image;
+                           
+                           $image_mesaage = $user_nomination[$i]->reason;
+                           $destinationPath = $path.$newImage;
+                           
+                           //echo $image_mesaage."<br>";
+                           //echo $destinationPath."<br>";
+                   
+                           $conv = new \Anam\PhantomMagick\Converter();
+                           $options = [
+                               'width' => 800,'quality' => 90
+                           ];
+                           
+                           $sendToUser 	= ProgramUsers::where("account_id",$user_nomination[$i]->user)->first();
+                           $presented_to 	= (!empty($sendToUser) && isset($sendToUser->first_name) && !empty($sendToUser->first_name)) ? $sendToUser->first_name : "N-A";
+                                   
+                           $NominationTypeData = NominationType::where('id', $user_nomination[$i]->value)->first();
+                           $core_value 		= (!empty($NominationTypeData) && isset($NominationTypeData->name) && !empty($NominationTypeData->name)) ? $NominationTypeData->name : "N-A";
+                           
+                           $conv->source(url('/newCertificateImage/'.$certificate_image.'/'.$image_mesaage.'/'.$presented_to.'/'.$core_value))
+                                   ->toPng($options)
+                                   ->save($destinationPath);
 
-                            var_dump($sendToUser); die(' SDERAE');
-                            
-                            $presented_to 	= $sendToUser->first_name;
-                            $core_value 	= $user_nomination[$i]->name;
-                            
-                            $conv->source(url('/newCertificateImage/'.$certificate_image.'/'.$image_mesaage.'/'.$presented_to.'/'.$core_value))
-                                    ->toPng($options)
-                                    ->save($destinationPath);
-
-                            UserNomination::where(['id' => $user_nomination[$i]->id, 'campaign_id' => $user_nomination[$i]->campaign_id])->update(['certificate_image_path' => $newImage]);
-                                        
-                        }		
+                           UserNomination::where(['id' => $user_nomination[$i]->id, 'campaign_id' => $user_nomination[$i]->campaign_id])->update(['certificate_image_path' => $newImage]);
+                                       
+                       }		
                    }
                }
            }
        }
-    }
+   }
     /**********  Generate existing nominations certificates script ends!!!  ******* */
 
 }
