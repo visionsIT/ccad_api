@@ -20,6 +20,7 @@ use Spatie\Permission\Models\Role;
 use Modules\User\Models\ProgramUsers;
 use Modules\User\Models\UsersGroupList;
 use Modules\User\Models\UserRoles;
+use Modules\User\Models\VpempNumberLog;
 use Modules\User\Imports\UserImport;
 use Modules\Reward\Imports\OrderImport;
 use Modules\CommonSetting\Models\PointRateSettings;
@@ -419,4 +420,76 @@ class ImportsController extends Controller
             ]);
         }
     }/******import order ends*****/
+
+    public function assignUserVpApi(Request $request){
+        try {
+            $file = $request->file('users_vp_file');
+
+            $randm = rand(100,1000000);
+            $fileNameSave = time() . "-users-" . $file->getClientOriginalName();
+            $filename = $randm.'-'.$fileNameSave;
+
+            $uploaded = $file->move(public_path('uploaded/user_import_file/'.$request->program_id.'/'), $filename);
+
+            $users = Excel::toCollection(new UserImport(), $uploaded->getRealPath());
+            $users = $users[0]->toArray();
+            // $rules = [
+            //     '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
+            //     '*.vp_email' => "required|unique:program_users,username",
+            //     '*.group_name' => 'required|exists:roles,name',
+            // ];
+
+            // $validator = \Validator::make($users, $rules);
+
+            // if ($validator->fails())
+            //     return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+            foreach ($users as $user){
+                $account = Account::where('email', $user['vp_email'])->first();
+                if($account){
+                    
+                    #maintain_log
+                    VpempNumberLog::create([
+                        'user_account_id' => $user['account_id'],
+                        'previous_vp_emp' => $user['vp_emp_number'] ?? '',
+                        'new_vp_emp_number' => $account->id,
+                    ]);
+
+                    
+                    $userData = ProgramUsers::where('email', $user['email'])->update(['vp_emp_number'=> $account->id]);
+
+                    #get_group_id
+                    $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
+                    $groupId = $group_id->id;
+
+                    $roleId = 2;
+
+                    $date = date('Y-m-d h:i:s');
+
+                    $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$groupId,'user_role_id'=>$roleId])->first();
+                    if(empty($check_data)){
+                        $UsersGroupList = new UsersGroupList;
+                        $UsersGroupList->account_id = $account->id;
+                        $UsersGroupList->user_group_id = $groupId;
+                        $UsersGroupList->user_role_id = $roleId;
+                        $UsersGroupList->created_at = $date;
+                        $UsersGroupList->updated_at = $date;
+                        $UsersGroupList->save();
+                    }
+                }
+            }
+            return response()->json([
+                'uploaded_file' => url('uploaded/user_import_file/'.$request->program_id.'/'.$uploaded->getFilename()),
+                'message' => 'VP Users Assigned Successfully'
+            ]);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error_message' => $th->getMessage(),
+                'error_line' => $th->getLine(),
+                'error_file' => $th->getFile()
+            ]);
+        }
+
+    }
 }

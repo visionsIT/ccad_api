@@ -14,6 +14,7 @@ Route::get('orders/confirmed', 'ProductOrderController@getConfirmedOrders');
 Route::get('orders/cancelled', 'ProductOrderController@getCancelledOrders');
 Route::get('orders/shipped', 'ProductOrderController@getShippedOrders');
 Route::post('orders/filter', 'ProductOrderController@filterByDates');
+Route::get('orders/search', 'ProductOrderController@search');
 Route::resource('orders', 'ProductOrderController');
 
 Route::resource('sub-products', 'SubProductController');
@@ -51,3 +52,4 @@ Route::get('countries_list', 'RewardController@getCountries');
 Route::post('change_country_delivery', 'RewardController@changeDeliveryStatus');
 // Route::post('change_ecards_permission', 'RewardController@ecardPermission');
 Route::post('delete_testing_products','ProductOrderController@deleteTestOrders');
+Route::post('users/assign_user_vp', 'ImportsController@assignUserVpApi');

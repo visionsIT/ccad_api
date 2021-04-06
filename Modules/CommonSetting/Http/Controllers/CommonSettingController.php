@@ -1331,147 +1331,97 @@ class CommonSettingController extends Controller
             }
             $pdf_filter = $request->pdf_filter;
 
+            // Total Nomination
+            $nomination_total = UserNomination::whereIn('group_id',$group_id)->whereBetween('created_at', [$from, $to]);
 
-            $nomination_data = UserNomination::whereIn('group_id',$group_id)->whereBetween('created_at', [$from, $to])->with(['nominee_account','user_account','campaignid','groupName','valueCategory']);
+            // Pending Nomination
+            $l1_pending = UserNomination::whereIn('group_id',$group_id)->whereBetween('created_at', [$from, $to])->where('level_1_approval','0');
+            $l2_pending = UserNomination::whereIn('group_id',$group_id)->whereBetween('created_at', [$from, $to])->where('level_2_approval','0');
+
+            // Approved Nomination
+            $l1_decliend = UserNomination::whereIn('group_id',$group_id)->whereBetween('created_at', [$from, $to])->where('level_1_approval','-1');
+            $l2_decliend = UserNomination::whereIn('group_id',$group_id)->whereBetween('created_at', [$from, $to])->where('level_2_approval','-1');
+
+
+            // Declined Nomination
+
             if($request->campaign_id != '0'){
-                $nomination_data = $nomination_data->where('campaign_id',$request->campaign_id);
+                $nomination_total = $nomination_total->where('campaign_id',$request->campaign_id);
+                $l1_pending = $l1_pending->where('campaign_id',$request->campaign_id);
+                $l2_pending = $l2_pending->where('campaign_id',$request->campaign_id);
+
+                $l1_decliend = $l1_decliend->where('campaign_id',$request->campaign_id);
+                $l2_decliend = $l2_decliend->where('campaign_id',$request->campaign_id);
+
+
             }
             
-            $final_data = $nomination_data->get()->toArray();
+            $total = $nomination_total->count();
+            $total_l1_pending = $l1_pending->count();
+            $total_l2_pending = $l2_pending->count();
 
+            $total_l1_decliend = $l1_decliend->count();
+            $total_l2_decliend = $l2_decliend->count();
+
+            $total_l1_approved = $total-$total_l1_pending-$total_l1_decliend;
+            $total_l2_approved = $total-$total_l2_pending-$total_l2_decliend;
+
+
+            if($total !== 0 && $total_l1_approved !== 0){
+                $l1_approvel_per = 100*$total_l1_approved/$total;
+            }
+            else{
+                $l1_approvel_per = 0;
+            }
+
+            if($total !== 0 && $total_l2_approved !== 0){
+                $l2_approvel_per = 100*$total_l2_approved/$total;
+            }
+            else{
+                $l2_approvel_per = 0;
+            }
+
+            if($total !== 0 && $total_l1_decliend !== 0){
+                $l1_decline_per = 100*$total_l1_decliend/$total;
+            }
+            else{
+                $l1_decline_per = 0;
+            }
+
+            if($total !== 0 && $total_l2_decliend !== 0){
+                $l2_decline_per = 100*$total_l2_decliend/$total;
+            }
+            else{
+                $l2_decline_per = 0;
+            }
+
+
+            if($total !== 0 && $total_l1_pending !== 0){
+                $l1_pending_per = 100*$total_l1_pending/$total;
+            }
+            else{
+                $l1_pending_per = 0;
+            }
+
+            if($total !== 0 && $total_l2_pending !== 0){
+                $l2_pending_per = 100*$total_l2_pending/$total;
+            }
+            else{
+                $l2_pending_per = 0;
+            }
             
-            // dd($final_data);
-            $columns = array('Campaign Name','Nominator First Name','Nominator Surname', 'Nominator Email','Nominee First Name','Nominee Surname','Nominee Email','Nominee Function','Nominee User Group','L1AdminFirst Name','L1Admin Surname','L1Admin Email','L1Admin User Group','L2Admin First Name','L2Admin Surname','L2Admin Email','Value Category Name','Level Name','Requested Value','Value','Reason For Nomination','Status','Reason For Decline','Created On','Updated On');
             $new_csv = fopen(public_path($file_name) , 'w');
-            fputcsv($new_csv, $columns);
-            foreach($final_data as $key => $value) {
+            fputcsv($new_csv, array("Status","Count (In number)","Count (In %age)"));
+            fputcsv($new_csv, array("",""));
 
-                // dd($value);
-                if($value["ecard_id"] != ''){
-                        $type = "Ecard";
-                    }
-                else{
-                    $type = "Nomination";
-                }
+            fputcsv($new_csv, array("approved_l1",$total_l1_approved,round($l1_approvel_per,2)."%"));
+            fputcsv($new_csv, array("approved_l2",$total_l2_approved,round($l2_approvel_per,2)."%"));
+            fputcsv($new_csv, array("pending_l1",$total_l1_pending,round($l1_pending_per,2)."%"));
+            fputcsv($new_csv, array("pending_l2", $total_l2_pending,round($l2_pending_per,2)."%"));
+            fputcsv($new_csv, array("declined_l1",$total_l1_decliend,round($l1_decline_per,2)."%"));
+            fputcsv($new_csv, array("declined_l2", $total_l2_decliend,round($l2_decline_per,2)."%"));
 
-                if($value["points"] == ''){
-                    $value["points"] = 0;
-                }
-
-                $l1admin_first_name = "N/A";
-                $l1admin_last_name = "N/A";
-                $l1admin_email = "N/A";
-
-                $l2admin_first_name = "";
-                $l2admin_last_name = "";
-                $l2admin_email = "";
-                $l1admin_group_name = "";
-                $cnt = 0;
-                $level_name = "Nomination";
-
-
-                if($value["nominee_account"]["vp_emp_number"] != ''){
-
-                    $adminL1_data = DB::table("users_group_list") 
-                                    ->select("users_group_list.user_group_id","users_group_list.account_id","roles.name","program_users.first_name","program_users.last_name","program_users.email")
-                                    ->leftJoin('roles','users_group_list.user_group_id','=','roles.id')
-                                    ->leftJoin('program_users','users_group_list.account_id','=','program_users.account_id')
-                                    ->where(["users_group_list.account_id" => $value["nominee_account"]["vp_emp_number"],"users_group_list.user_role_id" => 2])->get()->toArray();
-                                    // dd($adminL1_data);
-
-                                
-                    if(count($adminL1_data) > 0){
-                        foreach($adminL1_data as $key1 => $value1){
-                            $l1admin_first_name = $value1->first_name;
-                            $l1admin_last_name = $value1->last_name;
-                            $l1admin_email = $value1->email;
-                            if($cnt == 0){
-                                $l1admin_group_name = $l1admin_group_name.$value1->name;
-                            }
-                            else{
-                                $l1admin_group_name = $l1admin_group_name.", ".$value1->name;
-                            }
-                            $cnt++;
-                        }
-                    }
-                    
-                    
-                }
-                
-                if(!isset($value["value_category"]["name"])){
-                    $value["value_category"]["name"] = "N/A";
-                }
-                
-                if($value["ecard_id"] != ''){
-                    $level_name = "Ecard";
-                }
-
-                if($value["level_1_approval"] == 2 && $value["level_2_approval"] == 2 || $value["level_1_approval"] == 1 && $value["level_2_approval"]== 1 || $value["level_1_approval"] == 1 && $value["level_2_approval"] == 2 || $value["level_1_approval"] == 2 && $level_2_approval == 1 ){
-                    $status_by = "Approved";
-                }
-                else if($value["level_1_approval"] == "-1" || $value["level_2_approval"] == "-1" ){
-                    if($value["level_1_approval"] == "-1"){
-                        $status_by = "Declined_l1";
-                    }
-                    else{
-                        $status_by = "Declined_l2";
-                    }
-                }
-                else if($value["level_1_approval"] == "0"){
-                    $status_by = "Pending_l1";
-                }
-                else{
-                    $status_by = "Pending_l2";
-                }
-
-                if($status_by == "Approved"){
-                    $value_points = $value["points"];
-                }
-                else{
-                    $value_points = "";
-                }
-                
-                if($value["group_id"] != '' && strpos($value["campaignid"]["name"], "Excellence Award") !== false){
-
-                    $l2_admin = DB::table("program_users")
-                                ->select("program_users.first_name","program_users.last_name","program_users.email","users_group_list.id")
-                                ->leftJoin("users_group_list","program_users.account_id","=","users_group_list.account_id")
-                                ->where(["user_group_id" => $value["group_id"],"user_role_id" => '3'])
-                                ->first();
-                    
-                    $l2admin_first_name = $l2_admin->first_name;
-                    $l2admin_last_name = $l2_admin->last_name;
-                    $l2admin_email = $l2_admin->email;
-                }
-                            
-                if($type == 'Ecard'){
-                    $l1admin_first_name = "";
-                    $l1admin_last_name = "";
-                    $l1admin_email = "";
-
-                    $l2admin_first_name = "";
-                    $l2admin_last_name = "";
-                    $l2admin_email = "";
-                    $l1admin_group_name = "";
-                    $status_by = "Sent";
-
-                    $ecard_id = $value["ecard_id"];
-
-                    $ecard_detail = DB::table('users_ecards')
-                    ->select("users_ecards.id","users_ecards.image_message","ecards.card_title")
-                    ->leftJoin("ecards","users_ecards.ecard_id","=","ecards.id")
-                    ->where('users_ecards.id',$ecard_id)
-                    ->first();
-                    $value["reason"] = $ecard_detail->image_message;
-                    $value["value_category"]["name"] = $ecard_detail->card_title;
-
-                }
-
-                fputcsv($new_csv, array( $value["campaignid"]["name"],$value["user_account"]["first_name"],$value["user_account"]["last_name"],$value["user_account"]["email"],$value["nominee_account"]["first_name"],$value["nominee_account"]["last_name"],$value["nominee_account"]["email"],$value["nominee_function"],$value["group_name"]["name"],$l1admin_first_name,$l1admin_last_name,$l1admin_email,$l1admin_group_name,$l2admin_first_name,$l2admin_last_name,$l2admin_email,$value["value_category"]["name"],$level_name,$value["points"],$value_points,$value["reason"],$status_by,$value["reject_reason"],$value["created_at"],$value["updated_at"] ));
-
-                
-            }
-
+           
             fclose($new_csv);
             return response()->json(['message' => 'success', 'status'=>'success', 'link' =>$file_link]);
         }
@@ -1483,7 +1433,7 @@ class CommonSettingController extends Controller
             }
             $file_name = "/reports/nomination_status.csv";
             $file_link = env('APP_URL').$file_name;
-            $columns = array('Campaign Name','Nominator First Name','Nominator Surname', 'Nominator Email','Nominee First Name','Nominee Surname','Nominee Email','Nominee Function','Nominee User Group','L1AdminFirst Name','L1Admin Surname','L1Admin Email','L1Admin User Group','Value Category Name','Level Name','Requested Value','Value','Reason For Nomination','Status','Reason For Decline','Created On','Updated On');
+            $columns = array('Date','Campaign Name','Total Points','Total %','Total Cost');
             $new_csv = fopen(public_path($file_name) , 'w');
             fputcsv($new_csv, $columns);
             fclose($new_csv);

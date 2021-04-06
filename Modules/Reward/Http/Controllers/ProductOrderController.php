@@ -77,6 +77,25 @@ class ProductOrderController extends Controller
         return fractal($orders, new ProductOrderTransformer);
     }
 
+    public function search(Request $request)
+    {   
+        $search = $request->query('q');
+        $products = ProductOrder::select('product_orders.*','t1.seen')
+            ->leftJoin('products as t1', "t1.id","=","product_orders.product_id")
+            ->where(function($query) use ($search){
+                $query->where('product_orders.first_name', 'LIKE', "%{$search}%")
+                ->orWhere('product_orders.last_name', 'LIKE', "%{$search}%")
+                ->orWhere('product_orders.email', 'LIKE', "%{$search}%")
+                ->orWhere('t1.name', 'LIKE', "%{$search}%")
+                ->orWhereRaw("concat(product_orders.first_name, ' ', product_orders.last_name) LIKE '%{$search}%' ");
+            })
+            ->distinct()
+            ->orderBy('product_orders.created_at', 'DESC')
+            ->paginate(12);
+
+        return fractal($products, new ProductOrderTransformer);
+    }
+
     /**
      * @param ProductOrderRequest $request
      *
