@@ -1135,7 +1135,18 @@ class CommonSettingController extends Controller
                     $l2admin_email = $l2_admin->email;
                 }
                             
-                if(strpos($value["campaignid"]["name"], "E-CARDS") !== false){
+                // if(strpos($value["campaignid"]["name"], "E-CARDS") !== false){
+                //     $l1admin_first_name = "";
+                //     $l1admin_last_name = "";
+                //     $l1admin_email = "";
+
+                //     $l2admin_first_name = "";
+                //     $l2admin_last_name = "";
+                //     $l2admin_email = "";
+                //     $l1admin_group_name = "";
+                // }
+
+                if($type == 'Ecard'){
                     $l1admin_first_name = "";
                     $l1admin_last_name = "";
                     $l1admin_email = "";
@@ -1144,6 +1155,18 @@ class CommonSettingController extends Controller
                     $l2admin_last_name = "";
                     $l2admin_email = "";
                     $l1admin_group_name = "";
+                    $status_by = "Sent";
+
+                    $ecard_id = $value["ecard_id"];
+
+                    $ecard_detail = DB::table('users_ecards')
+                    ->select("users_ecards.id","users_ecards.image_message","ecards.card_title")
+                    ->leftJoin("ecards","users_ecards.ecard_id","=","ecards.id")
+                    ->where('users_ecards.id',$ecard_id)
+                    ->first();
+                    $value["reason"] = $ecard_detail->image_message;
+                    $value["value_category"]["name"] = $ecard_detail->card_title;
+
                 }
 
                 fputcsv($new_csv, array( $value["campaignid"]["name"],$value["user_account"]["first_name"],$value["user_account"]["last_name"],$value["user_account"]["email"],$value["nominee_account"]["first_name"],$value["nominee_account"]["last_name"],$value["nominee_account"]["email"],$value["nominee_function"],$value["group_name"]["name"],$l1admin_first_name,$l1admin_last_name,$l1admin_email,$l1admin_group_name,$l2admin_first_name,$l2admin_last_name,$l2admin_email,$value["value_category"]["name"],$level_name,$value["points"],$value_points,$value["reason"],$status_by,$value["reject_reason"],$value["created_at"],$value["updated_at"] ));
@@ -1152,6 +1175,7 @@ class CommonSettingController extends Controller
             }
 
             fclose($new_csv);
+            // chmod(public_path($file_name),0777);
             return response()->json(['message' => 'success', 'status'=>'success', 'link' =>$file_link]);
         }
         catch (\Throwable $th) {
@@ -1284,6 +1308,7 @@ class CommonSettingController extends Controller
                 }
             }
             fclose($new_csv);
+            // chmod(public_path($file_name),0777);
             return response()->json(['message' => 'success', 'status'=>'success', 'link' =>$file_link]);
         }
         catch (\Throwable $th) {
@@ -1297,6 +1322,7 @@ class CommonSettingController extends Controller
             $new_csv = fopen(public_path($file_name) , 'w');
             fputcsv($new_csv, $columns);
             fclose($new_csv);
+            // chmod(public_path($file_name),0777);
             return response()->json(['message' => 'No record found', 'status'=>'success', 'link' =>$file_link]);
         }
 
@@ -1423,6 +1449,7 @@ class CommonSettingController extends Controller
 
            
             fclose($new_csv);
+            // chmod(public_path($file_name),0777);
             return response()->json(['message' => 'success', 'status'=>'success', 'link' =>$file_link]);
         }
         catch (\Throwable $th) {
@@ -1437,6 +1464,7 @@ class CommonSettingController extends Controller
             $new_csv = fopen(public_path($file_name) , 'w');
             fputcsv($new_csv, $columns);
             fclose($new_csv);
+            // chmod(public_path($file_name),0777);
             return response()->json(['message' => 'No record found', 'status'=>'success', 'link' =>$file_link]);
 
         }

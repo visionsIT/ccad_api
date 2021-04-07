@@ -180,17 +180,21 @@ class ImportsController extends Controller
             $rules = [
                 // '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
                 // '*.username' => "required|unique:program_users,username",
-                '*.communication_preference' => "in:email,sms",
+              /*  '*.communication_preference' => "in:email,sms",
                 '*.group_name' => 'required|exists:roles,name',
-                '*.role_name' => 'required|exists:user_roles,name',
+                '*.role_name' => 'required|exists:user_roles,name',*/
             ];
 
             $validator = \Validator::make($users, $rules);
 
             if ($validator->fails())
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            $already_exists = array();
+            $new_use = array();
+            $count = 0;
 
-            foreach ($users as $user){
+            foreach ($users as $user){ 
+
                 $accountExist = Account::where('email', $user['email'])->first();
 
                 if(empty($accountExist)){
@@ -209,9 +213,16 @@ class ImportsController extends Controller
 
                     //$this->sendPasswordCodeToAccount($email,$name,$password);
 
-                    $time = strtotime( $user['date_of_birth'] );
+                   //$time = strtotime( $user['date_of_birth'] );
 
-                    $newformat = date('Y-m-d',$time);
+                    //$newformat = date('Y-m-d',$time);
+                    $date_of_birth = intval($user['date_of_birth']);
+                    $newformat = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($date_of_birth)->format('Y-m-d');
+
+                   // $joining_date = strtotime($user['date_of_joining']);
+                    //$formatted_joining_date = date('Y-m-d',$joining_date);
+                    $date_of_joining = intval($user['date_of_joining']);
+                    $formatted_joining_date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($date_of_joining)->format('Y-m-d');
 
                     $programUser = ProgramUsers::create([
                         'first_name'                => $user['first_name'] ?? '',
@@ -227,7 +238,59 @@ class ImportsController extends Controller
                         'country'                   => $user['country'] ?? '',
                         'telephone'                 => $user['telephone'] ?? '',
                         'mobile'                    => $user['mobile'] ?? '',
-                        'date_of_birth'             => $newformat   ,
+                        'date_of_birth'             => $newformat,
+                        'joining_date'             => $formatted_joining_date,
+                        'communication_preference'  => $user['communication_preference'] ?? 'email',
+                        'language'                  => 'en',
+                        'town'                      =>  '',
+                        'account_id'                => $account->id,
+                        'program_id'                => $request->program_id,
+                        // 'emp_number'                => $user['emp_number'] ?? '',
+                        // 'vp_emp_number'             => $user['vp_emp_number'] ?? '',
+                    ]);
+                    $new_use[$count] = $user['email'];
+                }else{
+
+                    $account = Account::where('email',$user['email'])->update([
+                        'name' => $user['first_name'] . ' ' . $user['last_name'],
+                        'contact_number' => $user['mobile'] ?? '',
+                        'def_dept_id' => null,
+                        'type' => 'user'
+                    ]);
+
+                    $account = Account::where('email',$user['email'])->first();
+
+                    $email = $user['email'];
+                    $name = $user['first_name'] . ' ' . $user['last_name'];
+
+                    //$this->sendPasswordCodeToAccount($email,$name,$password);
+
+                   // $time = strtotime( $user['date_of_birth'] ); #only work if in excel format : m-d-Y
+
+                    //$newformat = date('Y-m-d',$time);
+                    $date_of_birth = intval($user['date_of_birth']);
+                    $newformat = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($date_of_birth)->format('Y-m-d');
+
+                   // $joining_date = strtotime($user['date_of_joining']);
+                    //$formatted_joining_date = date('Y-m-d',$joining_date);
+                    $date_of_joining = intval($user['date_of_joining']);
+                    $formatted_joining_date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($date_of_joining)->format('Y-m-d');
+
+                    $programUser = ProgramUsers::where('email',$user['email'])->update([
+                        'first_name'                => $user['first_name'] ?? '',
+                        'last_name'                 => $user['last_name'] ?? '',
+                        'username'                  => $user['username'],
+                        'title'                     => $user['title'] ?? '',
+                        'company'                   => $user['company'] ?? '',
+                        'job_title'                 => $user['job_title'] ?? '',
+                        'address_1'                 => $user['address_1'] ?? '',
+                        'address_2'                 => $user['address_2'] ?? '',
+                        'postcode'                  => $user['postcode'] ?? '',
+                        'country'                   => $user['country'] ?? '',
+                        'telephone'                 => $user['telephone'] ?? '',
+                        'mobile'                    => $user['mobile'] ?? '',
+                        'date_of_birth'             => $newformat,
+                        'joining_date'             => $formatted_joining_date,
                         'communication_preference'  => $user['communication_preference'] ?? 'email',
                         'language'                  => 'en',
                         'town'                      =>  '',
@@ -237,41 +300,48 @@ class ImportsController extends Controller
                         // 'vp_emp_number'             => $user['vp_emp_number'] ?? '',
                     ]);
 
-                    if($request->emp_type == 'lead'){
-                        $programUser->vp_emp_number = $programUser->id;
-                        $programUser->save();
-                    }
-
-                    #get_group_id
-                    $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
-                    $groupId = $group_id->id;
-
-                    #get_role_id
-                    $role_id = UserRoles::select('id')->where('name', 'like', '%' . $user['role_name'] . '%')->first();
-                    $roleId = $role_id->id;
-
-                    if ($groupId) {
-                        $account->assignRole(Role::findById($groupId));
-                    }
-
-                    $date = date('Y-m-d h:i:s');
-
-                    $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->first();
-                    if(empty($check_data)){
-                        $UsersGroupList = new UsersGroupList;
-                        $UsersGroupList->account_id = $account->id;
-                        $UsersGroupList->user_group_id = $groupId;
-                        $UsersGroupList->user_role_id = $roleId;
-                        $UsersGroupList->created_at = $date;
-                        $UsersGroupList->updated_at = $date;
-                        $UsersGroupList->save();
-                    }
+                    $already_exists[$count] = $user['email'];
                 }
+
+                if(strtolower($request->emp_type) == 'lead'){
+                    $roleId = 2;
+                }else{
+                    $role_name = trim($user['role_name']);
+                    #get_role_id
+                    $role_id = UserRoles::select('id')->where('name', 'like', '%' . $role_name . '%')->first();
+                    $roleId = $role_id->id;
+                }
+
+                #get_group_id
+                $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
+                $groupId = $group_id->id;
+
+
+                if ($groupId) {
+                    $account->assignRole(Role::findById($groupId));
+                }
+
+                $date = date('Y-m-d h:i:s');
+
+                $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$groupId,'user_role_id'=>$roleId])->first();
+                if(empty($check_data)){
+                    $UsersGroupList = new UsersGroupList;
+                    $UsersGroupList->account_id = $account->id;
+                    $UsersGroupList->user_group_id = $groupId;
+                    $UsersGroupList->user_role_id = $roleId;
+                    $UsersGroupList->created_at = $date;
+                    $UsersGroupList->updated_at = $date;
+                    $UsersGroupList->save();
+                }
+                //}
+                $count++;
             }
 
             return response()->json([
                 'uploaded_file' => url('uploaded/user_import_file/'.$request->program_id.'/'.$uploaded->getFilename()),
-                'message' => 'Data Imported Successfully'
+                'message' => 'Data Imported Successfully',
+                'already_exists' => $already_exists,
+                'new' => $new_use
             ]);
 
         } catch (\Throwable $th) {
@@ -445,13 +515,14 @@ class ImportsController extends Controller
             //     return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
             foreach ($users as $user){
+                $userdata = $userData = ProgramUsers::where('email', $user['email'])->first();
                 $account = Account::where('email', $user['vp_email'])->first();
                 if($account){
                     
                     #maintain_log
                     VpempNumberLog::create([
-                        'user_account_id' => $user['account_id'],
-                        'previous_vp_emp' => $user['vp_emp_number'] ?? '',
+                        'user_account_id' => $userdata->account_id,
+                        'previous_vp_emp' => $userdata->vp_emp_number ?? 'Null',
                         'new_vp_emp_number' => $account->id,
                     ]);
 
