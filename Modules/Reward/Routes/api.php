@@ -53,3 +53,5 @@ Route::post('change_country_delivery', 'RewardController@changeDeliveryStatus');
 // Route::post('change_ecards_permission', 'RewardController@ecardPermission');
 Route::post('delete_testing_products','ProductOrderController@deleteTestOrders');
 Route::post('users/assign_user_vp', 'ImportsController@assignUserVpApi');
+Route::post('users/email_update_vp', 'ImportsController@sendEmailUpdateVp');
+Route::post('users/welcome_email', 'ImportsController@sendWelcomeEmail');

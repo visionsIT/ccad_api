@@ -513,45 +513,62 @@ class ImportsController extends Controller
 
             // if ($validator->fails())
             //     return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
-
+            $vp_email_notExist = array();
+            $user_email_notExist = array();
             foreach ($users as $user){
-                $userdata = $userData = ProgramUsers::where('email', $user['email'])->first();
-                $account = Account::where('email', $user['vp_email'])->first();
-                if($account){
-                    
-                    #maintain_log
-                    VpempNumberLog::create([
-                        'user_account_id' => $userdata->account_id,
-                        'previous_vp_emp' => $userdata->vp_emp_number ?? 'Null',
-                        'new_vp_emp_number' => $account->id,
-                    ]);
+                
+                $userdata = ProgramUsers::where('email', $user['email'])->first();
+                if($userdata){
+                    $account = Account::where('email', $user['vp_email'])->first();
+                    if($account){
 
-                    
-                    $userData = ProgramUsers::where('email', $user['email'])->update(['vp_emp_number'=> $account->id]);
+                        $previous_vp_emp_num = $userdata->vp_emp_number;
+                        $new_vp_emp_num = $account->id;
 
-                    #get_group_id
-                    $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
-                    $groupId = $group_id->id;
+                        if($previous_vp_emp_num != $new_vp_emp_num){
+                           
+                            #maintain_log
+                            VpempNumberLog::create([
+                                'user_account_id' => $userdata->account_id,
+                                'previous_vp_emp' =>  $previous_vp_emp_num ?? Null,
+                                'new_vp_emp_number' => $new_vp_emp_num,
+                            ]);
 
-                    $roleId = 2;
+                        }
+                        
+                        $userData = ProgramUsers::where('email', $user['email'])->update(['vp_emp_number'=> $account->id]);
 
-                    $date = date('Y-m-d h:i:s');
+                        #get_group_id
+                        $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
+                        $groupId = $group_id->id;
 
-                    $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$groupId,'user_role_id'=>$roleId])->first();
-                    if(empty($check_data)){
-                        $UsersGroupList = new UsersGroupList;
-                        $UsersGroupList->account_id = $account->id;
-                        $UsersGroupList->user_group_id = $groupId;
-                        $UsersGroupList->user_role_id = $roleId;
-                        $UsersGroupList->created_at = $date;
-                        $UsersGroupList->updated_at = $date;
-                        $UsersGroupList->save();
+                        $roleId = 2;
+
+                        $date = date('Y-m-d h:i:s');
+
+                        $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$groupId,'user_role_id'=>$roleId])->first();
+                        if(empty($check_data)){
+                            $UsersGroupList = new UsersGroupList;
+                            $UsersGroupList->account_id = $account->id;
+                            $UsersGroupList->user_group_id = $groupId;
+                            $UsersGroupList->user_role_id = $roleId;
+                            $UsersGroupList->created_at = $date;
+                            $UsersGroupList->updated_at = $date;
+                            $UsersGroupList->save();
+                        }
+                    }else{
+                        $vp_email_notExist[] = $user['vp_email'];
                     }
+                }else{
+                    $user_email_notExist[] = $user['email'];
                 }
+                
             }
             return response()->json([
                 'uploaded_file' => url('uploaded/user_import_file/'.$request->program_id.'/'.$uploaded->getFilename()),
-                'message' => 'VP Users Assigned Successfully'
+                'message' => 'VP Users Assigned Successfully',
+                'vp_email_notExist' => $vp_email_notExist,
+                'user_email_notExist' => $user_email_notExist
             ]);
 
         } catch (\Throwable $th) {
@@ -562,5 +579,70 @@ class ImportsController extends Controller
             ]);
         }
 
+    }
+
+    /*******************************************
+    fn to send emails to user/l1 when update L1
+    ********************************************/
+    public function sendEmailUpdateVp(Request $request){
+
+        $data_all_change = VpempNumberLog::all();
+        if(!empty($data_all_change)){
+            foreach($data_all_change as $key=>$value){
+                $user = Account::select('name','email')->where('id',$value->user_account_id)->first();
+
+                $new_lead = Account::select('name','email')->where('id',$value->new_vp_emp_number)->first();
+
+                #Send_Email_to_User
+                $data = [
+                    'name' => $user->name,
+                    'new_l1_admin' => $new_lead->name,
+                ];
+
+                $emailcontent["template_type_id"] =  '30';
+                $emailcontent["dynamic_code_value"] = array($data['name'],$data['new_l1_admin']);
+                $emailcontent["email_to"] = $user->email;
+                $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+                //to_new_l1
+                $email_content["template_type_id"] =  '31';
+                $email_content["dynamic_code_value"] = array($data['name'],$data['new_l1_admin']);
+                $email_content["email_to"] = $new_lead->email;
+                $email_data = Helper::emailDynamicCodesReplace($email_content);
+
+
+            }
+        }
+        
+
+    }/*******fn_ends_here********/
+
+    public function sendWelcomeEmail(Request $request){
+
+
+        $all_new_users = ProgramUsers::select('id','email','first_name')->where('id', '>=', '9294')->get();
+        
+
+        if(!empty($all_new_users)){
+            foreach($all_new_users as $key=>$value){
+                $data = [
+                    'name' => $value->first_name,
+                    'email' => $value->email,
+                ];
+                $link = env('frontendURL');
+                $emailcontent["template_type_id"] =  '32';
+                $emailcontent["dynamic_code_value"] = array($data['name'],$link);
+                $emailcontent["email_to"] = $data['email'];
+                $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+            }
+
+            return response()->json([
+                'message' => 'welcome email sent',
+            ]);
+        }else{
+            return response()->json([
+                'message' => 'no user found',
+            ]);
+        }
     }
 }

@@ -1097,8 +1097,19 @@ class CommonSettingController extends Controller
                     $level_name = "Ecard";
                 }
 
-                if($value["level_1_approval"] == 2 && $value["level_2_approval"] == 2 || $value["level_1_approval"] == 1 && $value["level_2_approval"]== 1 || $value["level_1_approval"] == 1 && $value["level_2_approval"] == 2 || $value["level_1_approval"] == 2 && $level_2_approval == 1 ){
-                    $status_by = "Approved";
+                if($value["level_1_approval"] == 2 && $value["level_2_approval"] == 2 || $value["level_1_approval"] == 1 && $value["level_2_approval"]== 1 || $value["level_1_approval"] == 1 && $value["level_2_approval"] == 2 || $value["level_1_approval"] == 2 && $value["level_2_approval"] == 1 ){
+                    if($value["level_1_approval"] == 2 && $value["level_2_approval"] == 2){
+                        $status_by = "Sent";
+                    }
+                    else if($value["level_1_approval"] == 1 && $value["level_2_approval"] == 1){
+                        $status_by = "Approved_l2";
+                    }
+                    else if($value["level_1_approval"] == 2 && $value["level_2_approval"] == 1){
+                        $status_by = "Approved_l2";
+                    }
+                    else{
+                        $status_by = "Approved_l1";
+                    }
                 }
                 else if($value["level_1_approval"] == "-1" || $value["level_2_approval"] == "-1" ){
                     if($value["level_1_approval"] == "-1"){
@@ -1115,11 +1126,11 @@ class CommonSettingController extends Controller
                     $status_by = "Pending_l2";
                 }
 
-                if($status_by == "Approved"){
+                if($status_by == "Approved_l1" || $status_by == "Approved_l2" || $status_by == "Sent"){
                     $value_points = $value["points"];
                 }
                 else{
-                    $value_points = "";
+                    $value_points = 0;
                 }
                 
                 if($value["group_id"] != '' && strpos($value["campaignid"]["name"], "Excellence Award") !== false){
@@ -1158,6 +1169,7 @@ class CommonSettingController extends Controller
                     $status_by = "Sent";
 
                     $ecard_id = $value["ecard_id"];
+                    $value_points = $value["points"];
 
                     $ecard_detail = DB::table('users_ecards')
                     ->select("users_ecards.id","users_ecards.image_message","ecards.card_title")
@@ -1230,8 +1242,6 @@ class CommonSettingController extends Controller
             else if($pdf_filter == '2'){
                 $pdf_filter = 'month';
                 $coins_awarded = $awarded_data->select('*',DB::raw("CONCAT_WS('-',month(created_at),YEAR(created_at)) as monthyear"))->orderBy('created_at','ASC')->get()->groupBy("monthyear")->toArray();
-            dd($coins_awarded);
-
             }
             else if($pdf_filter == '0'){
                 $pdf_filter = 'date';

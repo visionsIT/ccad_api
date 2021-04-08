@@ -33,6 +33,7 @@ use Modules\User\Models\UserNotifications;
 use Modules\User\Transformers\UserNotificationTransformer;
 use Modules\User\Transformers\UserNotificationDetailTransformer;
 use Helper;
+use Modules\User\Models\VpempNumberLog;
 
 class UserController extends Controller
 {
@@ -888,5 +889,8 @@ class UserController extends Controller
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
         }
     }/******fn_ends*******/
+
+
+    
 
 }

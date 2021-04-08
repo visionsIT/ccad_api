@@ -1867,6 +1867,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
      */
 
      public function getUsersBy($nomination_id, Account $account_id,$status = null) {
+        $queryString = \Illuminate\Support\Facades\Request::get('q');
         $logged_user_id = $account_id->id;
         $user_group_data =  DB::table('users_group_list')
         ->whereIn('user_role_id', ['2','3']) // 2 for Level1, 3 for level 2
@@ -1900,6 +1901,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
                     }
+                    if($queryString) {
+                        $approved->where('user_nominations.user', $queryString);
+                    }
                     /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
                     $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
 
@@ -1920,6 +1924,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }else{
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
+                    }
+                    if($queryString) {
+                        $approved->where('user_nominations.user', $queryString);
                     }
                     /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
                     $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
@@ -1953,6 +1960,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                             });
                         });
 
+                    }
+                    if($queryString) {
+                        $approved->where('user_nominations.user', $queryString);
                     }
                     /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
                     $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
