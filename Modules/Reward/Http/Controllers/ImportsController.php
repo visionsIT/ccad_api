@@ -629,20 +629,128 @@ class ImportsController extends Controller
                     'name' => $value->first_name,
                     'email' => $value->email,
                 ];
-                $link = env('frontendURL');
+                $link = "<a href=".env('frontendURL').">here</a>";
                 $emailcontent["template_type_id"] =  '32';
                 $emailcontent["dynamic_code_value"] = array($data['name'],$link);
                 $emailcontent["email_to"] = $data['email'];
                 $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+                
             }
 
             return response()->json([
-                'message' => 'welcome email sent',
+
+                'message' => 'Welcome email sent'
             ]);
         }else{
             return response()->json([
-                'message' => 'no user found',
+                'message' => 'no user found'
+
             ]);
         }
     }
+
+    public function removeExistingGroups(Request $request){
+        try {
+
+            $file = $request->file('users_file');
+            $request->validate([
+                'users_file' => 'required|file',
+            ]);
+            $randm = rand(100,1000000);
+            $fileNameSave = time() . "-users-" . $file->getClientOriginalName();
+            $filename = $randm.'-'.$fileNameSave;
+
+            $uploaded = $file->move(public_path('uploaded/user_import_file/'.$request->program_id.'/'), $filename);
+
+            $users = Excel::toCollection(new UserImport(), $uploaded->getRealPath());
+            $users = $users[0]->toArray();
+
+            $rules = [
+                // '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
+                // '*.username' => "required|unique:program_users,username",
+              /*  '*.communication_preference' => "in:email,sms",
+                '*.group_name' => 'required|exists:roles,name',
+                '*.role_name' => 'required|exists:user_roles,name',*/
+            ];
+
+            $validator = \Validator::make($users, $rules);
+
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            $already_exists = array();
+            $new_use = array();
+            $count = 0;
+            $groups = array();
+
+            foreach ($users as $user){ 
+
+                $accountExist = Account::where('email', $user['email'])->first();
+
+                if(empty($accountExist)){
+                    
+                    $new_use[$count] = $user['email'];
+                }else{
+
+                    $account = Account::where('email',$user['email'])->first();
+
+                    $already_exists[$count] = $user['email'];
+
+                    if(strtolower($request->emp_type) == 'lead'){
+                        $roleId = 2;
+                    }else{
+                        $role_name = trim($user['role_name']);
+                        #get_role_id
+                        $role_id = UserRoles::select('id')->where('name', 'like', '%' . $role_name . '%')->first();
+                        $roleId = $role_id->id;
+                    }
+
+                    #get_group_id
+                    $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
+                    $groupId = $group_id->id;
+
+
+                    if ($groupId) {
+                        $account->assignRole(Role::findById($groupId));
+                    }
+
+                    $date = date('Y-m-d h:i:s');
+
+                    $check_data = UsersGroupList::where('account_id',$account->id)->where('user_group_id','!=',$groupId)->get();
+
+                    if(!empty($check_data)){
+                       
+                       UsersGroupList::where('account_id',$account->id)->where('user_group_id','!=',$groupId)->delete();
+
+                    }
+
+                    $check_data = UsersGroupList::where('account_id',$account->id)->where('user_group_id',$groupId)->where('user_role_id','!=',$roleId)->get();
+
+                    if(!empty($check_data)){
+                       
+                       $check_data = UsersGroupList::where('account_id',$account->id)->where('user_group_id',$groupId)->where('user_role_id','!=',$roleId)->delete();
+
+                    }
+                }
+
+                
+                //}
+                $count++;
+            }
+
+            return response()->json([
+                'uploaded_file' => url('uploaded/user_import_file/'.$request->program_id.'/'.$uploaded->getFilename()),
+                'message' => 'Data Imported Successfully',
+                'already_exists' => $already_exists,
+                'new' => $new_use,
+                'groups' => $groups
+            ]);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error_message' => $th->getMessage(),
+                'error_line' => $th->getLine(),
+                'error_file' => $th->getFile()
+            ]);
+        }
+    }/*******fn ends*******/
 }

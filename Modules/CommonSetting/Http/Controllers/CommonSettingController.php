@@ -1141,9 +1141,12 @@ class CommonSettingController extends Controller
                                 ->where(["user_group_id" => $value["group_id"],"user_role_id" => '3'])
                                 ->first();
                     
-                    $l2admin_first_name = $l2_admin->first_name;
-                    $l2admin_last_name = $l2_admin->last_name;
-                    $l2admin_email = $l2_admin->email;
+                        if(!empty($l2_admin)){
+                            $l2admin_first_name = $l2_admin->first_name;
+                            $l2admin_last_name = $l2_admin->last_name;
+                            $l2admin_email = $l2_admin->email;
+                        }
+                        
                 }
                             
                 // if(strpos($value["campaignid"]["name"], "E-CARDS") !== false){

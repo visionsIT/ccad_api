@@ -339,7 +339,7 @@ class UserNominationController extends Controller
 							//$destinationPathUrl = $urlPath.$newImage;
 							$destinationPathUrl = env('FRONT_APP_URL').'uploaded/certificate_images/'.$newImage;
 					
-							$presented_to 	= $sendToUser->first_name;
+							$presented_to 	= $sendToUser->first_name. ' '. $sendToUser->last_name;
 							$core_value 	= $inputValueName;
 							$conv->source(url('/newCertificateImage/'.$certificate_image.'/'.$image_mesaage.'/'.$presented_to.'/'.$core_value))
 							->toPng($options)
@@ -3222,7 +3222,20 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                            ];
                            
                            $sendToUser 	= ProgramUsers::where("account_id",$user_nomination[$i]->user)->first();
-                           $presented_to 	= (!empty($sendToUser) && isset($sendToUser->first_name) && !empty($sendToUser->first_name)) ? $sendToUser->first_name : "N-A";
+                           $first_name 	= (!empty($sendToUser) && isset($sendToUser->first_name) && !empty($sendToUser->first_name)) ? $sendToUser->first_name : "";
+                           $last_name 		= (!empty($sendToUser) && isset($sendToUser->last_name) && !empty($sendToUser->last_name)) ? $sendToUser->last_name : "";
+                           
+                           $presented_to 	= "";
+                           if(!empty($first_name))
+                               $presented_to .= $first_name." ";
+                           if(!empty($last_name))
+                               $presented_to .= $last_name;
+                               
+                           if(empty($presented_to))
+                               $presented_to = "N-A";
+                               
+                           $NominationTypeData = NominationType::where('id', $user_nomination[$i]->value)->first();
+                           $core_value 		= (!empty($NominationTypeData) && isset($NominationTypeData->name) && !empty($NominationTypeData->name)) ? $NominationTypeData->name : "N-A";
                                    
                            $NominationTypeData = NominationType::where('id', $user_nomination[$i]->value)->first();
                            $core_value 		= (!empty($NominationTypeData) && isset($NominationTypeData->name) && !empty($NominationTypeData->name)) ? $NominationTypeData->name : "N-A";
