@@ -15,6 +15,7 @@ use Modules\Reward\Http\Requests\ProductOrderRequest;
 use Modules\Reward\Transformers\ProductOrderTransformer;
 use Modules\Reward\Repositories\ProductOrderRepository;
 use Modules\User\Models\UsersGroupList;
+use Helper;
 
 class ProductOrderController extends Controller
 {
@@ -25,6 +26,7 @@ class ProductOrderController extends Controller
         $this->repository    = $repository;
         $this->point_service = $point_service;
         $this->service       = $service;
+		$this->middleware('auth:api');
     }
 
     /**
@@ -77,59 +79,86 @@ class ProductOrderController extends Controller
         return fractal($orders, new ProductOrderTransformer);
     }
 
+    public function search(Request $request)
+    {   
+        $search = $request->query('q');
+        $products = ProductOrder::select('product_orders.*','t1.seen')
+            ->leftJoin('products as t1', "t1.id","=","product_orders.product_id")
+            ->where(function($query) use ($search){
+                $query->where('product_orders.first_name', 'LIKE', "%{$search}%")
+                ->orWhere('product_orders.last_name', 'LIKE', "%{$search}%")
+                ->orWhere('product_orders.email', 'LIKE', "%{$search}%")
+                ->orWhere('t1.name', 'LIKE', "%{$search}%")
+                ->orWhereRaw("concat(product_orders.first_name, ' ', product_orders.last_name) LIKE '%{$search}%' ");
+            })
+            ->distinct()
+            ->orderBy('product_orders.created_at', 'DESC')
+            ->paginate(12);
+
+        return fractal($products, new ProductOrderTransformer);
+    }
+
     /**
      * @param ProductOrderRequest $request
      *
      * @return Fractal
      */
     public function store(Request $request)
-    {
-        $get_points = ProductDenomination::select('points')->where('id',$request->value)->first();
+    {   
+        try{
+            $accountID = Helper::customDecrypt($request->account_id);
+            $productID = Helper::customDecrypt($request->product_id);
+            $denominationID = Helper::customDecrypt($request->value);
+            $get_points = ProductDenomination::select('points')->where('id',$denominationID)->first();
+            $request['account_id'] = $accountID;
+            $request['product_id'] = $productID;
+            $request['value'] = $get_points->points;
+            $request['denomination_id'] = $denominationID;
 
-        $request['value'] = $get_points->points;
-        $request['denomination_id'] = $request->value;
+            $rules = [
+                'value'      => 'required|numeric',
+                'account_id' => 'required|exists:accounts,id',
+                'product_id' => 'required|exists:products,id',
+                'first_name' => 'required',
+                'last_name'  => 'required',
+                'email'      => 'required|email',
+                'phone'      => 'required',
+                'address'    => 'required',
+                'city'       => 'required',
+                'country'    => 'required',
+                'is_gift'    => 'required|bool',
+                'quantity'   => 'required',
+                'denomination_id'   => 'required|exists:product_denominations,id',
+            ];
+            $validator = \Validator::make($request->all(), $rules);
 
-        $rules = [
-            'value'      => 'required|numeric',
-            'account_id' => 'required|exists:accounts,id',
-            'product_id' => 'required|exists:products,id',
-            'first_name' => 'required',
-            'last_name'  => 'required',
-            'email'      => 'required|email',
-            'phone'      => 'required',
-            'address'    => 'required',
-            'city'       => 'required',
-            'country'    => 'required',
-            'is_gift'    => 'required|bool',
-            'quantity'   => 'required',
-            'denomination_id'   => 'required|exists:product_denominations,id',
-        ];
-        $validator = \Validator::make($request->all(), $rules);
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
-        if ($validator->fails())
-            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            $user = ProgramUsers::where('account_id', $request->account_id)->first();
 
-        $user = ProgramUsers::where('account_id', $request->account_id)->first();
+            $request['value'] = $get_points->points * $request->quantity;
+
+            $Category = $this->repository->create($request->all());
+
+    //        //todo fix this later
+    //        $user_points = UsersPoint::where([ 'user_id' => $user->id, 'value' => $current ])->first();
+    //
+    //        $user_points->update([ 'value' => $new ]);
+
+            $data['value']       = $request->value;
+            $data['description'] = '';
+            $data['product_order_id'] = $Category->id;
+            $Category->status = true;
+            $this->point_service->store($user, $data, '-');
+            $this->service->placeOrder($Category->id);
+
+            return fractal($Category, new ProductOrderTransformer);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check product id,account id and denomination id in value parameter.', 'errors' => $th->getMessage()], 402);
+        }
         
-        $request['value'] = $get_points->points * $request->quantity;
-
-        $request['value'] = $get_points->points * $request->quantity;
-
-        $Category = $this->repository->create($request->all());
-
-//        //todo fix this later
-//        $user_points = UsersPoint::where([ 'user_id' => $user->id, 'value' => $current ])->first();
-//
-//        $user_points->update([ 'value' => $new ]);
-
-        $data['value']       = $request->value;
-        $data['description'] = '';
-        $data['product_order_id'] = $Category->id;
-        $Category->status = true;
-        $this->point_service->store($user, $data, '-');
-        $this->service->placeOrder($Category->id);
-
-        return fractal($Category, new ProductOrderTransformer);
     }
 
     /**
@@ -140,10 +169,16 @@ class ProductOrderController extends Controller
      * @return Fractal
      */
     public function show($id): Fractal
-    {
-        $Category = $this->repository->find($id);
+    {   try{
 
-        return fractal($Category, new ProductOrderTransformer);
+            $id = Helper::customDecrypt($id);
+            $Category = $this->repository->find($id);
+
+            return fractal($Category, new ProductOrderTransformer);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }   
     }
 
     /**
@@ -157,6 +192,16 @@ class ProductOrderController extends Controller
      */
     public function update(ProductOrderRequest $request, $id): JsonResponse
     {
+        if(isset($request->account_id)){
+            $accountID = Helper::customDecrypt($request->account_id);
+            $request['account_id'] = $accountID;
+        }
+
+        if(isset($request->product_id)){
+            $productID = Helper::customDecrypt($request->product_id);
+            $request['product_id'] = $productID;
+        }
+        $id = Helper::customDecrypt($id);
         $this->repository->update($request->all(), $id);
 
         return response()->json([ 'message' => 'Category Updated Successfully' ]);
@@ -172,38 +217,63 @@ class ProductOrderController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-        $this->repository->destroy($id);
+        try{
+            $id = Helper::customDecrypt($id);
+            $this->repository->destroy($id);
 
-        return response()->json([ 'message' => 'Category Trashed Successfully' ]);
+            return response()->json([ 'message' => 'Category Trashed Successfully' ]);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
     }
 
 
     public function confirmOrder($id)
     {
-        if ($this->service->confirmOrder($id)) {
-            return response()->json([ 'message' => 'The order has been confirmed Successfully' ]);
+        try{
+            $id = Helper::customDecrypt($id);
+            if ($this->service->confirmOrder($id)) {
+                return response()->json([ 'message' => 'The order has been confirmed Successfully' ]);
+            }
+
+            return response()->json([ 'message' => 'You cannot change the status any more' ], 400);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
         }
 
-        return response()->json([ 'message' => 'You cannot change the status any more' ], 400);
     }
 
     public function shipOrder($id)
-    {
-        if ($this->service->shipOrder($id)) {
-            return response()->json([ 'message' => 'The order has been shipped Successfully' ]);
-        }
+    {   
+        try{
+            $id = Helper::customDecrypt($id);
+            if ($this->service->shipOrder($id)) {
+                return response()->json([ 'message' => 'The order has been shipped Successfully' ]);
+            }
 
-        return response()->json([ 'message' => 'You cannot change the status any more' ], 400);
+            return response()->json([ 'message' => 'You cannot change the status any more' ], 400);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
     }
 
 
     public function cancelOrder($id)
-    {
-        if ($this->service->cancelOrder($id)) {
-            return response()->json([ 'message' => 'The order has been cancelled Successfully' ]);
-        }
+    {   
+        try{
+            $id = Helper::customDecrypt($id);
+            if ($this->service->cancelOrder($id)) {
+                return response()->json([ 'message' => 'The order has been cancelled Successfully' ]);
+            }
 
-        return response()->json([ 'message' => 'You cannot change the status any more' ], 400);
+            return response()->json([ 'message' => 'You cannot change the status any more' ], 400);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
     }
 
     public function filterByDates(Request $request)

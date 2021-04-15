@@ -14,7 +14,7 @@ Route::put('update/badge', 'NominationTypeController@updateBadges');
 Route::get('badges/{account_id}', 'NominationTypeController@NominationBadges');
 Route::get('nominations/{nomination_id}/values', 'NominationController@NominationValues');
 //Route::get('nominations/{nomination_id}/wall', 'NominationController@NominationWall');
-Route::get('nominations/campaign/wall', 'NominationController@NominationCampaignWall');
+Route::get('nominations/campaign/wall/{campaign_id?}', 'NominationController@NominationCampaignWall');
 Route::get('nomination/ecards_wall', 'NominationController@NominationEcardWall');
 Route::get('badges/wall', 'NominationController@NominationBadgesWall');
 Route::resource('nominations/{id}/decline', 'NominationDeclineController');
@@ -93,3 +93,8 @@ Route::post('user/campaign_report', 'UserNominationController@getCampaignReport'
 Route::post('user/campaign_report_specific', 'UserNominationController@getCampaignReport_count');
 
 Route::post('import_user_nominations','UserNominationController@importUserNominations');
+Route::post('import_user_ecards','UserNominationController@importUserEcards');
+
+Route::get('user/schedule-ecards','UserNominationController@getScheduledEcards');
+
+Route::get('generateCertificateImage/', 'UserNominationController@generateCertificateImage');

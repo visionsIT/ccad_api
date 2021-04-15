@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Laracodes\Presenter\Traits\Presentable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Program\Models\Currency;
-
+use Modules\Reward\Models\ProductDenomination;
 
 class Product extends Model
 {

@@ -23,6 +23,9 @@ use Modules\User\Models\UserCampaignsBudgetLogs;
 use DB;
 use Illuminate\Support\Facades\Mail;
 use File;
+use Carbon\Carbon;
+use Modules\User\Http\Services\UserNotificationService;
+use Helper;
 
 class RippleSettingsController extends Controller
 {
@@ -30,9 +33,11 @@ class RippleSettingsController extends Controller
 
     private $repository;
 
-    public function __construct(RippleSettingsRepository $repository)
+    public function __construct(RippleSettingsRepository $repository,UserNotificationService $userNotificationService)
     {
         $this->repository = $repository;
+        $this->notification_service = $userNotificationService;
+		$this->middleware('auth:api');
     }
 
     /**
@@ -97,6 +102,7 @@ class RippleSettingsController extends Controller
                     'min_point' => $request->min_point,
                     'max_point' => $request->max_point,
                     'points_allowed' => $request->points_allowed,
+                    'ecard_scheduler' => $request->scheduler_allowed
                  ]);
 
             }else{
@@ -109,6 +115,7 @@ class RippleSettingsController extends Controller
                     'level_2_approval' => $request->level_2_approval,
                     'budget_type' => $request->budget_type,
                     'points_allowed' => $request->points_allowed,
+                    'ecard_scheduler' => $request->scheduler_allowed
                 ]);
 
             }
@@ -127,7 +134,7 @@ class RippleSettingsController extends Controller
 
     public function createEcardsRipple(Request $request) {
         try {
-
+            $request['campaign_id'] =  Helper::customDecrypt($request->campaign_id);
             $rules = [
                 'card_title' => 'required|unique:ecards,card_title',
                 'image'   => 'required'
@@ -171,7 +178,7 @@ class RippleSettingsController extends Controller
      public function updateEcardsRipple(Request $request) {
 
         try {
-
+            $request['id'] =  Helper::customDecrypt($request->id);
             $rules = [
                 'id' => 'required|integer|exists:ecards,id',
             ];
@@ -244,7 +251,7 @@ class RippleSettingsController extends Controller
 
      public function ecardStatusChange(Request $request) {
         try {
-
+            $request['id'] =  Helper::customDecrypt($request->id);
             $rules = [
                 'id' => 'required|integer|exists:ecards,id',
             ];
@@ -306,6 +313,8 @@ class RippleSettingsController extends Controller
 
         try {
             //$email_address=  $request->email_add;
+            $request['program_user_id'] =  Helper::customDecrypt($request->program_user_id);
+
             $budget_bal = $this->repository->getRippleBudget($request);
 
             return response()->json(['data' => $budget_bal], 200);
@@ -323,6 +332,13 @@ class RippleSettingsController extends Controller
     public function sendEcardRipple(Request $request)
     {
 
+        try{
+            $request['sender_id'] =  Helper::customDecrypt($request->sender_id);
+            $request['ecard_id'] = Helper::customDecrypt($request->ecard_id);
+
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check sender_id,send_to_id,ecard_id and try again.', 'errors' => $th->getMessage()], 402);
+        }
 
         $data = array();
 
@@ -407,6 +423,7 @@ class RippleSettingsController extends Controller
 
             foreach ($receiverIds as $key => $receiverid) {
 
+                $receiverid = Helper::customDecrypt($receiverid);
                 $sendToUser = ProgramUsers::find($receiverid);
 
                 DB::beginTransaction();
@@ -439,6 +456,79 @@ class RippleSettingsController extends Controller
                     } // End Ripple Budget
 
 
+                    
+
+                    /********************* If Approval Required ***************************/
+
+                    //if($approval_request == 1 && $points_allowed == 1){
+
+                        $groupData = $this->repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+
+
+                        // Get lowest role of receiver
+                        $groupId  = $groupData['user_group_id'];
+
+
+                         if($level_1_approval == 0){
+                            $update_vale_l1 = 2;
+                         }else{
+                            $update_vale_l1 = 0;
+                         }
+
+                         if($level_2_approval == 0){
+                            $update_vale_l2 = 2;
+                         }else{
+                            $update_vale_l2 = 0;
+                         }
+
+                        // Update User Nomination table so that L1 or L2 can approve
+
+                        $user_nomination_data  = UserNomination::create([
+
+                            'user'   => $sendToUser->account_id, // Receiver
+                            'account_id' => $senderUser->account_id, // Sender
+                            'group_id' => $groupId,
+                            'points'  => $inputPoint,
+                            'campaign_id' => $campaign_id,
+                            'is_active'     => 1,
+                            'level_1_approval' => $update_vale_l1,
+                            'level_2_approval' => $update_vale_l2,
+                            'point_type' => $budget_type
+                            //'nomination_id' => $campaign_id,
+                        ]);
+                        $user_nomin_inserted_id = $user_nomination_data->id;
+
+                    //}
+
+                    if($request->send_type == 'schedule'){
+                        $dateTime = \Carbon\Carbon::parse($request->schedule_date.' '.date("h:i:sa"))->format('Y-m-d H:i:s');
+                        $timeone = $request->timezone;
+                    }else{
+                        $dateTime = \Carbon\Carbon::parse($request->schedule_date.' '.$request->schedule_time)->format('Y-m-d H:i:s');
+                        $timeone = Null;
+                    }
+                    
+
+                    $EcardDataCreated = UsersEcards::create([
+                        'ecard_id' => $request->ecard_id,
+                        'sent_to' => $receiverid,
+                        'campaign_id' => $campaign_id,
+                        'image_message' => strip_tags($request->image_message),
+                        'sent_by' => $request->sender_id,
+                        'points' => $inputPoint,
+                        'send_type' => $request->send_type,
+                        'send_datetime' => $dateTime,
+                        'send_timezone' => $timeone
+                    ]);
+                    $ecard_lat_inserted_id = $EcardDataCreated->id;
+
+
+                    if(isset($user_nomin_inserted_id)){
+                        UserNomination::where([
+                            'id' => $user_nomin_inserted_id
+                        ])->update(['ecard_id' => $ecard_lat_inserted_id ]);
+                    }
+
                     if($budget_type == 2 && $points_allowed == 1){ // For Overall Balance
                         $current_budget_bal = UsersPoint::select('balance')->where('user_id',$request->sender_id)->latest()->first();
                         $current_budget_bal = $current_budget_bal ? $current_budget_bal->balance : 0;
@@ -447,6 +537,7 @@ class RippleSettingsController extends Controller
                         $updateSenderBudget = UsersPoint::create([
                             'value'    => -$inputPoint, // +/- point
                             'user_id'    => $request->sender_id, // Receiver
+                            'user_nominations_id' => $user_nomination_data->id,
                             'transaction_type_id'    => 10,  // For Ripple
                             'description' => '',
                             'balance'    => $finalBud, // After +/- final balnce
@@ -487,6 +578,7 @@ class RippleSettingsController extends Controller
                         $updateReciverBudget = UsersPoint::create([
                             'value'    => $inputPoint, // +/- point
                             'user_id'    => $receiverid, // Receiver
+                            'user_nominations_id' => $user_nomination_data->id,
                             'transaction_type_id'    => 10,  // For Ripple
                             'description' => '',
                             'balance'    => $finalPoints, // After +/- final balnce
@@ -494,67 +586,6 @@ class RippleSettingsController extends Controller
                         ]);
 
 
-                    }
-
-                    /********************* If Approval Required ***************************/
-
-                    if($approval_request == 1 && $points_allowed == 1){
-
-                        $groupData = $this->repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
-
-
-                        // Get lowest role of receiver
-                        $groupId  = $groupData['user_group_id'];
-
-
-                         if($level_1_approval == 0){
-                            $update_vale_l1 = 2;
-                         }else{
-                            $update_vale_l1 = 0;
-                         }
-
-                         if($level_2_approval == 0){
-                            $update_vale_l2 = 2;
-                         }else{
-                            $update_vale_l2 = 0;
-                         }
-
-                        // Update User Nomination table so that L1 or L2 can approve
-
-                        $user_nomination_data  = UserNomination::create([
-
-                            'user'   => $sendToUser->account_id, // Receiver
-                            'account_id' => $senderUser->account_id, // Sender
-                            'group_id' => $groupId,
-                            'points'  => $inputPoint,
-                            'campaign_id' => $campaign_id,
-                            'is_active'     => 1,
-                            'level_1_approval' => $update_vale_l1,
-                            'level_2_approval' => $update_vale_l2,
-                            'point_type' => $budget_type
-                            //'nomination_id' => $campaign_id,
-                        ]);
-                        $user_nomin_inserted_id = $user_nomination_data->id;
-
-                    }
-
-                    $EcardDataCreated = UsersEcards::create([
-                        'ecard_id' => $request->ecard_id,
-                        'sent_to' => $receiverid,
-                        'campaign_id' => $campaign_id,
-                        'image_message' => $request->image_message,
-                        'sent_by' => $request->sender_id,
-                        'points' => $inputPoint,
-                        'send_type' => $request->send_type,
-
-                    ]);
-                    $ecard_lat_inserted_id = $EcardDataCreated->id;
-
-
-                    if(isset($user_nomin_inserted_id)){
-                        UserNomination::where([
-                            'id' => $user_nomin_inserted_id
-                        ])->update(['ecard_id' => $ecard_lat_inserted_id ]);
                     }
 
 
@@ -586,7 +617,7 @@ class RippleSettingsController extends Controller
                         if($update === 1){
                             $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
 
-                            $image_mesaage = str_replace(" ","%20",$request->image_message);#bcs_send_in_url
+                            $image_mesaage = str_replace(" ","%20",strip_tags($request->image_message));#bcs_send_in_url
                             $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
                             $conv = new \Anam\PhantomMagick\Converter();
                             $options = [
@@ -607,7 +638,7 @@ class RippleSettingsController extends Controller
                             'card_title' => $eCardDetails->card_title,
                             'sendername' => $senderUser->first_name.' '. $senderUser->last_name,
                             'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
-                            'image_message' => $request->image_message,
+                            'image_message' => strip_tags($request->image_message),
                             'color_code' => "#e6141a",
                             'new_image' => $newImage,
                             'file_path' => $file_path,
@@ -616,11 +647,16 @@ class RippleSettingsController extends Controller
                         ];
                         try {
 
-                            Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                                $m->from('customerexperience@meritincentives.com','CCAD');
-                                $m->to($data["email"])->subject($data["card_title"].' Ecard!');
-                            });
+                            $link_to_ecard = $data['link_to_ecard'];        
+                            $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
+                            $emailcontent["template_type_id"] =  '7';
+                            $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
+                            $emailcontent["email_to"] = $data["email"];
+                            $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
+                            $mail_content = "<p>You have received an E-Card from ".$data['sendername']." </p>";
+
+                            $saveNotification = $this->notification_service->creat_notification($sendToUser->account_id,$senderUser->account_id, $user_nomination_data->id, Null, '5', $mail_content);
 
                             DB::commit();
                         } catch (\Exception $e) {

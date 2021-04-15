@@ -33,7 +33,7 @@ class OrderConfirmation extends Mailable
         $this
             ->view([])
             ->to($this->account->email)
-            ->from('customerexperience@meritincentives.com','Merit Incentives')
+            ->from('customerexperience@meritincentives.com','Takreem')
             ->sendgrid([
                 'personalizations' => [
                     [

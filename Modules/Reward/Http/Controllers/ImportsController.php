@@ -20,14 +20,21 @@ use Spatie\Permission\Models\Role;
 use Modules\User\Models\ProgramUsers;
 use Modules\User\Models\UsersGroupList;
 use Modules\User\Models\UserRoles;
+use Modules\User\Models\VpempNumberLog;
 use Modules\User\Imports\UserImport;
 use Modules\Reward\Imports\OrderImport;
 use Modules\CommonSetting\Models\PointRateSettings;
+use Helper;
 
 class ImportsController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
     public function import(Request $request, $program_id)
     {
+	
         //todo move uploaded file to a folder
         $file = $request->file('products');
 
@@ -178,17 +185,21 @@ class ImportsController extends Controller
             $rules = [
                 // '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
                 // '*.username' => "required|unique:program_users,username",
-                '*.communication_preference' => "in:email,sms",
+              /*  '*.communication_preference' => "in:email,sms",
                 '*.group_name' => 'required|exists:roles,name',
-                '*.role_name' => 'required|exists:user_roles,name',
+                '*.role_name' => 'required|exists:user_roles,name',*/
             ];
 
             $validator = \Validator::make($users, $rules);
 
             if ($validator->fails())
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            $already_exists = array();
+            $new_use = array();
+            $count = 0;
 
-            foreach ($users as $user){
+            foreach ($users as $user){ 
+
                 $accountExist = Account::where('email', $user['email'])->first();
 
                 if(empty($accountExist)){
@@ -207,9 +218,16 @@ class ImportsController extends Controller
 
                     //$this->sendPasswordCodeToAccount($email,$name,$password);
 
-                    $time = strtotime( $user['date_of_birth'] );
+                   //$time = strtotime( $user['date_of_birth'] );
 
-                    $newformat = date('Y-m-d',$time);
+                    //$newformat = date('Y-m-d',$time);
+                    $date_of_birth = intval($user['date_of_birth']);
+                    $newformat = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($date_of_birth)->format('Y-m-d');
+
+                   // $joining_date = strtotime($user['date_of_joining']);
+                    //$formatted_joining_date = date('Y-m-d',$joining_date);
+                    $date_of_joining = intval($user['date_of_joining']);
+                    $formatted_joining_date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($date_of_joining)->format('Y-m-d');
 
                     $programUser = ProgramUsers::create([
                         'first_name'                => $user['first_name'] ?? '',
@@ -225,7 +243,59 @@ class ImportsController extends Controller
                         'country'                   => $user['country'] ?? '',
                         'telephone'                 => $user['telephone'] ?? '',
                         'mobile'                    => $user['mobile'] ?? '',
-                        'date_of_birth'             => $newformat   ,
+                        'date_of_birth'             => $newformat,
+                        'joining_date'             => $formatted_joining_date,
+                        'communication_preference'  => $user['communication_preference'] ?? 'email',
+                        'language'                  => 'en',
+                        'town'                      =>  '',
+                        'account_id'                => $account->id,
+                        'program_id'                => $request->program_id,
+                        // 'emp_number'                => $user['emp_number'] ?? '',
+                        // 'vp_emp_number'             => $user['vp_emp_number'] ?? '',
+                    ]);
+                    $new_use[$count] = $user['email'];
+                }else{
+
+                    $account = Account::where('email',$user['email'])->update([
+                        'name' => $user['first_name'] . ' ' . $user['last_name'],
+                        'contact_number' => $user['mobile'] ?? '',
+                        'def_dept_id' => null,
+                        'type' => 'user'
+                    ]);
+
+                    $account = Account::where('email',$user['email'])->first();
+
+                    $email = $user['email'];
+                    $name = $user['first_name'] . ' ' . $user['last_name'];
+
+                    //$this->sendPasswordCodeToAccount($email,$name,$password);
+
+                   // $time = strtotime( $user['date_of_birth'] ); #only work if in excel format : m-d-Y
+
+                    //$newformat = date('Y-m-d',$time);
+                    $date_of_birth = intval($user['date_of_birth']);
+                    $newformat = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($date_of_birth)->format('Y-m-d');
+
+                   // $joining_date = strtotime($user['date_of_joining']);
+                    //$formatted_joining_date = date('Y-m-d',$joining_date);
+                    $date_of_joining = intval($user['date_of_joining']);
+                    $formatted_joining_date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($date_of_joining)->format('Y-m-d');
+
+                    $programUser = ProgramUsers::where('email',$user['email'])->update([
+                        'first_name'                => $user['first_name'] ?? '',
+                        'last_name'                 => $user['last_name'] ?? '',
+                        'username'                  => $user['username'],
+                        'title'                     => $user['title'] ?? '',
+                        'company'                   => $user['company'] ?? '',
+                        'job_title'                 => $user['job_title'] ?? '',
+                        'address_1'                 => $user['address_1'] ?? '',
+                        'address_2'                 => $user['address_2'] ?? '',
+                        'postcode'                  => $user['postcode'] ?? '',
+                        'country'                   => $user['country'] ?? '',
+                        'telephone'                 => $user['telephone'] ?? '',
+                        'mobile'                    => $user['mobile'] ?? '',
+                        'date_of_birth'             => $newformat,
+                        'joining_date'             => $formatted_joining_date,
                         'communication_preference'  => $user['communication_preference'] ?? 'email',
                         'language'                  => 'en',
                         'town'                      =>  '',
@@ -235,41 +305,48 @@ class ImportsController extends Controller
                         // 'vp_emp_number'             => $user['vp_emp_number'] ?? '',
                     ]);
 
-                    if($request->emp_type == 'lead'){
-                        $programUser->vp_emp_number = $programUser->id;
-                        $programUser->save();
-                    }
-
-                    #get_group_id
-                    $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
-                    $groupId = $group_id->id;
-
-                    #get_role_id
-                    $role_id = UserRoles::select('id')->where('name', 'like', '%' . $user['role_name'] . '%')->first();
-                    $roleId = $role_id->id;
-
-                    if ($groupId) {
-                        $account->assignRole(Role::findById($groupId));
-                    }
-
-                    $date = date('Y-m-d h:i:s');
-
-                    $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$request->group_id,'user_role_id'=>$request->role_id])->first();
-                    if(empty($check_data)){
-                        $UsersGroupList = new UsersGroupList;
-                        $UsersGroupList->account_id = $account->id;
-                        $UsersGroupList->user_group_id = $groupId;
-                        $UsersGroupList->user_role_id = $roleId;
-                        $UsersGroupList->created_at = $date;
-                        $UsersGroupList->updated_at = $date;
-                        $UsersGroupList->save();
-                    }
+                    $already_exists[$count] = $user['email'];
                 }
+
+                if(strtolower($request->emp_type) == 'lead'){
+                    $roleId = 2;
+                }else{
+                    $role_name = trim($user['role_name']);
+                    #get_role_id
+                    $role_id = UserRoles::select('id')->where('name', 'like', '%' . $role_name . '%')->first();
+                    $roleId = $role_id->id;
+                }
+
+                #get_group_id
+                $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
+                $groupId = $group_id->id;
+
+
+                if ($groupId) {
+                    $account->assignRole(Role::findById($groupId));
+                }
+
+                $date = date('Y-m-d h:i:s');
+
+                $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$groupId,'user_role_id'=>$roleId])->first();
+                if(empty($check_data)){
+                    $UsersGroupList = new UsersGroupList;
+                    $UsersGroupList->account_id = $account->id;
+                    $UsersGroupList->user_group_id = $groupId;
+                    $UsersGroupList->user_role_id = $roleId;
+                    $UsersGroupList->created_at = $date;
+                    $UsersGroupList->updated_at = $date;
+                    $UsersGroupList->save();
+                }
+                //}
+                $count++;
             }
 
             return response()->json([
                 'uploaded_file' => url('uploaded/user_import_file/'.$request->program_id.'/'.$uploaded->getFilename()),
-                'message' => 'Data Imported Successfully'
+                'message' => 'Data Imported Successfully',
+                'already_exists' => $already_exists,
+                'new' => $new_use
             ]);
 
         } catch (\Throwable $th) {
@@ -285,13 +362,6 @@ class ImportsController extends Controller
     public function sendPasswordCodeToAccount($email,$name,$password)
     {
 
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
-
         $data = [
             'email' => $email,
             'name' => $name,
@@ -299,9 +369,10 @@ class ImportsController extends Controller
         ];
 
         try{
-            Mail::send('emails.UserWelcomeMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                $m->to($data["email"])->subject('Cleveland Clinic Abu Dhabi - New Account');
-            });
+            $emailcontent["template_type_id"] =  '13';
+            $emailcontent["dynamic_code_value"] = array($data['name'],$data['password']);
+            $emailcontent["email_to"] = $data["email"];
+            $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
         }catch(\Throwable $th){
             return response()->json([
                 'error_message' => $th->getMessage(),
@@ -424,4 +495,267 @@ class ImportsController extends Controller
             ]);
         }
     }/******import order ends*****/
+
+    public function assignUserVpApi(Request $request){
+        try {
+            $file = $request->file('users_vp_file');
+
+            $randm = rand(100,1000000);
+            $fileNameSave = time() . "-users-" . $file->getClientOriginalName();
+            $filename = $randm.'-'.$fileNameSave;
+
+            $uploaded = $file->move(public_path('uploaded/user_import_file/'.$request->program_id.'/'), $filename);
+
+            $users = Excel::toCollection(new UserImport(), $uploaded->getRealPath());
+            $users = $users[0]->toArray();
+            // $rules = [
+            //     '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
+            //     '*.vp_email' => "required|unique:program_users,username",
+            //     '*.group_name' => 'required|exists:roles,name',
+            // ];
+
+            // $validator = \Validator::make($users, $rules);
+
+            // if ($validator->fails())
+            //     return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            $vp_email_notExist = array();
+            $user_email_notExist = array();
+            foreach ($users as $user){
+                
+                $userdata = ProgramUsers::where('email', $user['email'])->first();
+                if($userdata){
+                    $account = Account::where('email', $user['vp_email'])->first();
+                    if($account){
+
+                        $previous_vp_emp_num = $userdata->vp_emp_number;
+                        $new_vp_emp_num = $account->id;
+
+                        if($previous_vp_emp_num != $new_vp_emp_num){
+                           
+                            #maintain_log
+                            VpempNumberLog::create([
+                                'user_account_id' => $userdata->account_id,
+                                'previous_vp_emp' =>  $previous_vp_emp_num ?? Null,
+                                'new_vp_emp_number' => $new_vp_emp_num,
+                            ]);
+
+                        }
+                        
+                        $userData = ProgramUsers::where('email', $user['email'])->update(['vp_emp_number'=> $account->id]);
+
+                        #get_group_id
+                        $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
+                        $groupId = $group_id->id;
+
+                        $roleId = 2;
+
+                        $date = date('Y-m-d h:i:s');
+
+                        $check_data = UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$groupId,'user_role_id'=>$roleId])->first();
+                        if(empty($check_data)){
+                            $UsersGroupList = new UsersGroupList;
+                            $UsersGroupList->account_id = $account->id;
+                            $UsersGroupList->user_group_id = $groupId;
+                            $UsersGroupList->user_role_id = $roleId;
+                            $UsersGroupList->created_at = $date;
+                            $UsersGroupList->updated_at = $date;
+                            $UsersGroupList->save();
+                        }
+                    }else{
+                        $vp_email_notExist[] = $user['vp_email'];
+                    }
+                }else{
+                    $user_email_notExist[] = $user['email'];
+                }
+                
+            }
+            return response()->json([
+                'uploaded_file' => url('uploaded/user_import_file/'.$request->program_id.'/'.$uploaded->getFilename()),
+                'message' => 'VP Users Assigned Successfully',
+                'vp_email_notExist' => $vp_email_notExist,
+                'user_email_notExist' => $user_email_notExist
+            ]);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error_message' => $th->getMessage(),
+                'error_line' => $th->getLine(),
+                'error_file' => $th->getFile()
+            ]);
+        }
+
+    }
+
+    /*******************************************
+    fn to send emails to user/l1 when update L1
+    ********************************************/
+    public function sendEmailUpdateVp(Request $request){
+
+        $data_all_change = VpempNumberLog::all();
+        if(!empty($data_all_change)){
+            foreach($data_all_change as $key=>$value){
+                $user = Account::select('name','email')->where('id',$value->user_account_id)->first();
+
+                $new_lead = Account::select('name','email')->where('id',$value->new_vp_emp_number)->first();
+
+                #Send_Email_to_User
+                $data = [
+                    'name' => $user->name,
+                    'new_l1_admin' => $new_lead->name,
+                ];
+
+                $emailcontent["template_type_id"] =  '30';
+                $emailcontent["dynamic_code_value"] = array($data['name'],$data['new_l1_admin']);
+                $emailcontent["email_to"] = $user->email;
+                $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+                //to_new_l1
+                $email_content["template_type_id"] =  '31';
+                $email_content["dynamic_code_value"] = array($data['name'],$data['new_l1_admin']);
+                $email_content["email_to"] = $new_lead->email;
+                $email_data = Helper::emailDynamicCodesReplace($email_content);
+
+
+            }
+        }
+        
+
+    }/*******fn_ends_here********/
+
+    public function sendWelcomeEmail(Request $request){
+
+
+        $all_new_users = ProgramUsers::select('id','email','first_name')->where('id', '>=', '9294')->get();
+        
+
+        if(!empty($all_new_users)){
+            foreach($all_new_users as $key=>$value){
+                $data = [
+                    'name' => $value->first_name,
+                    'email' => $value->email,
+                ];
+                $link = "<a href=".env('frontendURL').">here</a>";
+                $emailcontent["template_type_id"] =  '32';
+                $emailcontent["dynamic_code_value"] = array($data['name'],$link);
+                $emailcontent["email_to"] = $data['email'];
+                $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+                
+            }
+
+            return response()->json([
+
+                'message' => 'Welcome email sent'
+            ]);
+        }else{
+            return response()->json([
+                'message' => 'no user found'
+
+            ]);
+        }
+    }
+
+    public function removeExistingGroups(Request $request){
+        try {
+
+            $file = $request->file('users_file');
+            $request->validate([
+                'users_file' => 'required|file',
+            ]);
+            $randm = rand(100,1000000);
+            $fileNameSave = time() . "-users-" . $file->getClientOriginalName();
+            $filename = $randm.'-'.$fileNameSave;
+
+            $uploaded = $file->move(public_path('uploaded/user_import_file/'.$request->program_id.'/'), $filename);
+
+            $users = Excel::toCollection(new UserImport(), $uploaded->getRealPath());
+            $users = $users[0]->toArray();
+
+            $rules = [
+                // '*.email' => "required|email|unique:program_users,email|unique:accounts,email",
+                // '*.username' => "required|unique:program_users,username",
+              /*  '*.communication_preference' => "in:email,sms",
+                '*.group_name' => 'required|exists:roles,name',
+                '*.role_name' => 'required|exists:user_roles,name',*/
+            ];
+
+            $validator = \Validator::make($users, $rules);
+
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            $already_exists = array();
+            $new_use = array();
+            $count = 0;
+            $groups = array();
+
+            foreach ($users as $user){ 
+
+                $accountExist = Account::where('email', $user['email'])->first();
+
+                if(empty($accountExist)){
+                    
+                    $new_use[$count] = $user['email'];
+                }else{
+
+                    $account = Account::where('email',$user['email'])->first();
+
+                    $already_exists[$count] = $user['email'];
+
+                    if(strtolower($request->emp_type) == 'lead'){
+                        $roleId = 2;
+                    }else{
+                        $role_name = trim($user['role_name']);
+                        #get_role_id
+                        $role_id = UserRoles::select('id')->where('name', 'like', '%' . $role_name . '%')->first();
+                        $roleId = $role_id->id;
+                    }
+
+                    #get_group_id
+                    $group_id = Role::select('id')->where('name', 'like', '%' . $user['group_name'] . '%')->first();
+                    $groupId = $group_id->id;
+
+
+                    if ($groupId) {
+                        $account->assignRole(Role::findById($groupId));
+                    }
+
+                    $date = date('Y-m-d h:i:s');
+
+                    $check_data = UsersGroupList::where('account_id',$account->id)->where('user_group_id','!=',$groupId)->get();
+
+                    if(!empty($check_data)){
+                       
+                       UsersGroupList::where('account_id',$account->id)->where('user_group_id','!=',$groupId)->delete();
+
+                    }
+
+                    $check_data = UsersGroupList::where('account_id',$account->id)->where('user_group_id',$groupId)->where('user_role_id','!=',$roleId)->get();
+
+                    if(!empty($check_data)){
+                       
+                       $check_data = UsersGroupList::where('account_id',$account->id)->where('user_group_id',$groupId)->where('user_role_id','!=',$roleId)->delete();
+
+                    }
+                }
+
+                
+                //}
+                $count++;
+            }
+
+            return response()->json([
+                'uploaded_file' => url('uploaded/user_import_file/'.$request->program_id.'/'.$uploaded->getFilename()),
+                'message' => 'Data Imported Successfully',
+                'already_exists' => $already_exists,
+                'new' => $new_use,
+                'groups' => $groups
+            ]);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error_message' => $th->getMessage(),
+                'error_line' => $th->getLine(),
+                'error_file' => $th->getFile()
+            ]);
+        }
+    }/*******fn ends*******/
 }

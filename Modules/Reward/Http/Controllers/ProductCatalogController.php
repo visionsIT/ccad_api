@@ -9,6 +9,7 @@ use Illuminate\Routing\Controller;
 use Modules\Reward\Http\Requests\ProductCatalogRequest;
 use Modules\Reward\Transformers\ProductCatalogTransformer;
 use Modules\Reward\Repositories\ProductCatalogRepository;
+use Modules\Reward\Models\ProductCatalog;
 
 class ProductCatalogController extends Controller
 {
@@ -17,6 +18,7 @@ class ProductCatalogController extends Controller
     public function __construct(ProductCatalogRepository $repository)
     {
         $this->repository = $repository;
+		$this->middleware('auth:api');
     }
 
     /**
@@ -26,14 +28,15 @@ class ProductCatalogController extends Controller
      */
     public function index(): Fractal
     {   
-
         if(isset($_GET['country_id'])){
             define('COUNTRY_CODE', $_GET['country_id']);
         }else{
             define('COUNTRY_CODE', '');
         }
         
-        $Catalogs = $this->repository->get()->sortBy('name');
+        //$Catalogs = $this->repository->get()->sortBy('name');
+        //$Catalogs = ProductCatalog::where('status','1')->get()->sortBy('name');
+        $Catalogs = ProductCatalog::get()->sortBy('name');
         return fractal($Catalogs, new ProductCatalogTransformer);
     }
 
@@ -98,7 +101,7 @@ class ProductCatalogController extends Controller
     public function updateCatalogStatus(Request $request) {
         try {
             $rules = [
-                'id' => 'required|integer|exists:products,id',
+                'id' => 'required|integer|exists:product_catalogs,id',
                 'status' => 'required|integer',
             ];
 

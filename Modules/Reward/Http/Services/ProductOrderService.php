@@ -11,6 +11,8 @@ use Modules\User\Models\ProgramUsers;
 use Modules\Reward\Models\ProductOrder;
 use Modules\Reward\Models\ProductDenomination;
 use DB;
+use Modules\User\Http\Services\UserNotificationService;
+use Helper;
 
 /**
  * Class CatalogueService
@@ -26,9 +28,10 @@ class ProductOrderService
      *
      * @param ProductOrderRepository $repository
      */
-    public function __construct(ProductOrderRepository $repository)
+    public function __construct(ProductOrderRepository $repository,UserNotificationService $userNotificationService)
     {
         $this->repository = $repository;
+        $this->notification_service = $userNotificationService;
     }
 
     /**
@@ -42,7 +45,7 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 1) {
@@ -52,12 +55,7 @@ class ProductOrderService
         $this->repository->update([ 'status' => 2 ], $id);
 
         //Mail::send(new OrderConfirmation($order, $order->account, $order->product));
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
+        
         $data = [
             'email' => $order->email,
             'username' => $order->first_name.' '. $order->last_name,
@@ -66,11 +64,22 @@ class ProductOrderService
             'product_name'     => $order->product->name,
             'value'    => $value,
             'quantity' => $order->quantity,
+            'order_number' => 'ccad-00'.$order->id,
         ];
-        Mail::send('emails.orderConfirmation', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('info@meritincentives.com','Merit Incentives');
-            $m->to($data["email"])->subject('Order Confirmation!');
-        });
+        
+        $emailcontent["template_type_id"] =  '4';
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country']);
+        $emailcontent["email_to"] = $data["email"];
+        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+        $message = "<p>Hello ".$data['username'].",</p>";
+        $message .= "<p>Your order has been confirmed.</p>";
+        $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
+        $message .= "<p><b>Value: </b>".$data['value']."</p>";
+        $message .= "<p><b>City: </b>".$data['city']."</p>";
+        $message .= "<p><b>Country: </b>".$data['country']."</p>";
+
+        $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '4', $message);
 
         return TRUE;
     }
@@ -86,7 +95,7 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 2) {
@@ -95,12 +104,7 @@ class ProductOrderService
 
         $this->repository->update([ 'status' => 3 ], $id);
 
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
+        
         $data = [
             'email' => $order->email,
             'username' => $order->first_name.' '. $order->last_name,
@@ -109,13 +113,25 @@ class ProductOrderService
             'product_name'     => $order->product->name,
             'value'    => $value,
             'quantity' => $order->quantity,
+            'order_number' => 'ccad-00'.$order->id,
         ];
-        Mail::send('emails.orderShipped', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('info@meritincentives.com','Merit Incentives');
-            $m->to($data["email"])->subject('Order Shipment!');
-        });
+        
+        $emailcontent["template_type_id"] =  '5';
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country']);
+        $emailcontent["email_to"] = $data["email"];
+        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
         //Mail::send(new OrderShipping($order, $order->account, $order->product));
+
+        $message = "<p>Hello ".$data['username'].",</p>";
+        $message .= "<p>Your order has been shipped.</p>";
+        $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
+        $message .= "<p><b>Value: </b>".$data['value']."</p>";
+        $message .= "<p><b>City: </b>".$data['city']."</p>";
+        $message .= "<p><b>Country: </b>".$data['country']."</p>";
+
+
+        $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '3', $message);
 
         return TRUE;
     }
@@ -131,7 +147,7 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status === 3 || $order->status === -1) {
@@ -154,26 +170,29 @@ class ProductOrderService
                 'created_by_id' => $user_points->created_by_id
             ]);
 
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
+        
         $data = [
             'email' => $order->email,
             'username' => $order->first_name.' '. $order->last_name,
             'product_name'     => $order->product->name,
             'value'    => $value,
             'quantity' => $order->quantity,
+            'order_number' => 'ccad-00'.$order->id,
         ];
 
-        Mail::send('emails.orderCancellation', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('info@meritincentives.com','Merit Incentives');
-            $m->to($data["email"])->subject('Order Cancellation!');
-        });
+        $emailcontent["template_type_id"] =  '6';
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value']);
+        $emailcontent["email_to"] = $data["email"];
+        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
         //Mail::send(new OrderCancellation($order, $order->account, $order->product));
+
+        $message = "<p>Hello ".$data['username'].",</p>";
+        $message .= "<p>We have to cancel your order because the product is out of stock.</p>";
+        $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
+        $message .= "<p><b>Value: </b>".$data['value']."</p>";
+
+        $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '2', $message);
 
         return TRUE;
     }
@@ -221,7 +240,7 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();  
+        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 1) {
@@ -231,12 +250,7 @@ class ProductOrderService
         // $this->repository->update([ 'status' => 2 ], $id);
 
         //Mail::send(new OrderConfirmation($order, $order->account, $order->product));
-        $image_url = [
-            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-        ];
+        
         $data = [
             'email' => $order->email,
             'username' => $order->first_name.' '. $order->last_name,
@@ -245,11 +259,21 @@ class ProductOrderService
             'product_name'     => $order->product->name,
             'value'    => $value,
             'quantity' => $order->quantity,
+            'order_number' => 'ccad-00'.$order->id,
         ];
-        Mail::send('emails.orderPlaced', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-            $m->from('info@meritincentives.com','Merit Incentives');
-            $m->to($data["email"])->subject('Order Placed!');
-        });
+        $emailcontent["template_type_id"] =  '3';
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country']);
+        $emailcontent["email_to"] = $data["email"];
+        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+        $message = "<p>Hello ".$data['username'].",</p>";
+        $message .= "<p>Your order has been placed.</p>";
+        $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
+        $message .= "<p><b>Value: </b>".$data['value']."</p>";
+        $message .= "<p><b>City: </b>".$data['city']."</p>";
+        $message .= "<p><b>Country: </b>".$data['country']."</p>";
+
+        $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null,$order->id, '1', $message);
 
         return TRUE;
     }

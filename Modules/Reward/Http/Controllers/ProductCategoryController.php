@@ -14,7 +14,7 @@ use Modules\Reward\Repositories\ProductCategoryRepository;
 use Modules\Reward\Repositories\ProductRepository;
 use Illuminate\Http\Request;
 use Illuminate\Http\response;
-
+use DB;
 class ProductCategoryController extends Controller
 {
     private $repository;
@@ -24,6 +24,7 @@ class ProductCategoryController extends Controller
     {
         $this->repository = $repository;
         $this->prod_repository = $prod_repository;
+		$this->middleware('auth:api');
     }
 
     /**
@@ -71,9 +72,16 @@ class ProductCategoryController extends Controller
      */
     public function store(ProductCategoryRequest $request)
     {
-        $Category = $this->repository->create($request->all());
+        $check_data = DB::table('product_categories')->where($request->all())->get();
+    
+        if(count($check_data) == 0){
+            $Category = $this->repository->create($request->all());
 
-        return fractal($Category, new ProductCategoryTransformer);
+            return fractal($Category, new ProductCategoryTransformer);
+        }else{
+            return response()->json(['message' => 'Already exists','status'=>'error']);
+        }
+        
     }
 
     /**
@@ -101,9 +109,12 @@ class ProductCategoryController extends Controller
      */
     public function update(ProductCategoryRequest $request, $id): JsonResponse
     {
+
         $this->repository->update($request->all(), $id);
 
         return response()->json(['message' => 'Category Updated Successfully']);
+       
+        
     }
 
     /**
@@ -124,7 +135,7 @@ class ProductCategoryController extends Controller
     public function updateCategoryStatus(Request $request) {
         try {
             $rules = [
-                'id' => 'required|integer|exists:products,id',
+                'id' => 'required|integer|exists:product_categories,id',
                 'status' => 'required|integer',
             ];
 
@@ -147,7 +158,7 @@ class ProductCategoryController extends Controller
     {
         try {
             $rules = [
-                'name' => 'required|string|unique:product_categories,name,'.$id,
+                'name' => 'required|string',
                 'catalog' => 'required|integer|exists:product_catalogs,id'
             ];
             $validator = \Validator::make($request->all(), $rules);
@@ -155,9 +166,17 @@ class ProductCategoryController extends Controller
             if ($validator->fails())
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
-            $this->repository->update($request->all(), $id);
+            $check_data = DB::table('product_categories')->where($request->all())->where('id','!=',$id)->get();
 
-            return response()->json(['message' => 'Sub Category Updated Successfully']);
+            if(count($check_data) == 0){
+                $this->repository->update($request->all(), $id);
+
+                return response()->json(['message' => 'Sub Category Updated Successfully']);
+            }else{
+                return response()->json(['message' => 'Already exists','status'=>'error']);
+            }
+
+            
         } catch (\Throwable $th) {
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
         }

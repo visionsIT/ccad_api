@@ -32,6 +32,7 @@ class NominationController extends Controller
     {
         $this->repository = $repository;
         $this->nomination_service = $nomination_service;
+		$this->middleware('auth:api');
     }
     /**
     /**
@@ -201,11 +202,11 @@ class NominationController extends Controller
     /*****************************
     get nomination as per campaign
     *****************************/
-    public function NominationCampaignWall(){
+    public function NominationCampaignWall($campaign_id = null){
 
         try{
             $queryString = \Illuminate\Support\Facades\Request::get('q');
-            $user = $this->nomination_service->getCampaignUSerNomination($queryString);
+            $user = $this->nomination_service->getCampaignUSerNomination($queryString,$campaign_id);
             return fractal($user , new UserNominationTransformerNew());
             
             /*$campaignSetting = ValueSet::with(['Campaign_setting'])->where(['id'=>$campaign_id,'status'=>'1'])->first();

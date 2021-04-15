@@ -44,5 +44,9 @@ class ProductOrder extends Model
         return $this->belongsTo(ProductDenomination::class, 'denomination_id');
     }
 
+    public function order_denomination(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(ProductDenomination::class, 'denomination_id')->withTrashed();
+    }
 
 }

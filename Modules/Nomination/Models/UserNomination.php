@@ -4,6 +4,8 @@ namespace Modules\Nomination\Models;
 
 use Modules\Account\Models\Account;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Models\Role;
+
 
 class UserNomination extends Model
 {
@@ -59,6 +61,14 @@ class UserNomination extends Model
     public function user_relation(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(\Modules\User\Models\ProgramUsers::class, 'user','account_id');
+    }
+
+     /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function user_ecard(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\Modules\Program\Models\UsersEcards::class, 'ecard_id','id');
     }
 
     /**
@@ -184,6 +194,22 @@ catch (exception $e) {
     public function scopeOfStatuses($query, $statuses = null)
     {
         return $query->where('level_1_approval', $statuses);
+    }
+
+    public function groupName(): \Illuminate\Database\Eloquent\Relations\BelongsTo //
+    {
+        return $this->belongsTo(Role::class, 'group_id', 'id');
+    }
+
+
+    public function nominee_account(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\Modules\User\Models\ProgramUsers::class, 'user','account_id');
+    }
+
+    public function valueCategory(): \Illuminate\Database\Eloquent\Relations\BelongsTo //
+    {
+        return $this->belongsTo(NominationType::class, 'value');
     }
 
 }

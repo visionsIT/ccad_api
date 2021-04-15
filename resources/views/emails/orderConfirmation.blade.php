@@ -12,6 +12,7 @@
 			<h6>Your order has been confirmed</h6>
 			<div>
 				<div><b>Product Name: </b> {{ $data['product_name'] }}</div>
+				<div><b>Order Number: </b> {{ $data['order_number'] }}</div>
 				<div><b>Value: </b> {{ $data['value'] }}</div>
 				<div><b>Quantity: </b> {{ $data['quantity'] }}</div>
 				<div><b>City: </b> {{ $data['city'] }}</div>

@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Mail;
 use File;
 use Spatie\Fractal\Fractal;
 use Spatie\Browsershot\Browsershot;
+use Helper;
 
 class ProgramController extends Controller
 {
@@ -30,6 +31,7 @@ class ProgramController extends Controller
     {
         $this->program_service = $program_service;
         $this->service = $service;
+		$this->middleware('auth:api');
         // $this->middleware('auth:api', ['sendEcard']);
         // $this->middleware('auth:api')->only(['sendEcard']);
         // $this->middleware('guest');
@@ -238,10 +240,11 @@ class ProgramController extends Controller
             if($timestamp >= $voucherStartStamp && $timestamp <= $voucherEndStamp) {
                 if($voucher_use->quantity == $voucher_use->used_count) {
                     return response()->json(['status' => true, 'message'=>'Voucher not available']);
-                } else if($voucher_use->timezone != $input['timezone']) {
+                } /*else if($voucher_use->timezone != $input['timezone']) {
                     return response()->json(['status' => true, 'message'=>'Voucher not available in your locale.']);
-                } else {
-
+                }*/ else {
+                    $account_id = Helper::customDecrypt($input['account_id']);
+                    $user_id = Helper::customDecrypt($input['user_id']);
                     $check = UserVouchers::where('voucher_id', $voucher_use->id)->where('account_id', $input['account_id'])->first();
 
                     if($check) {
@@ -352,7 +355,7 @@ class ProgramController extends Controller
         }catch (\Throwable $th) {
             return response()->json(['status' => true, 'message'=>'Something went wrong! Please try after some time.']);
         }
-        
+
     }
 
     /**
@@ -434,11 +437,11 @@ class ProgramController extends Controller
                 'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
                 'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
             ];
-            
+
             $eCardDetails = Ecards::find($request->ecard_id);
             $sendToUser = ProgramUsers::find($request->send_to_id);
             $senderUser = ProgramUsers::find($request->sender_id);
-            
+
             $path = public_path().'/uploaded/e_card_images/new';
             if(!File::exists($path)) {
                 File::makeDirectory($path, $mode = 0777, true, true);
@@ -454,7 +457,7 @@ class ProgramController extends Controller
 
             if($update === 1){
                 $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
-                
+
                 $image_mesaage = str_replace(" ","%20",$request->image_message);#bcs_send_in_url
                 $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
                 $conv = new \Anam\PhantomMagick\Converter();
@@ -481,9 +484,9 @@ class ProgramController extends Controller
                 'file_path' => $file_path,
                 'full_img_path' => $new_img_path
             ];
-            
 
-        
+
+
             try {
                 // Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
                 //     $m->to($data["email"])->subject($data["card_title"].' Ecard!');

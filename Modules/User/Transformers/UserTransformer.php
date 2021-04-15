@@ -5,7 +5,7 @@ use Modules\User\Models\ProgramUsers;
 use Modules\User\Models\UsersPoint;
 use Modules\Reward\Models\ProductOrder;
 use DB;
-
+use Helper;
 class UserTransformer extends TransformerAbstract
 {
     /**
@@ -35,11 +35,11 @@ class UserTransformer extends TransformerAbstract
 
 
         return [
-            'id' => $User->id,
+            'id' => Helper::customCrypt($User->id),
             'name' => $username,
             'email' => filter_var($User->email, FILTER_SANITIZE_EMAIL),
             'username' => $User->username,
-            'account_id' => $User->account_id,
+            'account_id' => Helper::customCrypt($User->account_id),
             'user_groups' => optional($User->account)->getRoleNames(),
             'user_group_id' => $gruop_id ? $gruop_id->user_group_id : '',
             'user_group_all' => $all_group_data ? $all_group_data : '',
@@ -66,9 +66,10 @@ class UserTransformer extends TransformerAbstract
             'status' => $User->is_active,
             'emp_number' => $User->emp_number,
             'vp_emp_number' => $User->vp_emp_number,
-            'program_id' => $program_user_id->id,
+            'program_id' => Helper::customCrypt($program_user_id->id),
             'last_login' => $last_login,
             'country_id' => $User->country_id,
+            'login_attempt' => $User->account->login_attempts,
         ];
     }
 }

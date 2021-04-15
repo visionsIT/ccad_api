@@ -10,10 +10,17 @@ use Modules\Account\Models\Account;
 use Modules\User\Models\ProgramUsers;
 use DB;
 use Illuminate\Support\Facades\Mail;
-
+use App\Http\Services\AuthLoginService;
+use Helper;
 class AuthController extends AccessTokenController
 {
     use AuthenticatesUsers;
+
+    public function __construct(AuthLoginService $auth_services)
+    {
+       // $this->middleware('auth:api');
+        $this->auth_services = $auth_services;
+    }
 
     //custom login method
     public function login(Request $request){
@@ -50,15 +57,7 @@ class AuthController extends AccessTokenController
 
 			        	#if_user_attempt_wrong_password_3rd_time_then_send_mail_about_block
 			        	if($increase_attempt >= 3){
-			        		$image_url = [
-					            'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-					            'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-					            'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-					            'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-					            'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
-					        ];
-
-
+			        		
     						$program_user = ProgramUsers::select('first_name')->where('account_id',$account->id)->first();
 
 					        #Send_Email_to_User
@@ -67,10 +66,10 @@ class AuthController extends AccessTokenController
 					            'name' => $program_user->first_name,
 					        ];
 
-				            Mail::send('emails.UserBlockMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-				            	$m->from('customerexperience@meritincentives.com','Merit Incentives');
-				                $m->to($data["email"])->subject('Account Blocked');
-				            });
+				            $emailcontent["template_type_id"] =  '9';
+				            $emailcontent["dynamic_code_value"] = array($data['name']);
+				            $emailcontent["email_to"] = $data["email"];
+				            $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
 				            #Send_Email_to_Admin
 					        $data1 = [
@@ -79,10 +78,10 @@ class AuthController extends AccessTokenController
 					            'user_email' => $account->email
 					        ];
 
-				            Mail::send('emails.UserBlockMailAdmin', ['data' => $data1, 'image_url'=>$image_url], function ($m) use($data1) {
-				            	$m->from('customerexperience@meritincentives.com','Merit Incentives');
-				                $m->to($data1["email"])->subject('Account Blocked');
-				            });
+					        $email_content["template_type_id"] =  '10';
+				            $email_content["dynamic_code_value"] = array($data1['name'],$data1['user_email']);
+				            $email_content["email_to"] = $data1["email"];
+				            $email_data = Helper::emailDynamicCodesReplace($email_content);
 
 				            return response()->json(["error"=> "account_blocked","error_description"=> "The user account has been blocked.","message"=> "The user account has been blocked."]);
 

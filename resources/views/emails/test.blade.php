@@ -24,7 +24,7 @@
 		<td align="center" style="padding: 40px 20px; line-height: 1.6;">
 			<img src="{{ $image_url['smile_img_url'] }}" alt="Thank You" width="100" />
 			<h2 style="margin: 10px 0px 20px;">{!! $mes !!}</h2>
-			<h4>We are haapy to serve you better.</h4>
+			<h4>We are happy to serve you better.</h4>
 		</td>
 	</tr>
 	<tr>

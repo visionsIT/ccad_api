@@ -7,6 +7,7 @@ use Modules\User\Models\UsersPoint;
 use Modules\Nomination\Models\CampaignSettings;
 use Modules\User\Models\ProgramUsers;
 use DB;
+use Helper;
 
 
 class AccountTransformer extends TransformerAbstract
@@ -31,13 +32,14 @@ class AccountTransformer extends TransformerAbstract
         }else{
             $last_login = null;
         }
-
+        $accountID = Helper::customCrypt($account->id);
+        $userID = Helper::customCrypt(optional($account->user)->id);
         return [
-            'id'              => $account->id,
+            'id'              => $accountID,
             'name'            => ucfirst($account->user->first_name).' '.ucfirst($account->user->last_name),
             'email'           => $account->email,
             'type'            => $account->type,
-            'user_id'         => optional($account->user)->id,
+            'user_id'         => $userID,
             'title'           => optional($account->user)->title,
             'program_id'      => $account->client_admins->client->programs->id ?? $account->user->program_id, //TODO WTF REALLY
             'last_login'      => $last_login,

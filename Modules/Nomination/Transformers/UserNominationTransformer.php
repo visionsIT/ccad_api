@@ -3,6 +3,7 @@
 use League\Fractal\TransformerAbstract;
 use Modules\Nomination\Models\UserNomination;
 use Modules\Account\Models\Account;
+use Helper;
 
 class UserNominationTransformer extends TransformerAbstract
 {
@@ -19,7 +20,7 @@ class UserNominationTransformer extends TransformerAbstract
 
 
         return [
-            'id'                        => $model->id,
+            'id'                        => Helper::customCrypt($model->id),
             'campaign_id'               => $model->campaignid,
             //'nomination_id'             => $model->campaign,
             'user'                      => $model->user,

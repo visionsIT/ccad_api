@@ -8,7 +8,7 @@
 		<td align="center" style="padding: 40px 20px; line-height: 1.6;">
 			
 			
-			<h4>We are haapy to serve you better.</h4>
+			<h4>We are happy to serve you better.</h4>
 		</td>
 	</tr>
 	<tr>

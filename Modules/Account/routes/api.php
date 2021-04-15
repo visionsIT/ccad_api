@@ -36,3 +36,6 @@ Route::post('change_permission_status', 'PermissionController@changePermissionSt
     Route::post('password/create', [ 'uses' => 'PasswordsController@createNewPassword', 'as' => 'createNewPassword' ]);
     Route::post('password/change/{account_id}', [ 'uses' => 'PasswordsController@changeOldPassword', 'as' => 'changeOldPassword' ]); // need auth middleware
 }
+/******My Account*****/
+Route::post('my_account', 'AccountController@myAccountAllData');
+Route::post('my_activity', 'AccountController@myActivityAllData');

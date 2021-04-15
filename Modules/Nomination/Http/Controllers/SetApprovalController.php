@@ -16,6 +16,7 @@ class SetApprovalController extends Controller
     {
         $this->nomination_service = $nomination_service;
         $this->set_approval_service = $set_approval_service;
+		$this->middleware('auth:api');
     }
 
 

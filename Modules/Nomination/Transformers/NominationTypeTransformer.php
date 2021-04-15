@@ -2,6 +2,7 @@
 
 use League\Fractal\TransformerAbstract;
 use Modules\Nomination\Models\NominationType;
+use Helper;
 
 class NominationTypeTransformer extends TransformerAbstract
 {
@@ -13,7 +14,7 @@ class NominationTypeTransformer extends TransformerAbstract
     public function transform(NominationType $model): array
     {
         return [
-            'id'                    => $model->id,
+            'id'                    => Helper::customCrypt($model->id),
             'name'                  => $model->name,
             'description'           => $model->description,
             'logo'                  => $model->logo,

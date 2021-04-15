@@ -29,6 +29,11 @@ use Validator;
 use DB;
 use File;
 use Illuminate\Support\Facades\Mail;
+use Modules\User\Models\UserNotifications;
+use Modules\User\Transformers\UserNotificationTransformer;
+use Modules\User\Transformers\UserNotificationDetailTransformer;
+use Helper;
+use Modules\User\Models\VpempNumberLog;
 
 class UserController extends Controller
 {
@@ -37,6 +42,7 @@ class UserController extends Controller
     public function __construct(UserService $service)
     {
         $this->service = $service;
+		$this->middleware('auth:api');
         // $this->middleware(['paginatedUsers','getGroupLeadUsers']);
         // $this->middleware('auth:api', ['paginatedUsers','getGroupLeadUsers']);
     }
@@ -77,6 +83,13 @@ class UserController extends Controller
         } else {
             return $userList;
         }
+    }
+
+    public function getSearchedUsers(Request $request) {
+        $data = $this->service->getSearchedUsers($request);
+        return  response()->json([
+                    'users' => $data,
+                ]);
     }
 
     /**
@@ -136,9 +149,14 @@ class UserController extends Controller
     public function show($id): Fractal
     {
 
-        $user = $this->service->find($id);
+        try{
+            $id = Helper::customDecrypt($id);
+            $user = $this->service->find($id);
 
-        return fractal($user, new UserTransformer());
+            return fractal($user, new UserTransformer());
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check id and try again.', 'errors' => $th->getMessage()], 402);
+        }
     }
 
     /**
@@ -149,9 +167,14 @@ class UserController extends Controller
      */
     public function update(ProgramUsersRequest $request, $id): JsonResponse
     {
-        $this->service->update($request, $id);
+        try{
+            $id = Helper::customDecrypt($id);
+            $this->service->update($request, $id);
 
-        return response()->json([ 'message' => 'Data has been successfully updated' ]);
+            return response()->json([ 'message' => 'Data has been successfully updated','status'=>'Success' ]);
+        }catch (\Throwable $th) {
+            return response()->json(['status'=>'error','message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
     }
 
     /**
@@ -161,9 +184,14 @@ class UserController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-        $this->service->destroy($id);
+        try{
+            $id = Helper::customDecrypt($id);
+            $this->service->destroy($id);
 
-        return response()->json([ 'message' => 'Data has been successfully deleted' ]);
+            return response()->json([ 'message' => 'Data has been successfully deleted' ]);
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
     }
 
     /**
@@ -448,6 +476,8 @@ class UserController extends Controller
 
     public function updateUserStatus(Request $request){
         try {
+            $request['user_id'] = Helper::customDecrypt($request['user_id']);
+            $request['account_id'] = Helper::customDecrypt($request['account_id']);
             $rules = [
                 'user_id' => 'required|integer|exists:program_users,id',
                 'account_id' => 'required|integer|exists:accounts,id',
@@ -502,7 +532,7 @@ class UserController extends Controller
 
     public function updateUserInfo(Request $request, $id){
         try {
-
+            $id = Helper::customDecrypt($id);
             $request['first_name'] = filter_var($request->first_name, FILTER_SANITIZE_STRING);
             $request['last_name'] = filter_var($request->last_name, FILTER_SANITIZE_STRING);
             $request['job_title'] = filter_var($request->job_title, FILTER_SANITIZE_STRING);
@@ -516,7 +546,7 @@ class UserController extends Controller
                 'last_name' => 'required|string',
                 'language' => 'required',
                 //'company' => 'required',
-                'job_title' => 'required',
+                //'job_title' => 'required|string',
                 //'vp_emp_number' => 'required|integer|exists:accounts,id',
             ];
 
@@ -644,52 +674,55 @@ class UserController extends Controller
     upload user profile pic
     **********************/
     public function uploadUserProfilePic(Request $request){
+        try{
+            $request['account_id'] = Helper::customDecrypt($request['account_id']);
+            $rules = [
+                'account_id' => 'required|integer|exists:accounts,id',
+                'profile_pic' => 'required',
+            ];
 
-        $rules = [
-            'account_id' => 'required|integer|exists:accounts,id',
-            'profile_pic' => 'required',
-        ];
+            $validator = \Validator::make($request->all(), $rules);
 
-        $validator = \Validator::make($request->all(), $rules);
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
-        if ($validator->fails())
-            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
-
-        if ($request->hasFile('profile_pic')) {
-            $file = $request->file('profile_pic');
-            $request->validate([
-                'profile_pic' => 'file||mimes:jpeg,png,jpg',
-            ]);
-            $file_name = $file->getClientOriginalName();
-            $file_ext = $file->getClientOriginalExtension();
-            $fileInfo = pathinfo($file_name);
-            $filename = $fileInfo['filename'];
-            $path = 'uploaded/user_profile_pics/';
-            if(!File::exists($path)) {
-                File::makeDirectory($path, $mode = 0777, true, true);
-            }
-            $randm = rand(10,1000);
-            $newname = $randm.time().'-userProfile-'.$filename.'.'.$file_ext;
-            $newname = str_replace(" ","_",$newname);
-            $destinationPath = public_path($path);
-            $file->move($destinationPath, $newname);
-
-            #delete_user_prev_image_from_folder
-            $get_image = ProgramUsers::select('profile_image')->where('account_id',$request->account_id)->first();
-
-            if(!empty($get_image)){
-                if($get_image->profile_image != '' && $get_image->profile_image != null && $get_image->profile_image != 'null'){
-                    File::delete($destinationPath.$get_image->profile_image);
+            if ($request->hasFile('profile_pic')) {
+                $file = $request->file('profile_pic');
+                $request->validate([
+                    'profile_pic' => 'file||mimes:jpeg,png,jpg',
+                ]);
+                $file_name = $file->getClientOriginalName();
+                $file_ext = $file->getClientOriginalExtension();
+                $fileInfo = pathinfo($file_name);
+                $filename = $fileInfo['filename'];
+                $path = 'uploaded/user_profile_pics/';
+                if(!File::exists($path)) {
+                    File::makeDirectory($path, $mode = 0777, true, true);
                 }
+                $randm = rand(10,1000);
+                $newname = $randm.time().'-userProfile-'.$filename.'.'.$file_ext;
+                $newname = str_replace(" ","_",$newname);
+                $destinationPath = public_path($path);
+                $file->move($destinationPath, $newname);
+
+                #delete_user_prev_image_from_folder
+                $get_image = ProgramUsers::select('profile_image')->where('account_id',$request->account_id)->first();
+
+                if(!empty($get_image)){
+                    if($get_image->profile_image != '' && $get_image->profile_image != null && $get_image->profile_image != 'null'){
+                        File::delete($destinationPath.$get_image->profile_image);
+                    }
+                }
+
+                ProgramUsers::where('account_id',$request->account_id)->update(['profile_image'=>$newname,'image_path'=>$path]);
+
+                return response()->json(['message'=>'Profile Image saved successfully.', 'status'=>'success']);exit;
+            }else{
+                return response()->json(['message'=>'please provide Profile Image.', 'status'=>'error']);exit;
             }
-
-            ProgramUsers::where('account_id',$request->account_id)->update(['profile_image'=>$newname,'image_path'=>$path]);
-
-            return response()->json(['message'=>'Profile Image saved successfully.', 'status'=>'success']);exit;
-        }else{
-            return response()->json(['message'=>'please provide Profile Image.', 'status'=>'error']);exit;
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check account_id and try again.', 'errors' => $th->getMessage()], 402);
         }
-
 
     }/****fn_ends_here***/
 
@@ -698,19 +731,24 @@ class UserController extends Controller
     get user profile pic
     ********************/
     public function getUserProfilePic($account_id = null){
-        $get_image = ProgramUsers::select('profile_image','image_path')->where('account_id',$account_id)->first();
+        try{
+            $account_id = Helper::customDecrypt($account_id);
+            $get_image = ProgramUsers::select('profile_image','image_path')->where('account_id',$account_id)->first();
 
-        if(!empty($get_image)){
-            if($get_image->profile_image != '' && $get_image->profile_image != null && $get_image->profile_image != 'null'){
+            if(!empty($get_image)){
+                if($get_image->profile_image != '' && $get_image->profile_image != null && $get_image->profile_image != 'null'){
 
-                $profile_img = '/'.$get_image->image_path.$get_image->profile_image;
-                $user_profile_img = url($profile_img);
+                    $profile_img = '/'.$get_image->image_path.$get_image->profile_image;
+                    $user_profile_img = url($profile_img);
 
-                return response()->json(['message'=>'Profile Image get successfully.', 'status'=>'success','profile_image'=>$user_profile_img]);exit;
+                    return response()->json(['message'=>'Profile Image get successfully.', 'status'=>'success','profile_image'=>$user_profile_img]);exit;
+                }
             }
-        }
 
-        return response()->json(['message'=>'Image not Found.', 'status'=>'error']);exit;
+            return response()->json(['message'=>'Image not Found.', 'status'=>'error']);exit;
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check account_id and try again.', 'errors' => $th->getMessage()], 402);
+        }
     }/******fn_ends_here******/
 
     public function userBlockUnblock($b_status = null, $account_id = null){
@@ -719,16 +757,9 @@ class UserController extends Controller
             if($b_status == null || $account_id == null){
                 return response()->json(['message'=>'Please provide user id and block status.', 'status'=>'error']);exit;
             }else{
+                $account_id = Helper::customDecrypt($account_id);
                 $account = ProgramUsers::where('account_id',$account_id)->first();
                 if(!empty($account)){
-
-                    $image_url = [
-                        'blue_logo_img_url' => env('APP_URL')."/img/".env('BLUE_LOGO_IMG_URL'),
-                        'smile_img_url' => env('APP_URL')."/img/".env('SMILE_IMG_URL'),
-                        'blue_curve_img_url' => env('APP_URL')."/img/".env('BLUE_CURVE_IMG_URL'),
-                        'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
-                        'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
-                    ];
 
                     $data = [
                         'email' => $account->email,
@@ -738,19 +769,19 @@ class UserController extends Controller
                     if($b_status == 0){
                         Account::where('id',$account_id)->update(['login_attempts'=>0]);
 
-                        Mail::send('emails.UserUnBlockMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                            $m->from('customerexperience@meritincentives.com','Merit Incentives');
-                            $m->to($data["email"])->subject('Account Unblocked');
-                        });
+                        $emailcontent["template_type_id"] =  '12';
+                        $emailcontent["dynamic_code_value"] = array($data['name']);
+                        $emailcontent["email_to"] = $data["email"];
+                        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
                         return response()->json(['message'=>'User Un-Blocked Successfully.', 'status'=>'success']);exit;
                     }else{
                         Account::where('id',$account_id)->update(['login_attempts'=>3]);
 
-                        Mail::send('emails.AdminBlockUserMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                            $m->from('customerexperience@meritincentives.com','Merit Incentives');
-                            $m->to($data["email"])->subject('Account Suspended');
-                        });
+                        $emailcontent["template_type_id"] =  '11';
+                        $emailcontent["dynamic_code_value"] = array($data['name']);
+                        $emailcontent["email_to"] = $data["email"];
+                        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
                         return response()->json(['message'=>'User Blocked Successfully.', 'status'=>'success']);exit;
                     }
@@ -799,10 +830,14 @@ class UserController extends Controller
             $users = array();
             $count_blocked = Account::where('login_attempts',3)->count();
             $count_login = Account::whereNotNull('last_login')->count();
-            $notAdmin = UsersGroupList::select('account_id')->distinct('account_id')->where('user_role_id','!=',4)->count();
+
+            $notAdmin = ProgramUsers::select('program_users.account_id')->join('accounts', 'program_users.account_id', '=', 'accounts.id')->join('users_group_list', 'accounts.id', '=', 'users_group_list.account_id')->where('users_group_list.user_role_id','!=',4)->groupBy('users_group_list.account_id')->get();
+
+            $count_notAdmin = count($notAdmin);
+
             $users['blocked_users'] = $count_blocked;
             $users['login_users'] = $count_login;
-            $users['not_admin'] = $notAdmin;
+            $users['not_admin'] = $count_notAdmin;
 
             return response()->json(['message' => 'Count Get Successfully', 'status'=>'success','data'=>$users]);
 
@@ -810,5 +845,81 @@ class UserController extends Controller
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
         }
     }/*****count_fn_ends_here****/
+
+    public function userNotifications($account_id = null)
+    {
+        try{
+            if($account_id == null || $account_id == ''){
+                return response()->json(['message' => 'Please provide account id.','status'=>'error']);
+            }
+            $account_id = Helper::customDecrypt($account_id);
+            $getUserNotifications = UserNotifications::where('receiver_account_id', $account_id)->orderBy('id', 'desc')->get();
+            return fractal($getUserNotifications, new UserNotificationTransformer());
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+
+    }
+
+    /******************************************
+    fn to change status of notification to read
+    *******************************************/
+    public function userNotificationsStatus(Request $request){
+        try{
+            $request['notification_id'] = Helper::customDecrypt($request->notification_id);
+             $rules = [
+                 'notification_id' => 'required|integer|exists:user_notifications,id',
+             ];
+ 
+             $validator = \Validator::make($request->all(), $rules);
+ 
+             if ($validator->fails())
+                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+ 
+             $getUserNotifications = UserNotifications::where('id', $request->notification_id)->update(['read_status'=>'1']);
+             return response()->json(['message' => 'Status Changed Successfully.', 'status' => 'success']);
+ 
+         }catch (\Throwable $th) {
+             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+         }
+
+    }/****fn_ends*****/
+
+    /************************
+    fn to count notifications
+    *************************/
+    public function countUserNotifications($account_id = null){
+        try{
+            if($account_id == null || $account_id == ''){
+                return response()->json(['message' => 'Please provide account id.','status'=>'error']);
+            }
+
+            $account_id = Helper::customDecrypt($account_id);
+            $count_Notifications = UserNotifications::where('receiver_account_id', $account_id)->count();
+            return response()->json(['data'=>$count_Notifications,'message' => 'Get count Successfully.', 'status' => 'success']);
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+    }/***fn_ends_here***/
+
+    /**notification details**/
+    public function notificationDetail($notification_id = null){
+        try{
+            
+            if($notification_id == null || $notification_id == ''){
+                return response()->json(['message' => 'Please provide notification id.','status'=>'error']);
+            }
+            
+            $notification_id = Helper::customDecrypt($notification_id);
+            $notification_detail = UserNotifications::where('id', $notification_id)->first();
+
+            return fractal($notification_detail, new UserNotificationDetailTransformer());
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+    }/******fn_ends*******/
+
+
+    
 
 }

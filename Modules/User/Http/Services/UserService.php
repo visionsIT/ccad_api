@@ -13,6 +13,8 @@ use Spatie\Fractal\Fractal;
 use Spatie\Permission\Models\Role;
 use Modules\User\Models\UsersGroupList;
 use Modules\Nomination\Models\CampaignSettings;
+use DB;
+use Helper;
 class UserService
 {
     public $repository;
@@ -36,10 +38,13 @@ class UserService
             //         });
             // }
 
-            $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where('name', 'like', '%' . $search . '%')->orWhere('email', 'like', '%' . $search . '%');
+            $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->where(['users_group_list.user_role_id'=>$role_id,'users_group_list.user_group_id'=>$group_id])->join('accounts','users_group_list.account_id','accounts.id');
 
             if($role_id == 1){
-                $userdata = $userdata->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20);
+                $userdata = $userdata->where( function ($q) use ($search) {
+                        $q->where('accounts.name', 'like', '%' . $search . '%')
+                        ->orWhere('accounts.email', 'like', '%' . $search . '%');
+                        })->paginate(20);
 
             }else{
                 $userdata = $userdata->where( function ($q) use ($search) {
@@ -83,7 +88,7 @@ class UserService
                     ->orwhere('program_users.job_title', 'like', '%' . $search . '%');
                 }
 
-            if($column == 'last_login'){
+            if($column == 'last_login' || $column == 'login_attempts'){
                 $getUserList = $getUserList->orderBy('accounts.'.$column, $order)->paginate(12);
             }else{
                 $getUserList = $getUserList->orderBy('program_users.'.$column, $order)->paginate(12);
@@ -146,6 +151,61 @@ class UserService
         } else {
 
             return $this->repository->get();
+        }
+    }
+
+    private function getCampaignSettings($campaignId) {
+        $get_campaign_setting = CampaignSettings::select('receiver_users','receiver_group_ids')->where('campaign_id', $campaignId)->first()->toArray();
+
+        if($get_campaign_setting['receiver_users'] == 1){
+            $group_ids = $get_campaign_setting['receiver_group_ids'];
+            $group_ids = explode(',', $group_ids);
+
+            return $group_ids;
+        } else {
+            return array();
+        }
+    }
+
+    public function getSearchedUsers($request) {
+        $search = trim($_REQUEST['keyword']);
+        $campaignId = $_REQUEST['campaign_id'];
+
+        if($campaignId) {
+            $useraccount = \Auth::user();
+            $accountID =  $useraccount->id;
+
+            $group_ids = $this->getCampaignSettings($campaignId);
+
+            $data = ProgramUsers::select('program_users.id', 'program_users.account_id', 'first_name', 'last_name', 'email', 'profile_image', 'image_path')
+            ->where('program_users.account_id','!=',$accountID)
+            ->where(['program_users.is_active' => 1])
+            ->where(function($query) use ($search){
+                $query->where('first_name', 'LIKE', "%{$search}%")
+                ->orWhere('last_name', 'LIKE', "%{$search}%")
+                ->orWhere('email', 'Like', "%{$search}%")
+                ->orWhereRaw("concat(program_users.first_name, ' ', program_users.last_name) like '%{$search}%' ");
+            })
+            ->leftJoin('users_group_list as t1', "t1.account_id","=","program_users.account_id")
+            ->where('t1.account_id','!=',$accountID)
+            ->where('t1.user_role_id','1')
+            ->where('t1.status','1');
+            if (count($group_ids) > 0) {
+                $data->whereIn('t1.user_group_id', $group_ids);
+            }
+
+            return $data->distinct()->get();
+        } else {
+            $data = ProgramUsers::select('program_users.id', 'program_users.account_id', 'first_name', 'last_name', 'email', 'profile_image', 'image_path')
+            ->where(['program_users.is_active' => 1])
+            ->where(function($query) use ($search){
+                $query->where('first_name', 'LIKE', "%{$search}%")
+                ->orWhere('last_name', 'LIKE', "%{$search}%")
+                ->orWhere('email', 'LIKE', "%{$search}%")
+                ->orWhereRaw("concat(first_name, ' ', last_name) LIKE '%{$search}%' ");
+            });
+
+            return $data->distinct()->get();
         }
     }
 
@@ -254,6 +314,7 @@ class UserService
      */
     public function update($request, $id): void
     {
+        $request['id'] = Helper::customDecrypt($request->id);
         $this->repository->update($request->all(), $id);
     }
 

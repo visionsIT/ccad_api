@@ -51,6 +51,9 @@ use Modules\Nomination\Imports\UserNominationImport;
 use DB;
 use File;
 use Modules\Nomination\Models\NominationType;
+use Modules\Program\Models\Ecards;
+use Modules\User\Http\Services\UserNotificationService;
+use Helper;
 
 class UserNominationController extends Controller
 {
@@ -60,17 +63,19 @@ class UserNominationController extends Controller
     private $user_nomination_service, $nomination_repository, $user_service;
     private $account_service;
 
-    public function __construct(UserNominationRepository $repository,PointService $point_service,NominationRepository $nomination_repository,NominationService $nominationService,UserNominationService $user_nomination_service, UserService $user_service, AccountService $account_service, RippleSettingsRepository $ripple_repository)
+    public function __construct(UserNominationRepository $repository,PointService $point_service,NominationRepository $nomination_repository,NominationService $nominationService,UserNominationService $user_nomination_service, UserService $user_service, AccountService $account_service, RippleSettingsRepository $ripple_repository,UserNotificationService $userNotificationService)
     {
         $this->repository = $repository;
         $this->nomination_repository = $nomination_repository;
         $this->nomination_service = $nominationService;
         $this->user_nomination_service = $user_nomination_service;
+        $this->notification_service = $userNotificationService;
         $this->user_service = $user_service;
         $this->point_service = $point_service;
         $this->account_service = $account_service;
         $this->ripple_repository = $ripple_repository;
-        $this->middleware('auth:api')->only(['nominations']);
+        //$this->middleware('auth:api')->only(['nominations']);
+        $this->middleware('auth:api');
     }
 
     /**
@@ -194,376 +199,869 @@ class UserNominationController extends Controller
         }
     }
 
-
     public function sendNomination(Request $request)
-    {
+    {		
+        try{
 
-        $newname = '';
-        if ($request->hasFile('attachments')) {
-            $file = $request->file('attachments');
-            $request->validate([
-                'attachments' => 'file||mimes:jpeg,png,jpg,pdf',
-            ]);
-            $file_name = $file->getClientOriginalName();
-            $file_ext = $file->getClientOriginalExtension();
-            $fileInfo = pathinfo($file_name);
-            $filename = $fileInfo['filename'];
-            $newname = 'EN'.$filename.substr(strftime("%Y", time()),2).'.'.$file_ext;
-            $destinationPath = public_path('uploaded/user_nomination_files/');
-            $file->move($destinationPath, $newname);
-        }
-        $request->attachments = $newname;
-
-        $teamNomination = UserNomination::USER_NOMINATION;
-        if(isset($request->claim_award)){
-            $teamNomination = UserNomination::CLAIM_NOMINATION;
-        }
-
-
-        /****** Campaign Setting ********/
-
-
-        $setting_slug = $request->campaign_slug;
-        $getCampaignData = $this->ripple_repository->getCampaignIDBySLug($setting_slug);
-        $campaign_id = $getCampaignData->id;
-
-
-        $result = $this->ripple_repository->getDataCampaignID($campaign_id);
-
-        $points_allowed = $result->points_allowed;
-
-        $approval_request = $result->approval_request_status;
-
-        $budget_type = $result->budget_type;
-
-        $level_1_approval = $result->level_1_approval;
-        $level_2_approval = $result->level_2_approval;
-
-        $inputPoint = $request->points;
-
-        // Account IDs
-        $receiverIds = explode(',', $request->user);
-        $recevrCount = count($receiverIds);
-
-        $senderUser = ProgramUsers::find($request->sender_id);
-
-        $failed = [];
-
-        // Get Sender program id using account_id
-
-        $sender_account_id = $request->account_id;
-        $program_user_receiver = ProgramUsers::select('id')->where('account_id', $sender_account_id)->first();
-        $sender_program_id = $program_user_receiver->id;
-
-
-        /****** As per the Campaign Setting *****/
-
-
-         if(!empty($receiverIds)){
-            if($request->project_name){
-                $teamData = CreateNominationTeam::create();
+            $newname = '';
+            $NewImgPath = '';
+            if ($request->hasFile('attachments')) {
+                $file = $request->file('attachments');
+                $request->validate([
+                    'attachments' => 'file||mimes:doc,docx,pdf|max:10240',
+                ]);
+                $file_name = $file->getClientOriginalName();
+                $file_ext = $file->getClientOriginalExtension();
+                $fileInfo = pathinfo($file_name);
+                $filename = $fileInfo['filename'];
+                $newname = 'EN'.$filename.substr(strftime("%Y", time()),2).'.'.$file_ext;
+                $destinationPath = public_path('uploaded/user_nomination_files/');
+                $file->move($destinationPath, $newname);
             }
-            foreach ($receiverIds as $key => $receiverid_v) {
+            $request->attachments = $newname;
 
-                $program_user_receiver = ProgramUsers::select('id')->where('account_id', $receiverid_v)->first();
-                $receiverid = $program_user_receiver->id;
+            $teamNomination = UserNomination::USER_NOMINATION;
+            if(isset($request->claim_award)){
+                $teamNomination = UserNomination::CLAIM_NOMINATION;
+            }
 
-                $sendToUser = ProgramUsers::find($receiverid);
+            /****** Campaign Setting ********/ 
 
-                DB::beginTransaction();
+            $setting_slug = $request->campaign_slug;
+            $getCampaignData = $this->ripple_repository->getCampaignIDBySLug($setting_slug);
+            $campaign_id = $getCampaignData->id;
 
-                try {
+            $result = $this->ripple_repository->getDataCampaignID($campaign_id);
+			
+			$certificate_image = (!empty($result) && isset($result->certificate_image) && !empty($result->certificate_image)) ? str_replace(" ", "_", $result->certificate_image) : false;
+
+            /* $newImage = '';
+			$destinationPath = '';
+			$destinationPathUrl = '';
+
+			if(isset($certificate_image) && !empty($certificate_image))
+			{
+				$path = public_path('/uploaded/certificate_images/');
+                $urlPath = url('/uploaded/certificate_images/') . '/';
+				$certificate_image_path = $path.$certificate_image;
+				$certificate_image_url = $urlPath.$certificate_image;
+				
+				if(File::exists($certificate_image_path)) {
+
+                    $randm = rand(100,1000000);
+                    $newImage = $randm.time().'-'.$certificate_image;
+
+					$image_mesaage = str_replace(" ","%20",$request->reason);#bcs_send_in_url
+					
+					$conv = new \Anam\PhantomMagick\Converter();
+					$options = [
+						'width' => 800,'quality' => 90
+					];
+					
+                    $image_mesaage = $request->reason;
+
+                    $destinationPath = $path.$newImage;
+                    //$destinationPathUrl = $urlPath.$newImage;
+					$destinationPathUrl = env('FRONT_APP_URL').'uploaded/certificate_images/'.$newImage;
+            
+                    $conv->source(url('/newCertificateImage/'.$certificate_image.'/'.$image_mesaage))
+                    ->toPng($options)
+                    ->save($destinationPath);
+								
+				}		
+			} */
+			
+            $points_allowed = $result->points_allowed;
+
+            $approval_request = $result->approval_request_status;
+
+            $budget_type = $result->budget_type;
+
+            $level_1_approval = $result->level_1_approval;
+            $level_2_approval = $result->level_2_approval;
+
+            $request['value'] =  Helper::customDecrypt($request->value);
+
+            $inputPoint = NominationType::where('id', $request->value)->first();
+            $inputValueName = $inputPoint->name;
+            $inputPoint = $inputPoint->points;
+
+            //$inputPoint = $request->points;
+
+            // Account IDs
+            $receiverIds = explode(',', $request->user);
+            $recevrCount = count($receiverIds);
+
+            $request['sender_id'] =  Helper::customDecrypt($request->sender_id);
+
+            $senderUser = ProgramUsers::find($request->sender_id);
+            
+            $failed = [];
+
+            // Get Sender program id using account_id
+            $request['account_id'] =  Helper::customDecrypt($request->account_id);
+            $sender_account_id = $request->account_id; 
+            $program_user_receiver = ProgramUsers::select('id')->where('account_id', $sender_account_id)->first();
+            $sender_program_id = $program_user_receiver->id;
+
+
+            /****** As per the Campaign Setting *****/
+
+
+            if(!empty($receiverIds)){
+                foreach ($receiverIds as $key => $receiverid_v) {
+
+                    $receiverid_v =  Helper::customDecrypt($receiverid_v);
+
+                    $program_user_receiver = ProgramUsers::select('id')->where('account_id', $receiverid_v)->first();
+                    $receiverid = $program_user_receiver->id;
+                   
+                    $sendToUser = ProgramUsers::find($receiverid);
+
+                    $newImage = '';
+					$destinationPath = '';
+					$destinationPathUrl = '';
+					if(isset($certificate_image) && !empty($certificate_image))
+					{
+						$path = public_path('/uploaded/certificate_images/');
+						$urlPath = url('/uploaded/certificate_images/') . '/';
+						$certificate_image_path = $path.$certificate_image;
+						$certificate_image_url = $urlPath.$certificate_image;
+						
+						if(File::exists($certificate_image_path)) {
+
+							$randm = rand(100,1000000);
+							$newImage = $randm.time().'-'.$certificate_image;
+
+							$image_mesaage = str_replace(" ","%20",$request->reason);#bcs_send_in_url
+							
+							$conv = new \Anam\PhantomMagick\Converter();
+							$options = [
+								'width' => 800,'quality' => 90
+							];
+							
+							$image_mesaage = $request->reason;
+
+							$destinationPath = $path.$newImage;
+							//$destinationPathUrl = $urlPath.$newImage;
+							$destinationPathUrl = env('FRONT_APP_URL').'uploaded/certificate_images/'.$newImage;
+					
+							$presented_to 	= $sendToUser->first_name. ' '. $sendToUser->last_name;
+							$core_value 	= $inputValueName;
+							$conv->source(url('/newCertificateImage/'.$certificate_image.'/'.$image_mesaage.'/'.$presented_to.'/'.$core_value))
+							->toPng($options)
+							->save($destinationPath);
+										
+						}		
+					}
+                        
+                    DB::beginTransaction();
+
+                    try {
 
 
 
-                    /********************* If No Approval Required ***************************/
+                        /********************* If No Approval Required ***************************/
 
-                    if( $approval_request == 0 && $points_allowed == 1){
+                        if( $approval_request == 0 && $points_allowed == 1){
 
-                        if($budget_type == 1){
+                            if($budget_type == 1){ 
 
-                            // Campaign_Budget of current logged user
-
-                            $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
-
-                            if(!$campaign_budget){
-
-                                return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
-
-                            }else{
-
-                                $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
-
-                                if($campaign_budget_bal < ($inputPoint)) {
-                                    return response()->json(['message'=>"You don't have enough balance to nominate", 'status'=>'error']);
+                                // Campaign_Budget of current logged user
+            
+                                $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
+            
+                                if(!$campaign_budget){
+                                    
+                                    return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
+                                    
+                                }else{
+            
+                                    $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
+                                    
+                                    if($campaign_budget_bal < ($inputPoint)) {
+                                        return response()->json(['message'=>"You don't have enough balance to nominate", 'status'=>'error']);
+                                    }
                                 }
+            
+                                // campaign Deduction
+            
+                                $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
+                                $campaign_budget_bal =  $campaign_budget->budget;
+            
+                                $currentBud = $campaign_budget_bal;
+                                $finalBud = $currentBud-$inputPoint;
+            
+                                $updateSenderBudget = UserCampaignsBudget::where('program_user_id', $request->sender_id)->where('campaign_id',$campaign_id)->update([
+                                            'budget' => $finalBud,
+                                        ]);
+            
+                                // Logs
+                                
+                                $createRippleLog = UserCampaignsBudgetLogs::create([
+                                    'program_user_id' => $request->sender_id,
+                                    'campaign_id' => $campaign_id,
+                                    'budget' => $inputPoint,
+                                    'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
+                                    'description' => "direct nomination without approval",   
+                                    'created_by_id' => $request->account_id,     
+                                ]);
+
+                                $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+                                // Get lowest role of receiver
+                                $groupId  = $groupData['user_group_id'];
+
+                                $user_nomination = UserNomination::create([
+                                    'user'   => $sendToUser->account_id, // Receiver
+                                    'account_id' => $request->account_id, // Sender
+                                    'group_id' => $groupId,
+                                    'campaign_id' => $campaign_id,
+                                    'nomination_id' => $request->nomination_id,
+                                    'level_1_approval' => 2,
+                                    'level_2_approval' => 2,
+                                    'point_type' => $budget_type,
+                                    'reason' => strip_tags($request->reason),
+                                    'value' => $request->value,
+                                    'points'  => $inputPoint,
+                                    'attachments' => $newname,
+                                    'project_name' => $request->project_name ? $request->project_name : '',
+                                    'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+                                    'nominee_function' => $request->nominee_function,
+                                    'personal_message' => strip_tags($request->personal_message),
+                                    'certificate_image_path' => $newImage
+                                ]);
+            
+            
+                            } else {
+                                $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+                                // Get lowest role of receiver
+                                $groupId  = $groupData['user_group_id'];
+
+                                $user_nomination = UserNomination::create([
+                                    'user'   => $sendToUser->account_id, // Receiver
+                                    'account_id' => $request->account_id, // Sender
+                                    'group_id' => $groupId,
+                                    'campaign_id' => $campaign_id,
+                                    'nomination_id' => $request->nomination_id,
+                                    'level_1_approval' => 2,
+                                    'level_2_approval' => 2,
+                                    'point_type' => $budget_type,
+                                    'reason' => strip_tags($request->reason),
+                                    'value' => $request->value,
+                                    'points'  => $inputPoint,
+                                    'attachments' => $newname,
+                                    'project_name' => $request->project_name ? $request->project_name : '',
+                                    'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+                                    'nominee_function' => $request->nominee_function,
+                                    'personal_message' => strip_tags($request->personal_message),
+									'certificate_image_path' => $newImage
+                                ]);
                             }
 
-                            // campaign Deduction
-
-                            $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
-                            $campaign_budget_bal =  $campaign_budget->budget;
-
-                            $currentBud = $campaign_budget_bal;
-                            $finalBud = $currentBud-$inputPoint;
-
-                            $updateSenderBudget = UserCampaignsBudget::where('program_user_id', $request->sender_id)->where('campaign_id',$campaign_id)->update([
-                                        'budget' => $finalBud,
-                                    ]);
-
-                            // Logs
-
-                            $createRippleLog = UserCampaignsBudgetLogs::create([
-                                'program_user_id' => $request->sender_id,
-                                'campaign_id' => $campaign_id,
-                                'budget' => $inputPoint,
-                                'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
-                                'description' => "direct nomination without approval",
-                                'created_by_id' => $request->account_id,
+                            //update receiver budget
+                            $currentBud = UsersPoint::select('balance')->where('user_id',$receiverid)->latest()->first();
+                            
+                            $currentBud = $currentBud ? $currentBud->balance : 0;
+                            $finalPoints = $currentBud+$inputPoint;
+                            $updateReciverBudget = UsersPoint::create([
+                                'value'    => $inputPoint, // +/- point
+                                'user_id'    => $receiverid, // Receiver
+                                'user_nominations_id' => $user_nomination->id,
+                                'transaction_type_id'    => 10,  // For Ripple
+                                'description' => '',
+                                'balance'    => $finalPoints, // After +/- final balnce
+                                'created_by_id' => $request->sender_id // Who send
                             ]);
 
+                            
+                            $subject = "TAKREEM - Notification of nomination successful";
+                            
+                            $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                            
+                            $emailcontent["template_type_id"] = '21';
+
+                            $certificate_text = "<a href=".url('/uploaded/certificate_images/').'/'.$user_nomination->certificate_image_path.">Click here</a> to view the certificate.";
+
+                            $emailcontent["dynamic_code_value"] = array($sendToUser->first_name,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$request->reason,$certificate_text);
+
+                            $emailcontent["email_to"] = $sendToUser->email;
+                            $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+                            
+                            //$this->nomination_service->sendmail($sendToUser->email,$subject,$message); 
+
+                            $mail_content = "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
+                            $mail_content .= "<p>Keep up the good work.</p>";
+                            $saveNotification = $this->notification_service->creat_notification($sendToUser->account_id,$request->account_id, $user_nomination->id, Null, '10', $mail_content);
+
+                            DB::commit();
+                        }
+
+                        /********************* If Approval Required ***************************/
+                      
+                        if($approval_request == 1 && $points_allowed == 1){ 
+
                             $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+
+
                             // Get lowest role of receiver
                             $groupId  = $groupData['user_group_id'];
+
+                            
+                            if($level_1_approval == 0){
+                                $update_vale_l1 = 2;
+                             }else{
+                                $update_vale_l1 = 0;
+                             }
+
+                             if($level_2_approval == 0){
+                                $update_vale_l2 = 2;
+                             }else{
+                                $update_vale_l2 = 0;
+                             }
+
+                            // Update User Nomination table so that L1 or L2 can approve
+            
                             $user_nomination = UserNomination::create([
                                 'user'   => $sendToUser->account_id, // Receiver
                                 'account_id' => $request->account_id, // Sender
                                 'group_id' => $groupId,
                                 'campaign_id' => $campaign_id,
                                 'nomination_id' => $request->nomination_id,
-                                'level_1_approval' => 2,
-                                'level_2_approval' => 2,
+                                'level_1_approval' => $update_vale_l1,
+                                'level_2_approval' => $update_vale_l2,
                                 'point_type' => $budget_type,
-                                'reason' => $request->reason,
+                                'reason' => strip_tags($request->reason),
                                 'value' => $request->value,
                                 'points'  => $inputPoint,
                                 'attachments' => $newname,
                                 'project_name' => $request->project_name ? $request->project_name : '',
                                 'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
-                                'team_id' => $request->project_name ? $teamData->id : '',
                                 'nominee_function' => $request->nominee_function,
-                                'personal_message' => $request->personal_message
+                                'personal_message' => strip_tags($request->personal_message),
+								'certificate_image_path' => $newImage
                             ]);
 
-
-                        } else {
-                            $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
-                            // Get lowest role of receiver
-                            $groupId  = $groupData['user_group_id'];
-
-                            $user_nomination = UserNomination::create([
-                                'user'   => $sendToUser->account_id, // Receiver
-                                'account_id' => $request->account_id, // Sender
-                                'group_id' => $groupId,
-                                'campaign_id' => $campaign_id,
-                                'nomination_id' => $request->nomination_id,
-                                'level_1_approval' => 2,
-                                'level_2_approval' => 2,
-                                'point_type' => $budget_type,
-                                'reason' => $request->reason,
-                                'value' => $request->value,
-                                'points'  => $inputPoint,
-                                'attachments' => $newname,
-                                'project_name' => $request->project_name ? $request->project_name : '',
-                                'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
-                                'team_id' => $request->project_name ? $teamData->id : '',
-                                'nominee_function' => $request->nominee_function,
-                                'personal_message' => $request->personal_message
-                            ]);
-                        }
-
-                        //update receiver budget
-                        $currentBud = UsersPoint::select('balance')->where('user_id',$receiverid)->latest()->first();
-
-                        $currentBud = $currentBud ? $currentBud->balance : 0;
-                        $finalPoints = $currentBud+$inputPoint;
-                        $updateReciverBudget = UsersPoint::create([
-                            'value'    => $inputPoint, // +/- point
-                            'user_id'    => $receiverid, // Receiver
-                            'transaction_type_id'    => 10,  // For Ripple
-                            'description' => '',
-                            'balance'    => $finalPoints, // After +/- final balnce
-                            'created_by_id' => $request->sender_id // Who send
-                        ]);
-
-
-                        $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
-
-                        $nominator = $senderUser->first_name.' '.$senderUser->last_name;
-
-                        $message = "<p>Great news {$sendToUser->first_name},</p>";
-                        $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
-
-                        $message .= "<p>Keep up the good work.</p>";
-
-                        $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
-
-                        DB::commit();
-                    }
-
-                    /********************* If Approval Required ***************************/
-
-                    if($approval_request == 1 && $points_allowed == 1){
-
-                        $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
-
-
-                        // Get lowest role of receiver
-                        $groupId  = $groupData['user_group_id'];
-
-
-                        if($level_1_approval == 0){
-                            $update_vale_l1 = 2;
-                         }else{
-                            $update_vale_l1 = 0;
-                         }
-
-                         if($level_2_approval == 0){
-                            $update_vale_l2 = 2;
-                         }else{
-                            $update_vale_l2 = 0;
-                         }
-
-                        // Update User Nomination table so that L1 or L2 can approve
-
-                        $user_nomination = UserNomination::create([
-                            'user'   => $sendToUser->account_id, // Receiver
-                            'account_id' => $request->account_id, // Sender
-                            'group_id' => $groupId,
-                            'campaign_id' => $campaign_id,
-                            'nomination_id' => $request->nomination_id,
-                            'level_1_approval' => $update_vale_l1,
-                            'level_2_approval' => $update_vale_l2,
-                            'point_type' => $budget_type,
-                            'reason' => $request->reason,
-                            'value' => $request->value,
-                            'points'  => $inputPoint,
-                            'attachments' => $newname,
-                            'project_name' => $request->project_name ? $request->project_name : '',
-                            'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
-                            'team_id' => $request->project_name ? $teamData->id : '',
-                            'nominee_function' => $request->nominee_function,
-                            'personal_message' => $request->personal_message
-                        ]);
-
-
-                        if($level_1_approval == 0){
-                            $accounts = UsersGroupList::where('user_group_id', $groupId)
-                                ->where('user_role_id', '3')
-                                ->where('status', '1')
-                                ->get();
-
-                            $l2User = $accounts->map(function ($account){
-                                    return $account->programUserData;
-                                })->filter();
-
-                            $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
-
-                            $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
-                            $nominator = $senderUser->first_name.' '.$senderUser->last_name;
-                            $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
-
-                            $message = "<p>You have a nomination waiting for approval.</p>";
-                            $message .= "<strong>Nominee: </strong>{$nominee}<br>";
-                            $message .= "<strong>Nominator: </strong>{$nominator}<br>";
-                            $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
-                            $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
-                            $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
-                            $message .= "<strong>Reason: </strong>{$request->reason}<br>";
-
-                            $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
-
-
-                            foreach ($l2User as $account)
-                            {
-                                $this->nomination_service->sendmail($account->email,$subject,$message);
+                            #nomination_sumitted_email_to_sender
+                            if(strpos($user_nomination->campaignid->name, "Excellence Award") !== false){
+                                $emailcontents["template_type_id"] =  '25';
+                                $emailcontents["dynamic_code_value"] = array($senderUser->first_name.' '.$senderUser->last_name,$sendToUser->first_name.' '.$sendToUser->last_name,$user_nomination->type->name,$user_nomination->points,$request->reason,$user_nomination->campaignid->name);
+                            }else{
+                                $emailcontents["template_type_id"] =  '26';
+                                $emailcontents["dynamic_code_value"] = array($senderUser->first_name.' '.$senderUser->last_name,$sendToUser->first_name.' '.$sendToUser->last_name,$user_nomination->type->name,$user_nomination->points,$request->reason,$user_nomination->campaignid->name);
                             }
+                            
+                            $emailcontents["email_to"] = $senderUser->email;
+                            $emaildatas = Helper::emailDynamicCodesReplace($emailcontents);
 
-                        } else {
 
-                            $l1_id = $sendToUser->vp_emp_number;
-                            if($l1_id != ''){
+                            if($level_1_approval == 0){
+                                $accounts = UsersGroupList::where('user_group_id', $groupId)
+                                    ->where('user_role_id', '3')
+                                    ->where('status', '1')
+                                    ->get();
 
-                                $l1_account_data = ProgramUsers::select('first_name','email')->where('account_id',$l1_id)->first();
+                                $l2User = $accounts->map(function ($account){
+                                        return $account->programUserData;
+                                    })->filter();
 
-                                if(!empty($l1_account_data)){
-                                    $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
+                                $subject = "TAKREEM - Notification of nomination";
+                    
+                                $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
+                                $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                                $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+                        
+                                foreach ($l2User as $account)
+                                {
+                                    $link = "Please <a href=".$link.">click here</a>";
+                                    $emailcontent["template_type_id"] = '23';
+                                    $emailcontent["dynamic_code_value"] = array($account->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$request->reason,$link);
+                                    $emailcontent["email_to"] = $account->email;
+                                    $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
-                                    $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
-                                    $nominator = $senderUser->first_name.' '.$senderUser->last_name;
-                                    $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+                                   // $this->nomination_service->sendmail($account->email,$subject,$message);
 
-                                    $message = "<p>You have a nomination waiting for approval.</p>";
-                                    $message .= "<strong>Nominee: </strong>{$nominee}<br>";
-                                    $message .= "<strong>Nominator: </strong>{$nominator}<br>";
-                                    $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
-                                    $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
-                                    $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
-                                    $message .= "<strong>Reason: </strong>{$request->reason}<br>";
-
-                                    $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
-
-                                    $this->nomination_service->sendmail($l1_account_data->email,$subject,$message);
+                                    $mail_content = "<p>You have a nomination waiting for approval.</p>";
+                                    $saveNotification = $this->notification_service->creat_notification($account->account_id,$request->account_id, $user_nomination->id, Null, '5', $mail_content);
 
                                 }
-                            }else{
-                                return response()->json(['message'=>"L1 is not assigned", 'status'=>'error']);
+                                
+                            } else {
+
+                                $l1_id = $sendToUser->vp_emp_number;
+
+                                if($l1_id != ''){
+                                    $l1_account_data = ProgramUsers::select('first_name','email')->where('account_id',$l1_id)->first();
+
+                                    if(!empty($l1_account_data)){
+                                        $subject = "TAKREEM - Notification of nomination";
+                        
+                                        $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
+                                        $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                                        $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+                                    
+                                        $link = "Please <a href=".$link.">click here</a>";
+                                        //L1_is_required
+                                        if($level_2_approval == 0){
+                                            //L2_not_required_for_this_nomination
+                                            $emailcontent["template_type_id"] = '23';
+                                        }else{
+                                            //L2+is_required
+                                            $emailcontent["template_type_id"] = '27';
+                                        }
+                                    
+                                        $emailcontent["dynamic_code_value"] = array($l1_account_data->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$request->reason,$link);
+                                        $emailcontent["email_to"] = $l1_account_data->email;
+                                        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+                                        //$this->nomination_service->sendmail($l1_account_data->email,$subject,$message);
+
+                                        $mail_content = "<p>You have a nomination waiting for approval.</p>";
+                                        $saveNotification = $this->notification_service->creat_notification($l1_id,$request->account_id, $user_nomination->id, Null, '5', $mail_content);
+
+                                    }
+                                }else{
+                                    return response()->json(['message'=>"L1 is not assigned", 'status'=>'error']);
+                                }
+                                /*$accounts = UsersGroupList::where('user_group_id', $groupId)
+                                    ->where('user_role_id', '2')
+                                    ->where('status', '1')
+                                    ->get();
+
+                                $l1User = $accounts->map(function ($account){
+                                        return $account->programUserData;
+                                    })->filter();
+                        
+                                $subject = "TAKREEM - Notification of nomination";
+                        
+                                $link = env('frontendURL')."/pages/campaign/".$user_nomination->campaign_id;
+                                $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+                                $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+                        
+                                $message = "<p>You have a nomination waiting for approval.</p>";
+                                $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+                                $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+                                $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+                                $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+                                $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
+                                $message .= "<strong>Reason: </strong>{$request->reason}<br>";
+                        
+                                $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+                        
+                        
+                                foreach ($l1User as $account)
+                                {
+                                    $this->nomination_service->sendmail($account->email,$subject,$message);
+                                }*/
                             }
-                            /*$accounts = UsersGroupList::where('user_group_id', $groupId)
-                                ->where('user_role_id', '2')
-                                ->where('status', '1')
-                                ->get();
 
-                            $l1User = $accounts->map(function ($account){
-                                    return $account->programUserData;
-                                })->filter();
-
-                            $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
-
-                            $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
-                            $nominator = $senderUser->first_name.' '.$senderUser->last_name;
-                            $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
-
-                            $message = "<p>You have a nomination waiting for approval.</p>";
-                            $message .= "<strong>Nominee: </strong>{$nominee}<br>";
-                            $message .= "<strong>Nominator: </strong>{$nominator}<br>";
-                            $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
-                            $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
-                            $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
-                            $message .= "<strong>Reason: </strong>{$request->reason}<br>";
-
-                            $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
-
-
-                            foreach ($l1User as $account)
-                            {
-                                $this->nomination_service->sendmail($account->email,$subject,$message);
-                            }*/
+                            DB::commit();
+                            
                         }
-
-                        DB::commit();
+                     
+                    } catch (\Exception $e) {
+                        
+                        DB::rollBack();
+                        array_push($failed, $e->getMessage());
 
                     }
+                }  // end foreach
 
-                } catch (\Exception $e) {
-
-                    DB::rollBack();
-                    array_push($failed, $e->getMessage());
-
+                if(!empty($failed)) {
+                    return response()->json(['message'=>'Nomination has not been sent for '.implode(", ",$failed).'. Please try again later.', 'status'=>'error']);
+                } else {
+                    return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
                 }
-            }  // end foreach
-
-            if(!empty($failed)) {
-                return response()->json(['message'=>'Nomination has not been sent for '.implode(", ",$failed).'. Please try again later.', 'status'=>'error']);
+               
             } else {
-                return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
+                return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
             }
 
-        } else {
-            return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
+        } catch (\Exception $e) {
+            return response()->json(['message'=>$e->getMessage(), 'status'=>'error']);
         }
-
+        
+        
     }
+    // public function sendNomination(Request $request)
+    // {
+
+    //     $newname = '';
+    //     if ($request->hasFile('attachments')) {
+    //         $file = $request->file('attachments');
+    //         $request->validate([
+    //             'attachments' => 'file||mimes:jpeg,png,jpg,pdf',
+    //         ]);
+    //         $file_name = $file->getClientOriginalName();
+    //         $file_ext = $file->getClientOriginalExtension();
+    //         $fileInfo = pathinfo($file_name);
+    //         $filename = $fileInfo['filename'];
+    //         $newname = 'EN'.$filename.substr(strftime("%Y", time()),2).'.'.$file_ext;
+    //         $destinationPath = public_path('uploaded/user_nomination_files/');
+    //         $file->move($destinationPath, $newname);
+    //     }
+    //     $request->attachments = $newname;
+
+    //     $teamNomination = UserNomination::USER_NOMINATION;
+    //     if(isset($request->claim_award)){
+    //         $teamNomination = UserNomination::CLAIM_NOMINATION;
+    //     }
+
+
+    //     /****** Campaign Setting ********/
+
+
+    //     $setting_slug = $request->campaign_slug;
+    //     $getCampaignData = $this->ripple_repository->getCampaignIDBySLug($setting_slug);
+    //     $campaign_id = $getCampaignData->id;
+
+
+    //     $result = $this->ripple_repository->getDataCampaignID($campaign_id);
+
+    //     $points_allowed = $result->points_allowed;
+
+    //     $approval_request = $result->approval_request_status;
+
+    //     $budget_type = $result->budget_type;
+
+    //     $level_1_approval = $result->level_1_approval;
+    //     $level_2_approval = $result->level_2_approval;
+
+    //     $inputPoint = $request->points;
+
+    //     // Account IDs
+    //     $receiverIds = explode(',', $request->user);
+    //     $recevrCount = count($receiverIds);
+
+    //     $senderUser = ProgramUsers::find($request->sender_id);
+
+    //     $failed = [];
+
+    //     // Get Sender program id using account_id
+
+    //     $sender_account_id = $request->account_id;
+    //     $program_user_receiver = ProgramUsers::select('id')->where('account_id', $sender_account_id)->first();
+    //     $sender_program_id = $program_user_receiver->id;
+
+
+    //     /****** As per the Campaign Setting *****/
+
+
+    //      if(!empty($receiverIds)){
+    //         if($request->project_name){
+    //             $teamData = CreateNominationTeam::create();
+    //         }
+    //         foreach ($receiverIds as $key => $receiverid_v) {
+
+    //             $program_user_receiver = ProgramUsers::select('id')->where('account_id', $receiverid_v)->first();
+    //             $receiverid = $program_user_receiver->id;
+
+    //             $sendToUser = ProgramUsers::find($receiverid);
+
+    //             DB::beginTransaction();
+
+    //             try {
+
+
+
+    //                 /********************* If No Approval Required ***************************/
+
+    //                 if( $approval_request == 0 && $points_allowed == 1){
+
+    //                     if($budget_type == 1){
+
+    //                         // Campaign_Budget of current logged user
+
+    //                         $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
+
+    //                         if(!$campaign_budget){
+
+    //                             return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
+
+    //                         }else{
+
+    //                             $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
+
+    //                             if($campaign_budget_bal < ($inputPoint)) {
+    //                                 return response()->json(['message'=>"You don't have enough balance to nominate", 'status'=>'error']);
+    //                             }
+    //                         }
+
+    //                         // campaign Deduction
+
+    //                         $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
+    //                         $campaign_budget_bal =  $campaign_budget->budget;
+
+    //                         $currentBud = $campaign_budget_bal;
+    //                         $finalBud = $currentBud-$inputPoint;
+
+    //                         $updateSenderBudget = UserCampaignsBudget::where('program_user_id', $request->sender_id)->where('campaign_id',$campaign_id)->update([
+    //                                     'budget' => $finalBud,
+    //                                 ]);
+
+    //                         // Logs
+
+    //                         $createRippleLog = UserCampaignsBudgetLogs::create([
+    //                             'program_user_id' => $request->sender_id,
+    //                             'campaign_id' => $campaign_id,
+    //                             'budget' => $inputPoint,
+    //                             'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
+    //                             'description' => "direct nomination without approval",
+    //                             'created_by_id' => $request->account_id,
+    //                         ]);
+
+    //                         $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+    //                         // Get lowest role of receiver
+    //                         $groupId  = $groupData['user_group_id'];
+    //                         $user_nomination = UserNomination::create([
+    //                             'user'   => $sendToUser->account_id, // Receiver
+    //                             'account_id' => $request->account_id, // Sender
+    //                             'group_id' => $groupId,
+    //                             'campaign_id' => $campaign_id,
+    //                             'nomination_id' => $request->nomination_id,
+    //                             'level_1_approval' => 2,
+    //                             'level_2_approval' => 2,
+    //                             'point_type' => $budget_type,
+    //                             'reason' => $request->reason,
+    //                             'value' => $request->value,
+    //                             'points'  => $inputPoint,
+    //                             'attachments' => $newname,
+    //                             'project_name' => $request->project_name ? $request->project_name : '',
+    //                             'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+    //                             'team_id' => $request->project_name ? $teamData->id : '',
+    //                             'nominee_function' => $request->nominee_function,
+    //                             'personal_message' => $request->personal_message
+    //                         ]);
+
+
+    //                     } else {
+    //                         $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+    //                         // Get lowest role of receiver
+    //                         $groupId  = $groupData['user_group_id'];
+
+    //                         $user_nomination = UserNomination::create([
+    //                             'user'   => $sendToUser->account_id, // Receiver
+    //                             'account_id' => $request->account_id, // Sender
+    //                             'group_id' => $groupId,
+    //                             'campaign_id' => $campaign_id,
+    //                             'nomination_id' => $request->nomination_id,
+    //                             'level_1_approval' => 2,
+    //                             'level_2_approval' => 2,
+    //                             'point_type' => $budget_type,
+    //                             'reason' => $request->reason,
+    //                             'value' => $request->value,
+    //                             'points'  => $inputPoint,
+    //                             'attachments' => $newname,
+    //                             'project_name' => $request->project_name ? $request->project_name : '',
+    //                             'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+    //                             'team_id' => $request->project_name ? $teamData->id : '',
+    //                             'nominee_function' => $request->nominee_function,
+    //                             'personal_message' => $request->personal_message
+    //                         ]);
+    //                     }
+
+    //                     //update receiver budget
+    //                     $currentBud = UsersPoint::select('balance')->where('user_id',$receiverid)->latest()->first();
+
+    //                     $currentBud = $currentBud ? $currentBud->balance : 0;
+    //                     $finalPoints = $currentBud+$inputPoint;
+    //                     $updateReciverBudget = UsersPoint::create([
+    //                         'value'    => $inputPoint, // +/- point
+    //                         'user_id'    => $receiverid, // Receiver
+    //                         'user_nominations_id' => $user_nomination->id,
+    //                         'transaction_type_id'    => 10,  // For Ripple
+    //                         'description' => '',
+    //                         'balance'    => $finalPoints, // After +/- final balnce
+    //                         'created_by_id' => $request->sender_id // Who send
+    //                     ]);
+
+
+    //                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
+
+    //                     $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+
+    //                     $message = "<p>Great news {$sendToUser->first_name},</p>";
+    //                     $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
+
+    //                     $message .= "<p>Keep up the good work.</p>";
+
+    //                     $this->nomination_service->sendmail($sendToUser->email,$subject,$message);
+
+    //                     $mail_content = "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
+    //                     $mail_content .= "<p>Keep up the good work.</p>";
+    //                     $saveNotification = $this->notification_service->creat_notification($sendToUser->account_id,$request->account_id, $user_nomination->id, Null, '10', $mail_content);
+
+    //                     DB::commit();
+    //                 }
+
+    //                 /********************* If Approval Required ***************************/
+
+    //                 if($approval_request == 1 && $points_allowed == 1){
+
+    //                     $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
+
+
+    //                     // Get lowest role of receiver
+    //                     $groupId  = $groupData['user_group_id'];
+
+
+    //                     if($level_1_approval == 0){
+    //                         $update_vale_l1 = 2;
+    //                      }else{
+    //                         $update_vale_l1 = 0;
+    //                      }
+
+    //                      if($level_2_approval == 0){
+    //                         $update_vale_l2 = 2;
+    //                      }else{
+    //                         $update_vale_l2 = 0;
+    //                      }
+
+    //                     // Update User Nomination table so that L1 or L2 can approve
+
+    //                     $user_nomination = UserNomination::create([
+    //                         'user'   => $sendToUser->account_id, // Receiver
+    //                         'account_id' => $request->account_id, // Sender
+    //                         'group_id' => $groupId,
+    //                         'campaign_id' => $campaign_id,
+    //                         'nomination_id' => $request->nomination_id,
+    //                         'level_1_approval' => $update_vale_l1,
+    //                         'level_2_approval' => $update_vale_l2,
+    //                         'point_type' => $budget_type,
+    //                         'reason' => $request->reason,
+    //                         'value' => $request->value,
+    //                         'points'  => $inputPoint,
+    //                         'attachments' => $newname,
+    //                         'project_name' => $request->project_name ? $request->project_name : '',
+    //                         'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
+    //                         'team_id' => $request->project_name ? $teamData->id : '',
+    //                         'nominee_function' => $request->nominee_function,
+    //                         'personal_message' => $request->personal_message
+    //                     ]);
+
+
+    //                     if($level_1_approval == 0){
+    //                         $accounts = UsersGroupList::where('user_group_id', $groupId)
+    //                             ->where('user_role_id', '3')
+    //                             ->where('status', '1')
+    //                             ->get();
+
+    //                         $l2User = $accounts->map(function ($account){
+    //                                 return $account->programUserData;
+    //                             })->filter();
+
+    //                         $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
+
+    //                         $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
+    //                         $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+    //                         $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+
+    //                         $message = "<p>You have a nomination waiting for approval.</p>";
+    //                         $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+    //                         $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+    //                         $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+    //                         $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+    //                         $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
+    //                         $message .= "<strong>Reason: </strong>{$request->reason}<br>";
+
+    //                         $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+
+
+    //                         foreach ($l2User as $account)
+    //                         {
+    //                             $this->nomination_service->sendmail($account->email,$subject,$message);
+
+    //                             $mail_content = "<p>You have a nomination waiting for approval.</p>";
+    //                             $saveNotification = $this->notification_service->creat_notification($account->account_id,$request->account_id, $user_nomination->id, Null, '5', $mail_content);
+    //                         }
+
+    //                     } else {
+
+    //                         $l1_id = $sendToUser->vp_emp_number;
+    //                         if($l1_id != ''){
+
+    //                             $l1_account_data = ProgramUsers::select('first_name','email')->where('account_id',$l1_id)->first();
+
+    //                             if(!empty($l1_account_data)){
+    //                                 $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
+
+    //                                 $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
+    //                                 $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+    //                                 $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+
+    //                                 $message = "<p>You have a nomination waiting for approval.</p>";
+    //                                 $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+    //                                 $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+    //                                 $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+    //                                 $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+    //                                 $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
+    //                                 $message .= "<strong>Reason: </strong>{$request->reason}<br>";
+
+    //                                 $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+
+    //                                 $this->nomination_service->sendmail($l1_account_data->email,$subject,$message);
+
+    //                                 $mail_content = "<p>You have a nomination waiting for approval.</p>";
+    //                                 $saveNotification = $this->notification_service->creat_notification($l1_id,$request->account_id, $user_nomination->id, Null, '5', $mail_content);
+
+    //                             }
+    //                         }else{
+    //                             return response()->json(['message'=>"L1 is not assigned", 'status'=>'error']);
+    //                         }
+    //                         /*$accounts = UsersGroupList::where('user_group_id', $groupId)
+    //                             ->where('user_role_id', '2')
+    //                             ->where('status', '1')
+    //                             ->get();
+
+    //                         $l1User = $accounts->map(function ($account){
+    //                                 return $account->programUserData;
+    //                             })->filter();
+
+    //                         $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination";
+
+    //                         $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
+    //                         $nominator = $senderUser->first_name.' '.$senderUser->last_name;
+    //                         $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
+
+    //                         $message = "<p>You have a nomination waiting for approval.</p>";
+    //                         $message .= "<strong>Nominee: </strong>{$nominee}<br>";
+    //                         $message .= "<strong>Nominator: </strong>{$nominator}<br>";
+    //                         $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
+    //                         $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
+    //                         $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
+    //                         $message .= "<strong>Reason: </strong>{$request->reason}<br>";
+
+    //                         $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
+
+
+    //                         foreach ($l1User as $account)
+    //                         {
+    //                             $this->nomination_service->sendmail($account->email,$subject,$message);
+    //                         }*/
+    //                     }
+
+    //                     DB::commit();
+
+    //                 }
+
+    //             } catch (\Exception $e) {
+
+    //                 DB::rollBack();
+    //                 array_push($failed, $e->getMessage());
+
+    //             }
+    //         }  // end foreach
+
+    //         if(!empty($failed)) {
+    //             return response()->json(['message'=>'Nomination has not been sent for '.implode(", ",$failed).'. Please try again later.', 'status'=>'error']);
+    //         } else {
+    //             return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
+    //         }
+
+    //     } else {
+    //         return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
+    //     }
+
+    // }
     /**
      * Show the specified resource.
      *
@@ -573,9 +1071,15 @@ class UserNominationController extends Controller
      */
     public function show($id): Fractal
     {
-        $user_nomination = $this->repository->find($id);
+        try{
+            $id =  Helper::customDecrypt($id);
+            $user_nomination = $this->repository->find($id);
 
-        return fractal($user_nomination, new UserNominationTransformer);
+            return fractal($user_nomination, new UserNominationTransformer);
+        } catch (\Exception $e) {
+
+           return response()->json(['message'=> $e->getMessage(), 'status'=>'error','error_description'=>'Please check id and try again']);
+        }
     }
 
 
@@ -739,10 +1243,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
     DB::beginTransaction();
     try {
+        $id =  Helper::customDecrypt($id);
+        $request['approver_account_id'] =  Helper::customDecrypt($request->approver_account_id);
         $user_nomination = $this->user_nomination_service->find($id);
         $campaign_id = $user_nomination->campaign_id;
         $approval_status = $request->level_1_approval; // 1 for acceted and -1 decline
-
+        if($user_nomination->level_1_approval == 1 || $user_nomination->level_1_approval == -1 || $user_nomination->level_1_approval == 2) {
+            return response()->json(['message'=>'Nomination status already updated.', 'status'=>'error']);
+        }
 
         // Get receiver program user id
         $receiver_account_id = $user_nomination->user;
@@ -832,6 +1340,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $updateReciverBudget = UsersPoint::create([
                         'value'    => $points_update, // +/- point
                         'user_id'    => $receiver_program_id, // Receiver
+                        'user_nominations_id' => $user_nomination->id,
                         'transaction_type_id'    => 10,  // For Ripple
                         'description' => '',
                         'balance'    => $finalPoints, // After +/- final balnce
@@ -842,28 +1351,37 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $sender_email = $program_user_sender->email;
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
                     $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
-                    $message = "<p>Your nomination has been approved!.</p>";
-                    $message .= "<strong>Nominee </strong>{$nominee}<br>";
-                    $message .= "<strong>Value </strong>{$user_nomination->type->name}<br>";
-                    $message .= "<strong>Level </strong>{$user_nomination->campaignid->name}<br>";
-                    $message .= "<strong>Points </strong>{$user_nomination->points}<br>";
-                    $message .= "<strong>Reason </strong>{$user_nomination->reason}<br>";
+                    $nominator = $program_user_sender->first_name.' '.$program_user_sender->last_name;
 
-                    $message .= "<p>{$nominee} will be able to spend their points on the rewards catalogue immediately.</p>";
-                    $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
-                    $this->nomination_service->sendmail($sender_email,$subject,$message);
+                    $emailcontent["template_type_id"] = '20';
+                    $emailcontent["dynamic_code_value"] = array($nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$user_nomination->reason);
+                    $emailcontent["email_to"] = $sender_email;
+                    $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
+                    $mail_content = "<p>Your nomination has been approved!.</p>";
+                    $saveNotification = $this->notification_service->creat_notification($user_nomination->account_id,$request->approver_account_id, $user_nomination->id, Null, '8', $mail_content);
 
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
 
                     $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
 
-                    $message = "<p>Great news {$program_user_receiver->first_name},</p>";
-                    $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+                    $email_content["template_type_id"] = '21';
 
-                    $message .= "<p>Keep up the good work.</p>";
+                    if($user_nomination->certificate_image_path){
 
-                    $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
+                        $certificate_text = "<a href=".url('/uploaded/certificate_images/').'/'.$user_nomination->certificate_image_path.">Click here</a> to view the certificate.";
+                    }else{
+                        $certificate_text = "";
+                    }
+
+                    $email_content["dynamic_code_value"] = array($program_user_receiver->first_name,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$user_nomination->reason,$certificate_text);
+                    $email_content["email_to"] = $program_user_receiver->email;
+                    $email_data = Helper::emailDynamicCodesReplace($email_content);
+
+                    $mail_content =  "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+                    $mail_content .= "<p>Keep up the good work.</p>";
+            
+                    $saveNotification = $this->notification_service->creat_notification($receiver_account_id,$user_nomination->account_id, $user_nomination->id, Null, '5', $mail_content);
 
                 } // Close Campiagn type condition
 
@@ -896,9 +1414,17 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ];
                     try {
 
-                        Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                            $m->to($data["email"])->subject($data["card_title"].' Ecard!');
-                        });
+                        $link_to_ecard = $data['link_to_ecard'];        
+                        $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
+                        $emailcontent["template_type_id"] = '7';
+                        $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
+                        $emailcontent["email_to"] = $data["email"];
+                        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+
+                        $mail_content = "<p>You have received an E-Card from ".$data['sendername']."</p>";
+
+                        $saveNotification = $this->notification_service->creat_notification($receiver_account_id,$user_nomination->account_id, $user_nomination->id, Null, '5', $mail_content);
 
 
                     } catch (\Exception $e) {
@@ -926,20 +1452,17 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
                     $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
 
-                    $message = "<p>You have a nomination waiting for approval.</p>";
-                    $message .= "<strong>Nominee: </strong>{$nominee}<br>";
-                    $message .= "<strong>Nominator: </strong>{$nominator}<br>";
-                    $message .= "<strong>Value: </strong>{$user_nomination->type->name}<br>";
-                    $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
-                    $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
-                    $message .= "<strong>Reason: </strong>{$user_nomination->reason}<br>";
-
-                    $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
-
-
+                    $mail_content = "<p>You have a nomination waiting for approval.</p>";
                     foreach ($l2User as $account)
                     {
-                        $this->nomination_service->sendmail($account->email,$subject,$message);
+                        $link = "Please <a href=".$link.">click here</a>";
+                        $emailcontent["template_type_id"] = '23';
+                        $emailcontent["dynamic_code_value"] = array($account->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$user_nomination->reason,$link);
+                        $emailcontent["email_to"] = $account->email;
+                        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+                        $saveNotification = $this->notification_service->creat_notification($account->account_id,$user_nomination->account_id, $user_nomination->id, Null, '5', $mail_content);
+
                     }
                 }
             }
@@ -992,6 +1515,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $updateReciverBudget = UsersPoint::create([
                         'value'    => $points_update, // +/- point
                         'user_id'    => $sender_program_id, // Receiver
+                        'user_nominations_id' => $user_nomination->id,
                         'transaction_type_id'    => 10,  // For Ripple
                         'description' => 'Refund as request declined',
                         'balance'    => $finalPoints, // After +/- final balnce
@@ -1003,10 +1527,13 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
             if($request->campaign_type == 4) {
                 $sender_email = $program_user_sender->email;
-                $subject ="Cleveland Clinic Abu Dhabi - Notification of nomination decline";
-                $message = "<p>Dear {$program_user_sender->first_name},</p>";
-                $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
-                $this->nomination_service->sendmail($sender_email,$subject,$message);
+                $emailcontent["template_type_id"] = '19';
+                $emailcontent["dynamic_code_value"] = array($program_user_sender->first_name,$program_user_receiver->first_name.' '. $program_user_receiver->last_name,$user_nomination->type->name,$request->decline_reason);
+                $emailcontent["email_to"] = $sender_email;
+                $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+                $mail_content = "<p>Your nomination to " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
+                $saveNotification = $this->notification_service->creat_notification($program_user_sender->account_id,$request->approver_account_id,$user_nomination->id, Null, '6', $mail_content);
             }
 
             $msgResponse ="Nomination has been declined successfully.";
@@ -1044,6 +1571,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         DB::beginTransaction();
 
         try {
+            $id =  Helper::customDecrypt($id);
+            $request['approver_account_id'] =  Helper::customDecrypt($request->approver_account_id);
 
             $nominationData = [
                 'level_2_approval' => $request->level_2_approval
@@ -1060,6 +1589,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             // Nomination Data
             $user_nomination = $this->user_nomination_service->find($id);
             $campaign_id = $user_nomination->campaign_id;
+
+            if($user_nomination->level_2_approval == 1 || $user_nomination->level_2_approval == -1 || $user_nomination->level_2_approval == 2) {
+                return response()->json(['message'=>'Nomination status already updated.', 'status'=>'error']);
+            }
 
 
             // Get receiver program user id
@@ -1179,6 +1712,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             $updateReciverBudget = UsersPoint::create([
                 'value'    => $points_update, // +/- point
                 'user_id'    => $receiver_program_id, // Receiver
+                'user_nominations_id' => $user_nomination->id,
                 'transaction_type_id'    => 10,  // For Ripple
                 'description' => '',
                 'balance'    => $finalPoints, // After +/- final balnce
@@ -1186,7 +1720,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             ]);
 
 
-             if($request->campaign_type == 2) {
+            if($request->campaign_type == 2) {
 
 
                 /****** Start Send ecrad ***********/
@@ -1198,10 +1732,13 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                 'white_logo_img_url' => env('APP_URL')."/img/".env('WHITE_LOGO_IMG_URL'),
                             ];
 
-               $eCardDetails =  UsersEcards::select('users_ecards.image_message','ecards.card_title','ecards.card_image')
+               $eCardDetails =  UsersEcards::select('users_ecards.new_image','users_ecards.image_path','users_ecards.image_message','ecards.card_title','ecards.card_image')
                 ->leftJoin('ecards', 'ecards.id', '=', 'users_ecards.ecard_id')
                 ->where(['users_ecards.id' => $user_nomination->ecard_id])
                 ->get()->first();
+
+                $new_img = $eCardDetails->image_path.$eCardDetails->new_image;
+                $new_img_path = url($new_img);
 
 
                 $data = [
@@ -1212,12 +1749,20 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
                     'image_message' => $eCardDetails->image_message,
                     'color_code' => "#e6141a",
+                    'link_to_ecard' => $new_img_path
                 ];
                 try {
 
-                    Mail::send('emails.sendEcard', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-                        $m->to($data["email"])->subject($data["card_title"].' Ecard!');
-                    });
+                    $link_to_ecard = $data['link_to_ecard'];        
+                    $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
+                    $emailcontent["template_type_id"] = '7';
+                    $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
+                    $emailcontent["email_to"] = $data["email"];
+                    $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+                    $mail_content = "<p>You have received an E-Card from ".$data['sendername']."</p>";
+
+                    $saveNotification = $this->notification_service->creat_notification($program_user_receiver->account_id,$program_user_sender->account_id,$user_nomination->id, Null, '5', $mail_content);
 
                 } catch (\Exception $e) {
 
@@ -1233,28 +1778,34 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $sender_email = $program_user_sender->email;
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
                     $nominee = $program_user_receiver->first_name.' '.$program_user_receiver->last_name;
-                    $message = "<p>Your nomination has been approved!.</p>";
-                    $message .= "<strong>Nominee </strong>{$nominee}<br>";
-                    $message .= "<strong>Value </strong>{$user_nomination->type->name}<br>";
-                    $message .= "<strong>Level </strong>{$user_nomination->campaignid->name}<br>";
-                    $message .= "<strong>Points </strong>{$user_nomination->points}<br>";
-                    $message .= "<strong>Reason </strong>{$user_nomination->reason}<br>";
+                    $nominator = $program_user_sender->first_name.' '.$program_user_sender->last_name;
 
-                    $message .= "<p>{$nominee} will be able to spend their points on the rewards catalogue immediately.</p>";
-                    $message .= "<p>Thank you for using Cleveland Clinic Abu Dhabi!</p>";
-                    $this->nomination_service->sendmail($sender_email,$subject,$message);
+                    $emailcontent["template_type_id"] = '20';
+                    $emailcontent["dynamic_code_value"] = array($nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$user_nomination->reason);
+                    $emailcontent["email_to"] = $sender_email;
+                    $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
+                    $mail_content = "<p>Your nomination has been approved!.</p>";
+                    $saveNotification = $this->notification_service->creat_notification($program_user_sender->account_id,$request->approver_account_id,$user_nomination->id, Null, '5', $mail_content);
 
                     $subject = "Cleveland Clinic Abu Dhabi - Notification of nomination successful";
 
                     $nominator = $program_user_sender->first_name.' '. $program_user_sender->last_name;
 
-                    $message = "<p>Great news {$program_user_receiver->first_name},</p>";
-                    $message .= "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+                    $emailcontent["template_type_id"] = '21';
+                    if($user_nomination->certificate_image_path){
 
-                    $message .= "<p>Keep up the good work.</p>";
+                        $certificate_text = "<a href=".url('/uploaded/certificate_images/').'/'.$user_nomination->certificate_image_path.">Click here</a> to view the certificate.";
+                    }else{
+                        $certificate_text = "";
+                    }
+                    $emailcontent["dynamic_code_value"] = array($program_user_receiver->first_name,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$user_nomination->reason,$certificate_text);
+                    $emailcontent["email_to"] = $program_user_receiver->email;
+                    $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
-                    $this->nomination_service->sendmail($program_user_receiver->email,$subject,$message);
+                    $mail_content = "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
+                    $mail_content .= "<p>Keep up the good work.</p>";
+                    $saveNotification = $this->notification_service->creat_notification($program_user_receiver->account_id,$program_user_sender->account_id,$user_nomination->id, Null, '5', $mail_content);
 
                 }
             } else if ($request->level_2_approval == -1 ) {
@@ -1298,6 +1849,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                                 $updateReciverBudget = UsersPoint::create([
                                     'value'    => $points_update, // +/- point
                                     'user_id'    => $sender_program_id, // Receiver
+                                    'user_nominations_id' => $user_nomination->id,
                                     'transaction_type_id'    => 10,  // For Ripple
                                     'description' => 'Refund as request declined',
                                     'balance'    => $finalPoints, // After +/- final balnce
@@ -1308,10 +1860,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 }
                 if($request->campaign_type == 4) {
                     $sender_email = $program_user_sender->email;
-                    $subject ="Cleveland Clinic Abu Dhabi - Notification of nomination decline";
-                    $message = "<p>Dear {$program_user_sender->first_name},</p>";
-                    $message .="<p>Your nomination " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
-                    $this->nomination_service->sendmail($sender_email,$subject,$message);
+                    
+                    $emailcontent["template_type_id"] = '19';
+                    $emailcontent["dynamic_code_value"] = array($program_user_sender->first_name,$program_user_receiver->first_name.' '. $program_user_receiver->last_name,$user_nomination->type->name,$request->decline_reason);
+                    $emailcontent["email_to"] = $sender_email;
+                    $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+                    $mail_content = "<p>Your nomination to " . $program_user_receiver->first_name.' '. $program_user_receiver->last_name . " for the " . $user_nomination->type->name . " has been declined for the following reason: <strong>" . $request->decline_reason .".</strong></p>";
+                    $saveNotification = $this->notification_service->creat_notification($program_user_sender->account_id,$request->approver_account_id,$user_nomination->id, Null, '7', $mail_content);
                 }
             }
 
@@ -1333,8 +1889,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
      * @return Fractal
      */
 
-     public function getUsersBy($nomination_id, Account $account_id,$status = null) {
-        $logged_user_id = $account_id->id;
+     public function getUsersBy($nomination_id,$account_id,$status = null) {
+        $queryString = \Illuminate\Support\Facades\Request::get('q');
+        $logged_user_id = Helper::customDecrypt($account_id);
+
+        // $logged_user_id = $account_id->id;
         $user_group_data =  DB::table('users_group_list')
         ->whereIn('user_role_id', ['2','3']) // 2 for Level1, 3 for level 2
         ->where('account_id', $logged_user_id)
@@ -1367,6 +1926,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
                     }
+                    if($queryString) {
+                        $approved->where('user_nominations.user', $queryString);
+                    }
                     /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
                     $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
 
@@ -1387,6 +1949,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }else{
                     //3 for L2
                         $approved->whereIn('user_nominations.group_id', $groupids);
+                    }
+                    if($queryString) {
+                        $approved->where('user_nominations.user', $queryString);
                     }
                     /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
                     $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
@@ -1420,6 +1985,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                             });
                         });
 
+                    }
+                    if($queryString) {
+                        $approved->where('user_nominations.user', $queryString);
                     }
                     /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
                     $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
@@ -2000,6 +2568,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
     public function getCampaignReport(Request $request)
     {
         try {
+            $request['account_id'] = Helper::customDecrypt($request['account_id']);
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
                  'campaign_id' => 'required|integer|exists:value_sets,id',
@@ -2175,6 +2744,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
     {
 
         try {
+            $request['account_id'] =  Helper::customDecrypt($request->account_id);
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
                 //'campaign_id' => 'required|integer|exists:value_sets,id',
@@ -2323,7 +2893,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $not_found3[$key] = $nomination[4];
                 }
 
-                if(empty($sender_account_id) || empty($receiver_account_id) ||empty($l1_account_id) ||empty($l2_account_id) ){
+                if(empty($sender_account_id) || empty($receiver_account_id) ){
                     continue;
                 }
 
@@ -2331,10 +2901,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $l2_approver_account = Null;
                 $l1_approver_account = Null;
                 $reject_reason = Null;
-                if($nomination[9] == 'approved_l2'){
+               
+
+                if($nomination[9] == 'approved_l1'){
                     $update_vale_l1 = 1;
-                    $update_vale_l2 = 1;
-                    $l2_approver_account = $l2_account_id->id;
+                    $update_vale_l2 = 0;
                     $l1_approver_account = $l1_account_id->id;
                 }
 
@@ -2378,7 +2949,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         'level_1_approval' => $update_vale_l1,
                         'level_2_approval' => $update_vale_l2,
                         'point_type' => 2,
-                        'reason' => $nomination[8],
+                        'reason' => strip_tags($nomination[8]),
                         'value' => $value_id->id,
                         'points'  => $nomination[7],
                         'reject_reason' => $reject_reason,
@@ -2410,5 +2981,304 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         }
     }/**********fn ends**********/
 
+    /*****************
+    import user ecards
+    ******************/
+    public function importUserEcards(Request $request){
+      
+        try{
+            $file = $request->file('ecards_file');
+            $request->validate([
+                'ecards_file' => 'required|file',
+            ]);
+
+            if (!file_exists(public_path('uploaded/ecards_import_file/'))) {
+                mkdir(public_path('uploaded/ecards_import_file/'), 0777, true);
+            }
+
+            $uploaded = $file->move(public_path('uploaded/ecards_import_file/'), $file->getClientOriginalName());
+            $nominations = Excel::toCollection(new UserNominationImport(), $uploaded->getRealPath());
+            $nominations = $nominations[0]->toArray();
+
+            $not_found = array();
+            $not_found1 = array();
+            $not_found2 = array();
+            $not_found3 = array();
+            $user_not_found = array();
+            foreach ($nominations as $key => $nomination){
+                if($key === 0) continue;
+
+                $created_at = date('Y-m-d h:i:s', strtotime($nomination[10]));
+                $scheduled = date('Y-m-d h:i:s', strtotime($nomination[11]));
+
+                $sender_account_id = Account::select('id')->where('email',trim($nomination[1]))->first();
+                if(empty($sender_account_id)){
+                    $not_found[$key] = $nomination[1];
+                }
+
+                $receiver_account_id = Account::select('id')->where('email',trim($nomination[2]))->first();
+                if(empty($receiver_account_id)){
+                    $not_found1[$key] = $nomination[2];
+                }
+
+
+                if(empty($receiver_account_id) ){
+                    continue;
+                }
+
+                $receiverid = ProgramUsers::where('account_id',$receiver_account_id->id)->first();
+                if(!empty($sender_account_id)){
+                    $senderId = ProgramUsers::where('account_id',$sender_account_id->id)->first();
+                }else{
+                    $senderId = Null;
+                    $sender_account_id->id = Null;
+                }
+
+                $update_vale_l1 = 2;
+                $update_vale_l2 = 2;
+
+                $str =  filter_var($nomination[8], FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
+                $str = str_replace("_x005F_x000D_","",$str);
+                $str = str_replace("_x000D_","",$str);
+                $str = str_replace("_x005F","",$str);
+                $str = str_replace("&#39;","",$str);
+                $str = html_entity_decode($str, ENT_QUOTES);
+                
+                if($nomination[9] == 'Sent'){
+                    $sent_status = 1;
+                }else{
+                    $sent_status = 0;
+                }
+                $user_nomination_data  = UserNomination::create([
+                    'user'   => $receiver_account_id->id, // Receiver
+                    'account_id' => $sender_account_id->id, // Sender
+                    'group_id' => $nomination[5],
+                    'points'  => $nomination[7],
+                    'campaign_id' => $nomination[0],
+                    'is_active'     => 1,
+                    'level_1_approval' => $update_vale_l1,
+                    'level_2_approval' => $update_vale_l2,
+                    'point_type' => 2,
+                    'created_at' => $created_at,
+                    //'nomination_id' => $campaign_id,
+                ]);
+                $user_nomin_inserted_id = $user_nomination_data->id;
+
+                $EcardDataCreated = UsersEcards::create([
+                    'ecard_id' => $nomination[6],
+                    'sent_to' => $receiverid->id,
+                    'campaign_id' => $nomination[0],
+                    'image_message' => $str,
+                    'sent_by' => $senderId->id,
+                    'send_type' => 'schedule',
+                    'sent_status' => $sent_status,
+                    'send_datetime' => $scheduled,
+                    'send_timezone' => 'Asia/Dubai',
+                    'created_at' => $created_at,
+                ]);
+                $ecard_lat_inserted_id = $EcardDataCreated->id;
+
+                if(isset($user_nomin_inserted_id)){
+                    UserNomination::where([
+                        'id' => $user_nomin_inserted_id
+                    ])->update(['ecard_id' => $ecard_lat_inserted_id ]);
+                }
+
+                $eCardDetails = Ecards::find($nomination[6]);
+
+                $path = public_path().'/uploaded/e_card_images/new';
+                if(!File::exists($path)) {
+                    File::makeDirectory($path, $mode = 0777, true, true);
+                }
+                $randm = rand(100,1000000);
+                $newImage = $randm.time().'-'.$eCardDetails->card_image;
+                $file_path = "/uploaded/e_card_images/new";
+
+                $prev_img = '/uploaded/e_card_images/'.$eCardDetails->card_image;
+                $prev_img_path = url($prev_img);
+                //$prev_img_path = env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image;
+
+                $update = UsersEcards::where('id',$ecard_lat_inserted_id)->update(['new_image'=>$newImage,'image_path'=>$file_path]);
+
+                if($update === 1){
+                    $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
+
+                    $image_mesaage = str_replace(" ","%20",$str);#bcs_send_in_url
+                    $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
+                    $conv = new \Anam\PhantomMagick\Converter();
+                    $options = [
+                        'width' => 640,'quality' => 90
+                    ];
+                   // $imageNAme = 'ripple_e_cardVodafone_Congrats_ecards20.jpg';
+                    $conv->source(url('/newImage/'.$eCardDetails->card_image.'/'.$image_mesaage))
+                        ->toPng($options)
+                        ->save($destinationPath);
+                }
+
+                $new_img = '/uploaded/e_card_images/new/'.$newImage;
+                $new_img_path = url($new_img);
+
+
+            }
+
+            return response()->json([
+                'not_found_sender' => $not_found,
+                'not_found_receiver' => $not_found1,
+                'l1' => $not_found2,
+                'l2' => $not_found3,
+                'user_not_found' => $user_not_found,
+                'uploaded_file' => url('uploaded/nomination_import_file/'.$uploaded->getFilename()),
+                'message' => 'Data Imported Successfully'
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error_message' => $th->getMessage(),
+                'error_line' => $th->getLine(),
+                'error_file' => $th->getFile()
+            ]);
+        }
+        
+    }/*******fn_ends*******/
+
+    /**************************
+    fn to get scheduled ecards
+    **************************/
+    public function getScheduledEcards(){
+
+        $pending_ecards = UsersEcards::whereNotNull('send_datetime')
+                ->where(function($q){
+                    $q->where('sent_status','=','0')
+                        ->orWhereNull('sent_status');
+                })
+                ->where('send_type','schedule')
+                ->get()
+                ->groupBy('send_timezone');
+
+        if(!empty($pending_ecards)){
+            foreach($pending_ecards as $timezone=>$timezoneData){
+                if($timezone == ''){
+                    $timezone = 'Asia/Dubai';
+                }
+
+                foreach($timezoneData as $key=>$ecards){
+
+                    date_default_timezone_set($timezone);
+                    $select_timezone = date('Y-m-d H:i:s');  
+                    $current_time = date('H:i:s');
+                    $plus5_min_time = Date("Y-m-d H:i:s", strtotime("5 minutes", strtotime($current_time)));
+
+                    if (($ecards->send_datetime >= $select_timezone) && ($ecards->send_datetime <= $plus5_min_time)){
+
+                        $image_url = [
+                            'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
+                        ];
+
+                        $sendToUser = ProgramUsers::find($ecards->sent_to);
+                        $senderUser = ProgramUsers::find($ecards->sent_by);
+                        $eCardDetails = Ecards::find($ecards->ecard_id);
+                        $new_img = '/uploaded/e_card_images/new/'.$ecards->new_image;
+                        $new_img_path = url($new_img);
+
+                        $data = [
+                            'email' => $sendToUser->email,
+                            'username' => $sendToUser->first_name.' '. $sendToUser->last_name,
+                            'card_title' => $eCardDetails->card_title,
+                            'sendername' => $senderUser->first_name.' '. $senderUser->last_name,
+                            'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
+                            'image_message' => $ecards->image_message,
+                            'color_code' => "#e6141a",
+                            'new_image' => $ecards->new_image,
+                            'file_path' => $ecards->image_path,
+                            'full_img_path' => $new_img_path,
+                            'link_to_ecard' => $new_img_path
+                        ];
+                        
+                        $link_to_ecard = $data['link_to_ecard'];        
+                        $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
+                        $emailcontent["template_type_id"] = '7';
+                        $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
+                        $emailcontent["email_to"] = $data["email"];
+                        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+
+                        #change_status_sent
+                        UsersEcards::where('id',$ecards->id)->update(['sent_status'=>'1']);
+                    }
+
+                }#foreach_ends
+            }#end_foreach
+        }
+
+        
+    }/***********fn_ends_here**********/
+
+    /**********  Generate existing nominations certificates script  ******* */
+    public function generateCertificateImage()
+    { 
+       $user_nomination = UserNomination::where("is_active",1)->get();
+       if(!empty($user_nomination))
+       {
+           $path = public_path('/uploaded/certificate_images/');
+           $urlPath = url('/uploaded/certificate_images/') . '/';
+                       
+           for($i=0;$i<count($user_nomination);$i++)
+           {
+               $campaign_id = $user_nomination[$i]->campaign_id;
+               if(!empty($campaign_id))
+               {
+                   $result = $this->ripple_repository->getDataCampaignID($campaign_id);
+                   $certificate_image = (!empty($result) && isset($result->certificate_image) && !empty($result->certificate_image)) ? str_replace(" ", "_", $result->certificate_image) : false;
+                   if(isset($certificate_image) && !empty($certificate_image))
+                   {
+                       $certificate_image_path = $path.$certificate_image;
+                       $certificate_image_url = $urlPath.$certificate_image;
+                       
+                       if(File::exists($certificate_image_path)) {
+
+                           $randm = rand(100,1000000);
+                           $newImage = $randm.time().'-'.$certificate_image;
+                           
+                           $image_mesaage = $user_nomination[$i]->reason;
+                           $destinationPath = $path.$newImage;
+                           
+                           //echo $image_mesaage."<br>";
+                           //echo $destinationPath."<br>";
+                   
+                           $conv = new \Anam\PhantomMagick\Converter();
+                           $options = [
+                               'width' => 800,'quality' => 90
+                           ];
+                           
+                           $sendToUser 	= ProgramUsers::where("account_id",$user_nomination[$i]->user)->first();
+                           $first_name 	= (!empty($sendToUser) && isset($sendToUser->first_name) && !empty($sendToUser->first_name)) ? $sendToUser->first_name : "";
+                           $last_name 		= (!empty($sendToUser) && isset($sendToUser->last_name) && !empty($sendToUser->last_name)) ? $sendToUser->last_name : "";
+                           
+                           $presented_to 	= "";
+                           if(!empty($first_name))
+                               $presented_to .= $first_name." ";
+                           if(!empty($last_name))
+                               $presented_to .= $last_name;
+                               
+                           if(empty($presented_to))
+                               $presented_to = "N-A";
+                               
+                           $NominationTypeData = NominationType::where('id', $user_nomination[$i]->value)->first();
+                           $core_value 		= (!empty($NominationTypeData) && isset($NominationTypeData->name) && !empty($NominationTypeData->name)) ? $NominationTypeData->name : "N-A";
+                                   
+                           $NominationTypeData = NominationType::where('id', $user_nomination[$i]->value)->first();
+                           $core_value 		= (!empty($NominationTypeData) && isset($NominationTypeData->name) && !empty($NominationTypeData->name)) ? $NominationTypeData->name : "N-A";
+                           
+                           $conv->source(url('/newCertificateImage/'.$certificate_image.'/'.$image_mesaage.'/'.$presented_to.'/'.$core_value))
+                                   ->toPng($options)
+                                   ->save($destinationPath);
+
+                           UserNomination::where(['id' => $user_nomination[$i]->id, 'campaign_id' => $user_nomination[$i]->campaign_id])->update(['certificate_image_path' => $newImage]);
+                                       
+                       }		
+                   }
+               }
+           }
+       }
+   }
+    /**********  Generate existing nominations certificates script ends!!!  ******* */
 
 }

@@ -4,6 +4,7 @@ use League\Fractal\TransformerAbstract;
 use Modules\Reward\Models\Product;
 use Modules\Reward\Models\ProductsCountries;
 use DB;
+use Helper;
 class ProductsTransformer extends TransformerAbstract
 {
 
@@ -29,6 +30,7 @@ class ProductsTransformer extends TransformerAbstract
         if(!file_exists( public_path().'/storage/products_img/'.$product->image )){
             $product->image = 'defaultproductimage.png';
         }
+        
         $minValue = 0;
         $maxValue = 99999999;
 
@@ -47,8 +49,23 @@ class ProductsTransformer extends TransformerAbstract
 
         $country_data =  DB::table('products_countries')->select('countries.name', 'countries.id as country_id')->where(['products_countries.product_id' => $product->id])->join('countries', 'countries.id', '=', 'products_countries.country_id')->get();
 
+        $productID = Helper::customCrypt($product->id);
+
+        $denomination = $product->denominations()->select('id', 'value', 'points')->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy(DB::raw("points+0"), 'ASC')->get()->toArray();
+
+        $denomination_all = $denomination;
+        foreach ($denomination_all as $key1 => $answer) {
+            unset($denomination_all[$key1]['id']);
+        }
+        
+        $denomination_final= array();
+        foreach ($denomination as $key => $value) {
+            $denomination_all[$key]['id'] = Helper::customCrypt($value['id']);
+        }
+
+
         return [
-            'id'           => $product->id,
+            'id'           => $productID,
             'name'         => $product->name,
             'value'        => $product->value,
             'image'        => $product->image,
@@ -68,7 +85,7 @@ class ProductsTransformer extends TransformerAbstract
             'base_price' => $product->base_price,
             'brand_id'      => $product->brand->id,
             'brand_name'    => $product->brand->name,
-            'denominations' => $product->denominations()->select('id', 'value', 'points')->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy('value','ASC')->get()->all(),
+            'denominations' => $denomination_all,
             'Sub'          => $product->sub()->select('id', 'name', 'value')->get()->all(),
             'seen'         => $product->product_seen ? $product->product_seen->account_id === 1 : FALSE,
             'status'  => $product->status,

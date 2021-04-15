@@ -24,15 +24,14 @@ class CheckKafuBackendAuthToken
      */
     public function handle($request, Closure $next)
     {
+		$result =  $next($request);
 
+		$referer =  $request->header('referer');
+		$result->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+		
+		$routeName = Route::currentRouteName();
 
-        $result =  $next($request);
-
-         $referer =  $request->header('referer');
-
-         $routeName = Route::currentRouteName();
-
-        return $result;
+		return $result;
 
     }
 }

@@ -18,6 +18,7 @@ class SubProductController extends Controller
     public function __construct(SubProductRepository $repository)
     {
         $this->repository = $repository;
+		$this->middleware('auth:api');
     }
 
     /**
