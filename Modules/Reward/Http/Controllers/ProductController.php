@@ -73,16 +73,15 @@ class ProductController extends Controller
      */
     public function show($id): Fractal
     {
-        try{
-            $id = Helper::customDecrypt($id);
-            $product = $this->repository->find($id);
-            $useraccount = \Auth::user();
-            $accountID =  $useraccount->id;
-            
-            ProductsAccountsSeen::create([
-                    'account_id' => $accountID,
-                    'product_id' => $product->id
-                ]);
+        
+        $product = $this->repository->find($id);
+        $useraccount = \Auth::user();
+        $accountID =  $useraccount->id;
+        
+        ProductsAccountsSeen::create([
+                'account_id' => $accountID,
+                'product_id' => $product->id
+            ]);
 
             return fractal($product, new ProductsTransformer);
         }catch (\Throwable $th) {

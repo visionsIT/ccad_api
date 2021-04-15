@@ -16,7 +16,6 @@ use Spatie\Fractal\Fractal;
 use Modules\Nomination\Models\UserNomination;
 use Modules\Nomination\Transformers\UserNominationTransformer;
 use DB;
-use Helper;
 
 class AccountController extends Controller
 {
@@ -253,9 +252,8 @@ class AccountController extends Controller
     } */
     public function myActivityAllData(Request $request)
     {
+        $data = $request->all();
         try{
-            $request['account_id'] =  Helper::customDecrypt($request->account_id);
-            $data = $request->all();
             
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',

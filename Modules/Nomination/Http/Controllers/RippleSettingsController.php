@@ -37,7 +37,6 @@ class RippleSettingsController extends Controller
     {
         $this->repository = $repository;
         $this->notification_service = $userNotificationService;
-		$this->middleware('auth:api');
     }
 
     /**

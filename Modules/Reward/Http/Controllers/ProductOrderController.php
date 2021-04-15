@@ -104,61 +104,51 @@ class ProductOrderController extends Controller
      * @return Fractal
      */
     public function store(Request $request)
-    {   
-        try{
-            $accountID = Helper::customDecrypt($request->account_id);
-            $productID = Helper::customDecrypt($request->product_id);
-            $denominationID = Helper::customDecrypt($request->value);
-            $get_points = ProductDenomination::select('points')->where('id',$denominationID)->first();
-            $request['account_id'] = $accountID;
-            $request['product_id'] = $productID;
-            $request['value'] = $get_points->points;
-            $request['denomination_id'] = $denominationID;
+    {
+        $get_points = ProductDenomination::select('points')->where('id',$request->value)->first();
 
-            $rules = [
-                'value'      => 'required|numeric',
-                'account_id' => 'required|exists:accounts,id',
-                'product_id' => 'required|exists:products,id',
-                'first_name' => 'required',
-                'last_name'  => 'required',
-                'email'      => 'required|email',
-                'phone'      => 'required',
-                'address'    => 'required',
-                'city'       => 'required',
-                'country'    => 'required',
-                'is_gift'    => 'required|bool',
-                'quantity'   => 'required',
-                'denomination_id'   => 'required|exists:product_denominations,id',
-            ];
-            $validator = \Validator::make($request->all(), $rules);
+        $request['denomination_id'] = $request->value;
+        $request['value'] = $get_points->points;
 
-            if ($validator->fails())
-                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+        $rules = [
+            'value'      => 'required|numeric',
+            'account_id' => 'required|exists:accounts,id',
+            'product_id' => 'required|exists:products,id',
+            'first_name' => 'required',
+            'last_name'  => 'required',
+            'email'      => 'required|email',
+            'phone'      => 'required',
+            'address'    => 'required',
+            'city'       => 'required',
+            'country'    => 'required',
+            'is_gift'    => 'required|bool',
+            'quantity'   => 'required',
+            'denomination_id'   => 'required|exists:product_denominations,id',
+        ];
+        $validator = \Validator::make($request->all(), $rules);
 
-            $user = ProgramUsers::where('account_id', $request->account_id)->first();
+        if ($validator->fails())
+            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
-            $request['value'] = $get_points->points * $request->quantity;
+        $user = ProgramUsers::where('account_id', $request->account_id)->first();
 
-            $Category = $this->repository->create($request->all());
+        $request['value'] = $get_points->points * $request->quantity;
 
-    //        //todo fix this later
-    //        $user_points = UsersPoint::where([ 'user_id' => $user->id, 'value' => $current ])->first();
-    //
-    //        $user_points->update([ 'value' => $new ]);
+        $Category = $this->repository->create($request->all());
 
-            $data['value']       = $request->value;
-            $data['description'] = '';
-            $data['product_order_id'] = $Category->id;
-            $Category->status = true;
-            $this->point_service->store($user, $data, '-');
-            $this->service->placeOrder($Category->id);
+//        //todo fix this later
+//        $user_points = UsersPoint::where([ 'user_id' => $user->id, 'value' => $current ])->first();
+//
+//        $user_points->update([ 'value' => $new ]);
 
-            return fractal($Category, new ProductOrderTransformer);
-        }
-        catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please check product id,account id and denomination id in value parameter.', 'errors' => $th->getMessage()], 402);
-        }
-        
+        $data['value']       = $request->value;
+        $data['description'] = '';
+        $data['product_order_id'] = $Category->id;
+        $Category->status = true;
+        $this->point_service->store($user, $data, '-');
+        $this->service->placeOrder($Category->id);
+
+        return fractal($Category, new ProductOrderTransformer);
     }
 
     /**

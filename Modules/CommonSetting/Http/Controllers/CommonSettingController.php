@@ -27,7 +27,7 @@ class CommonSettingController extends Controller
 {
     public function __construct(CommonSettingsRepository $common_repository,CommonService $common_service)
     {
-        $this->middleware('auth:api', ['except' => ['loginVisit']]);
+       // $this->middleware('auth:api');
         $this->common_service = $common_service;
         $this->common_repository = $common_repository;
     }
@@ -347,7 +347,7 @@ class CommonSettingController extends Controller
     /**********get group list of user**********/
     public function userGroups($accountid = null){
         try{
-            $accountid =  Helper::customDecrypt($accountid);
+            //$accountid =  Helper::customDecrypt($accountid);
             $groupData = $this->common_repository->getUserGroups($accountid);
             return response()->json(['message'=>'User Group List.', 'status'=>'success','data'=>$groupData]);exit;
         } catch (\Throwable $th) {
@@ -361,7 +361,8 @@ class CommonSettingController extends Controller
     public function overallReport(Request $request){
 
         try{
-            $request['account_id'] =  Helper::customDecrypt($request->account_id);
+            //$request['account_id'] =  Helper::customDecrypt($request->account_id);
+            $request['account_id'] =  $request->account_id;
 
             $rules = [
                 'user_group' => 'required',
@@ -403,7 +404,8 @@ class CommonSettingController extends Controller
             $file_name = "/reports/all-registered-user.csv";
             $file_link = env('APP_URL').$file_name;
             // $account_id = $request->account_id;
-            $account_id = Helper::customDecrypt($request->account_id);
+            //$account_id = Helper::customDecrypt($request->account_id);
+            $account_id = $request->account_id;
             if($request->user_group == 0){
                 $groupData = $this->common_repository->getUserGroups($account_id);
                 if(!empty($groupData)){
@@ -530,8 +532,8 @@ class CommonSettingController extends Controller
     public function recognitionReport(Request $request){
         try{
 
-            // $request['account_id'] = $request->account_id;
-            $request['account_id'] =  Helper::customDecrypt($request->account_id);
+            //$request['account_id'] =  Helper::customDecrypt($request->account_id);
+            $request['account_id'] = $request->account_id;
             $rules = [
                 'user_group' => 'required',
                 'account_id' => 'required|integer|exists:accounts,id',
@@ -588,7 +590,6 @@ class CommonSettingController extends Controller
             // $ip_address = '127.0.1';
 
             if(isset($request->account_id) && !empty($request->account_id)){
-                $request['account_id'] =  Helper::customDecrypt($request->account_id);
                 $count = DB::table('page_visits')->where('account_id',$request->account_id)->where('page_name',$request->page_name)->where('created_at', 'like', date('Y-m-d%'))->count();
                 $old_count = DB::table('page_visits')->where('account_id',$request->account_id)->where('page_name',$request->page_name)->count();
                 $account_id = $request->account_id;
@@ -682,7 +683,7 @@ class CommonSettingController extends Controller
                 foreach($new_array as $key => $value) {
                     fputcsv($new_csv,array($key));
                     foreach($value as $value1){
-
+                       
                         $user_data = DB::table("page_visits")
                         ->select('page_visits.account_id','program_users.*')
                         ->leftJoin('program_users','page_visits.account_id','=','program_users.account_id')
@@ -826,7 +827,8 @@ class CommonSettingController extends Controller
             $file_name = "/reports/active-inactive-user.csv";
             $file_link = env('APP_URL').$file_name;
             // $account_id = $request->account_id;
-            $account_id = Helper::customDecrypt($request->account_id);
+            //$account_id = Helper::customDecrypt($request->account_id);
+            $account_id = $request->account_id;
             if($request->user_group == 0){
                 $groupData = $this->common_repository->getUserGroups($account_id);
                 if(!empty($groupData)){
@@ -1007,8 +1009,7 @@ class CommonSettingController extends Controller
             $file_link = env('APP_URL').$file_name;
 
 
-            // $account_id = $request->account_id;
-            $account_id = Helper::customDecrypt($request->account_id);
+            $account_id = $request->account_id;
             if($request->user_group == 0){
                 $groupData = $this->common_repository->getUserGroups($account_id);
                 if(!empty($groupData)){
@@ -1026,10 +1027,10 @@ class CommonSettingController extends Controller
             if($request->campaign_id != '0'){
                 $nomination_data = $nomination_data->where('campaign_id',$request->campaign_id);
             }
-
+            
             $final_data = $nomination_data->get()->toArray();
 
-
+            
             // dd($final_data);
             $columns = array('Campaign Name','Nominator First Name','Nominator Surname', 'Nominator Email','Nominee First Name','Nominee Surname','Nominee Email','Nominee Function','Nominee User Group','L1AdminFirst Name','L1Admin Surname','L1Admin Email','L1Admin User Group','L2Admin First Name','L2Admin Surname','L2Admin Email','Value Category Name','Level Name','Requested Value','Value','Reason For Nomination','Status','Reason For Decline','Created On','Updated On');
             $new_csv = fopen(public_path($file_name) , 'w');
@@ -1062,14 +1063,14 @@ class CommonSettingController extends Controller
 
                 if($value["nominee_account"]["vp_emp_number"] != ''){
 
-                    $adminL1_data = DB::table("users_group_list")
+                    $adminL1_data = DB::table("users_group_list") 
                                     ->select("users_group_list.user_group_id","users_group_list.account_id","roles.name","program_users.first_name","program_users.last_name","program_users.email")
                                     ->leftJoin('roles','users_group_list.user_group_id','=','roles.id')
                                     ->leftJoin('program_users','users_group_list.account_id','=','program_users.account_id')
                                     ->where(["users_group_list.account_id" => $value["nominee_account"]["vp_emp_number"],"users_group_list.user_role_id" => 2])->get()->toArray();
                                     // dd($adminL1_data);
 
-
+                                
                     if(count($adminL1_data) > 0){
                         foreach($adminL1_data as $key1 => $value1){
                             $l1admin_first_name = $value1->first_name;
@@ -1084,14 +1085,14 @@ class CommonSettingController extends Controller
                             $cnt++;
                         }
                     }
-
-
+                    
+                    
                 }
-
+                
                 if(!isset($value["value_category"]["name"])){
                     $value["value_category"]["name"] = "N/A";
                 }
-
+                
                 if($value["ecard_id"] != ''){
                     $level_name = "Ecard";
                 }
@@ -1131,7 +1132,7 @@ class CommonSettingController extends Controller
                 else{
                     $value_points = 0;
                 }
-
+                
                 if($value["group_id"] != '' && strpos($value["campaignid"]["name"], "Excellence Award") !== false){
 
                     $l2_admin = DB::table("program_users")
@@ -1139,15 +1140,15 @@ class CommonSettingController extends Controller
                                 ->leftJoin("users_group_list","program_users.account_id","=","users_group_list.account_id")
                                 ->where(["user_group_id" => $value["group_id"],"user_role_id" => '3'])
                                 ->first();
-
+                    
                         if(!empty($l2_admin)){
                             $l2admin_first_name = $l2_admin->first_name;
                             $l2admin_last_name = $l2_admin->last_name;
                             $l2admin_email = $l2_admin->email;
                         }
-
+                        
                 }
-
+                            
                 // if(strpos($value["campaignid"]["name"], "E-CARDS") !== false){
                 //     $l1admin_first_name = "";
                 //     $l1admin_last_name = "";
@@ -1185,7 +1186,7 @@ class CommonSettingController extends Controller
 
                 fputcsv($new_csv, array( $value["campaignid"]["name"],$value["user_account"]["first_name"],$value["user_account"]["last_name"],$value["user_account"]["email"],$value["nominee_account"]["first_name"],$value["nominee_account"]["last_name"],$value["nominee_account"]["email"],$value["nominee_function"],$value["group_name"]["name"],$l1admin_first_name,$l1admin_last_name,$l1admin_email,$l1admin_group_name,$l2admin_first_name,$l2admin_last_name,$l2admin_email,$value["value_category"]["name"],$level_name,$value["points"],$value_points,$value["reason"],$status_by,$value["reject_reason"],$value["created_at"],$value["updated_at"] ));
 
-
+                
             }
 
             fclose($new_csv);
@@ -1219,8 +1220,8 @@ class CommonSettingController extends Controller
             }
             $file_name = "/reports/award-cost.csv";
             $file_link = env('APP_URL').$file_name;
-            // $account_id = $request->account_id;
-            $account_id = Helper::customDecrypt($request->account_id);
+            $account_id = $request->account_id;
+            //$account_id = Helper::customDecrypt($request->account_id);
             if($request->user_group == 0){
                 $groupData = $this->common_repository->getUserGroups($account_id);
                 if(!empty($groupData)){
@@ -1356,9 +1357,7 @@ class CommonSettingController extends Controller
             $file_link = env('APP_URL').$file_name;
 
 
-            // $account_id = $request->account_id;
-            $account_id = Helper::customDecrypt($request->account_id);
-
+            $account_id = $request->account_id;
             if($request->user_group == 0){
                 $groupData = $this->common_repository->getUserGroups($account_id);
                 if(!empty($groupData)){
@@ -1395,7 +1394,7 @@ class CommonSettingController extends Controller
 
 
             }
-
+            
             $total = $nomination_total->count();
             $total_l1_pending = $l1_pending->count();
             $total_l2_pending = $l2_pending->count();
@@ -1449,7 +1448,7 @@ class CommonSettingController extends Controller
             else{
                 $l2_pending_per = 0;
             }
-
+            
             $new_csv = fopen(public_path($file_name) , 'w');
             fputcsv($new_csv, array("Status","Count (In number)","Count (In %age)"));
             fputcsv($new_csv, array("",""));
@@ -1461,7 +1460,7 @@ class CommonSettingController extends Controller
             fputcsv($new_csv, array("declined_l1",$total_l1_decliend,round($l1_decline_per,2)."%"));
             fputcsv($new_csv, array("declined_l2", $total_l2_decliend,round($l2_decline_per,2)."%"));
 
-
+           
             fclose($new_csv);
             // chmod(public_path($file_name),0777);
             return response()->json(['message' => 'success', 'status'=>'success', 'link' =>$file_link]);
@@ -1492,7 +1491,7 @@ class CommonSettingController extends Controller
     public function rewardsReport(Request $request){
         try{
 
-            $request['account_id'] =  Helper::customDecrypt($request->account_id);
+            //$request['account_id'] =  Helper::customDecrypt($request->account_id);
             $rules = [
                 'user_group' => 'required',
                 'account_id' => 'required|integer|exists:accounts,id',
@@ -1545,8 +1544,8 @@ class CommonSettingController extends Controller
             }
             $file_name = "/reports/product-orders.csv";
             $file_link = env('APP_URL').$file_name;
-            // $account_id = $request->account_id;
-            $account_id = Helper::customDecrypt($request->account_id);
+            $account_id = $request->account_id;
+            //$account_id = Helper::customDecrypt($request->account_id);
             $group_id = array();
             if($request->user_group == 0){
                 $groupData = $this->common_repository->getUserGroups($account_id);

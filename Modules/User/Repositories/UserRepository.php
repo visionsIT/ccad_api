@@ -139,7 +139,7 @@ class UserRepository extends Repository
             
             //mail send to admin
             $emailcontent["template_type_id"] =  '1';
-            $emailcontent["dynamic_code_value"] = array($data['name'],$data['phone'],strip_tags($data['feedback']),$data['email']);
+            $emailcontent["dynamic_code_value"] = array($data['name'],$data['phone'],$data['feedback'],$data['email']);
             $emailcontent["email_to"] = env('FEEDBACK_SEND_TO');
             $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -149,7 +149,7 @@ class UserRepository extends Repository
                 'name' => isset($data['name']) ? $data['name'] : NULL,
                 'email' => $data['email'],
                 'phone' => isset($data['phone']) ? $data['phone']: NULL,
-                'feedback' => strip_tags($data['feedback'])
+                'feedback' => $data['feedback']
             ]);
 
             return response()->json(['status' => true, 'message' => 'Thank you for your valuable feedback.' ]);

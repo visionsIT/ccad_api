@@ -852,7 +852,6 @@ class UserController extends Controller
             if($account_id == null || $account_id == ''){
                 return response()->json(['message' => 'Please provide account id.','status'=>'error']);
             }
-            $account_id = Helper::customDecrypt($account_id);
             $getUserNotifications = UserNotifications::where('receiver_account_id', $account_id)->orderBy('id', 'desc')->get();
             return fractal($getUserNotifications, new UserNotificationTransformer());
         }catch (\Throwable $th) {
@@ -866,22 +865,22 @@ class UserController extends Controller
     *******************************************/
     public function userNotificationsStatus(Request $request){
         try{
-            $request['notification_id'] = Helper::customDecrypt($request->notification_id);
-             $rules = [
-                 'notification_id' => 'required|integer|exists:user_notifications,id',
-             ];
- 
-             $validator = \Validator::make($request->all(), $rules);
- 
-             if ($validator->fails())
-                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
- 
-             $getUserNotifications = UserNotifications::where('id', $request->notification_id)->update(['read_status'=>'1']);
-             return response()->json(['message' => 'Status Changed Successfully.', 'status' => 'success']);
- 
-         }catch (\Throwable $th) {
-             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
-         }
+
+            $rules = [
+                'notification_id' => 'required|integer|exists:user_notifications,id',
+            ];
+
+            $validator = \Validator::make($request->all(), $rules);
+
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+            $getUserNotifications = UserNotifications::where('id', $request->notification_id)->update(['read_status'=>'1']);
+            return response()->json(['message' => 'Status Changed Successfully.', 'status' => 'success']);
+
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
 
     }/****fn_ends*****/
 
@@ -894,7 +893,6 @@ class UserController extends Controller
                 return response()->json(['message' => 'Please provide account id.','status'=>'error']);
             }
 
-            $account_id = Helper::customDecrypt($account_id);
             $count_Notifications = UserNotifications::where('receiver_account_id', $account_id)->count();
             return response()->json(['data'=>$count_Notifications,'message' => 'Get count Successfully.', 'status' => 'success']);
         }catch (\Throwable $th) {
@@ -905,12 +903,11 @@ class UserController extends Controller
     /**notification details**/
     public function notificationDetail($notification_id = null){
         try{
-            
+
             if($notification_id == null || $notification_id == ''){
                 return response()->json(['message' => 'Please provide notification id.','status'=>'error']);
             }
-            
-            $notification_id = Helper::customDecrypt($notification_id);
+
             $notification_detail = UserNotifications::where('id', $notification_id)->first();
 
             return fractal($notification_detail, new UserNotificationDetailTransformer());

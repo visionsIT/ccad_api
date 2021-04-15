@@ -14,7 +14,6 @@ use Spatie\Permission\Models\Role;
 use Modules\User\Models\UsersGroupList;
 use Modules\Nomination\Models\CampaignSettings;
 use DB;
-use Helper;
 class UserService
 {
     public $repository;

@@ -15,11 +15,6 @@ class UserGroupTransformer extends TransformerAbstract
      */
     public function transform(UsersGroupList $User): array
     {
-        $programUserData = $User->programUserData->toArray();
-        $toId = Helper::customCrypt($programUserData['id']);
-        unset($programUserData['id']);
-        $programUserData['id'] = $toId;
-        
         $id = $User->uglId;
         if($id == '' || $id == null){
             $id = $User->id;

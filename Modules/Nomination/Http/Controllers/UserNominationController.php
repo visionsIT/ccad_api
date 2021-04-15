@@ -280,8 +280,6 @@ class UserNominationController extends Controller
             $level_1_approval = $result->level_1_approval;
             $level_2_approval = $result->level_2_approval;
 
-            $request['value'] =  Helper::customDecrypt($request->value);
-
             $inputPoint = NominationType::where('id', $request->value)->first();
             $inputValueName = $inputPoint->name;
             $inputPoint = $inputPoint->points;
@@ -292,14 +290,11 @@ class UserNominationController extends Controller
             $receiverIds = explode(',', $request->user);
             $recevrCount = count($receiverIds);
 
-            $request['sender_id'] =  Helper::customDecrypt($request->sender_id);
-
             $senderUser = ProgramUsers::find($request->sender_id);
             
             $failed = [];
 
             // Get Sender program id using account_id
-            $request['account_id'] =  Helper::customDecrypt($request->account_id);
             $sender_account_id = $request->account_id; 
             $program_user_receiver = ProgramUsers::select('id')->where('account_id', $sender_account_id)->first();
             $sender_program_id = $program_user_receiver->id;
@@ -311,7 +306,6 @@ class UserNominationController extends Controller
             if(!empty($receiverIds)){
                 foreach ($receiverIds as $key => $receiverid_v) {
 
-                    $receiverid_v =  Helper::customDecrypt($receiverid_v);
 
                     $program_user_receiver = ProgramUsers::select('id')->where('account_id', $receiverid_v)->first();
                     $receiverid = $program_user_receiver->id;
@@ -420,14 +414,14 @@ class UserNominationController extends Controller
                                     'level_1_approval' => 2,
                                     'level_2_approval' => 2,
                                     'point_type' => $budget_type,
-                                    'reason' => strip_tags($request->reason),
+                                    'reason' => $request->reason,
                                     'value' => $request->value,
                                     'points'  => $inputPoint,
                                     'attachments' => $newname,
                                     'project_name' => $request->project_name ? $request->project_name : '',
                                     'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
                                     'nominee_function' => $request->nominee_function,
-                                    'personal_message' => strip_tags($request->personal_message),
+                                    'personal_message' => $request->personal_message,
                                     'certificate_image_path' => $newImage
                                 ]);
             
@@ -446,14 +440,14 @@ class UserNominationController extends Controller
                                     'level_1_approval' => 2,
                                     'level_2_approval' => 2,
                                     'point_type' => $budget_type,
-                                    'reason' => strip_tags($request->reason),
+                                    'reason' => $request->reason,
                                     'value' => $request->value,
                                     'points'  => $inputPoint,
                                     'attachments' => $newname,
                                     'project_name' => $request->project_name ? $request->project_name : '',
                                     'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
                                     'nominee_function' => $request->nominee_function,
-                                    'personal_message' => strip_tags($request->personal_message),
+                                    'personal_message' => $request->personal_message,
 									'certificate_image_path' => $newImage
                                 ]);
                             }
@@ -530,14 +524,14 @@ class UserNominationController extends Controller
                                 'level_1_approval' => $update_vale_l1,
                                 'level_2_approval' => $update_vale_l2,
                                 'point_type' => $budget_type,
-                                'reason' => strip_tags($request->reason),
+                                'reason' => $request->reason,
                                 'value' => $request->value,
                                 'points'  => $inputPoint,
                                 'attachments' => $newname,
                                 'project_name' => $request->project_name ? $request->project_name : '',
                                 'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
                                 'nominee_function' => $request->nominee_function,
-                                'personal_message' => strip_tags($request->personal_message),
+                                'personal_message' => $request->personal_message,
 								'certificate_image_path' => $newImage
                             ]);
 
@@ -1889,11 +1883,9 @@ public function updateLevelOne(Request $request, $id): JsonResponse
      * @return Fractal
      */
 
-     public function getUsersBy($nomination_id,$account_id,$status = null) {
+     public function getUsersBy($nomination_id, Account $account_id,$status = null) {
         $queryString = \Illuminate\Support\Facades\Request::get('q');
-        $logged_user_id = Helper::customDecrypt($account_id);
-
-        // $logged_user_id = $account_id->id;
+        $logged_user_id = $account_id->id;
         $user_group_data =  DB::table('users_group_list')
         ->whereIn('user_role_id', ['2','3']) // 2 for Level1, 3 for level 2
         ->where('account_id', $logged_user_id)
