@@ -13,7 +13,7 @@ return [
     */
 
     'supportsCredentials'    => FALSE,
-    'allowedOrigins'         => [ '*' ],
+    'allowedOrigins'         => [ '*', 'https://ccadapi.takreem.ae/' ],
     'allowedOriginsPatterns' => [],
     'allowedHeaders'         => [ '*' ],
     'allowedMethods'         => [ '*' ],

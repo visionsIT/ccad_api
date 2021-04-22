@@ -236,6 +236,7 @@ class NominationTypeController extends Controller
             if ($validator->fails())
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
+           
             $check_data = NominationType::where(['name'=>$request->name,'value_set'=>$request->value_set])->where('id','!=',$id)->first();
             if(!empty($check_data)){
                 return response()->json(['message' => 'The name has already been taken in this campaign.','status'=>'error']);

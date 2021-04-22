@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
-
+use \App\Helpers;
 /*
 |--------------------------------------------------------------------------
 | API routes
@@ -15,4 +15,21 @@ use Illuminate\Http\Request;
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::group([
+    'prefix' => 'auth'
+], function () {
+    Route::post('login', 'AuthController@login');
+  
+    Route::group([
+      'middleware' => 'auth:api'
+    ], function() {
+		
+		if (isset($_SERVER) && !empty($_SERVER) && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
+			Helper::ValidateGetRequestParameters();
+		}
+
+		Route::get('logout', 'AuthController@logout');
+    });
 });

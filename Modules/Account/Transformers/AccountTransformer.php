@@ -34,17 +34,6 @@ class AccountTransformer extends TransformerAbstract
         }
         $accountID = Helper::customCrypt($account->id);
         $userID = Helper::customCrypt(optional($account->user)->id);
-
-        $userRoles = DB::table('users_group_list')->where('account_id', $account->id)->get();
-        if(!empty($userRoles)) {
-            foreach($userRoles as $key1 => $value) {
-                $rand = mt_rand(1000, 9999);
-                $key = $rand+($value->user_role_id*2);
-                $code = $key.'_'.$rand*2;
-                $value->key = $code;
-            }
-        }
-
         return [
             'id'              => $accountID,
             'name'            => ucfirst($account->user->first_name).' '.ucfirst($account->user->last_name),

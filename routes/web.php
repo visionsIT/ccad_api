@@ -21,3 +21,7 @@ Route::get('/export-file/{program_id}/{file}', function ($program_id, $file) {
 Route::get('/newImage/{image}/{message}', function ($image, $message) {
     return view('newImage', ["image"=>$image,"message"=>$message]);
 });
+
+Route::get('/newCertificateImage/{image}/{message}/{presented_to}/{core_value}', function ($image,$message,$presented_to,$core_value) {
+	return view('newCertificateImage', ["image"=>$image,"message"=>$message,"presented_to"=>$presented_to,"core_value"=>$core_value]);
+});

@@ -78,7 +78,7 @@ class PointController extends Controller
 
         try {
             $decrypted_id = Helper::customDecrypt($program_id);
-            $current_budget_bal = UsersPoint::select('balance')->where('user_id',$decrypted_id)->orderBy('id', 'desc')->first();
+            $current_budget_bal = UsersPoint::select('balance')->where('user_id',$decrypted_id)->latest()->first();
 
             if($current_budget_bal){
                 $budget_bal = $current_budget_bal->balance;
