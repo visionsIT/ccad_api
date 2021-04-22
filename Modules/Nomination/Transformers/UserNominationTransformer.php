@@ -3,6 +3,7 @@
 use League\Fractal\TransformerAbstract;
 use Modules\Nomination\Models\UserNomination;
 use Modules\Account\Models\Account;
+use Helper;
 
 class UserNominationTransformer extends TransformerAbstract
 {
@@ -14,12 +15,17 @@ class UserNominationTransformer extends TransformerAbstract
     public function transform(UserNomination $model): array
     {
         $protocol = strtolower(substr($_SERVER["SERVER_PROTOCOL"],0,5))=='https'?'https':'http';
-        $imgUrl = $protocol.'://'.$_SERVER['HTTP_HOST'].'/uploaded/user_nomination_files/';
+        if(isset($_SERVER['HTTP_HOST'])){
+            $imgUrl = $protocol.'://'.$_SERVER['HTTP_HOST'].'/uploaded/user_nomination_files/';
+        }else{
+            $imgUrl = $protocol.'://'.$_SERVER['REMOTE_ADDR'].'/uploaded/user_nomination_files/';
+        }
+        
 
 
 
         return [
-            'id'                        => $model->id,
+            'id'                        => Helper::customCrypt($model->id),
             'campaign_id'               => $model->campaignid,
             //'nomination_id'             => $model->campaign,
             'user'                      => $model->user,

@@ -22,6 +22,7 @@ use Modules\Nomination\Models\CampaignSettings;
 use Modules\Nomination\Models\ValueSet;
 use Modules\Nomination\Models\UserNomination;
 use DB;
+use Helper;
 
 class NominationController extends Controller
 {
@@ -32,6 +33,7 @@ class NominationController extends Controller
     {
         $this->repository = $repository;
         $this->nomination_service = $nomination_service;
+		$this->middleware('auth:api');
     }
     /**
     /**
@@ -205,6 +207,7 @@ class NominationController extends Controller
 
         try{
             $queryString = \Illuminate\Support\Facades\Request::get('q');
+            $queryString = isset($queryString) && !empty($queryString) ? Helper::customDecrypt($queryString) : NULL;
             $user = $this->nomination_service->getCampaignUSerNomination($queryString,$campaign_id);
             return fractal($user , new UserNominationTransformerNew());
             

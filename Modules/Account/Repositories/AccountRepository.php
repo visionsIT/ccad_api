@@ -1,4 +1,4 @@
-<?php namespace Modules\Account\Http\Repositories;
+<?php namespace Modules\Account\Repositories;
 
 use App\Repositories\Repository;
 use Modules\Account\Models\Account;

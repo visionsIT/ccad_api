@@ -25,6 +25,7 @@ use Modules\User\Models\ProgramUsers;
 use Modules\User\Http\Requests\ProgramUsersRequest;
 use Throwable;
 use DB;
+use Helper;
 class ProductController extends Controller
 {
     private $repository, $service;
@@ -33,6 +34,7 @@ class ProductController extends Controller
     {
         $this->repository = $repository;
         $this->service    = $service;
+		$this->middleware('auth:api');
     }
 
     /**
@@ -45,7 +47,7 @@ class ProductController extends Controller
        
         $products = $this->repository->paginate(12);
 
-        return fractal($products, new ProductTransformer);
+        return fractal($products, new ProductsTransformer);
     }
 
 
@@ -59,7 +61,7 @@ class ProductController extends Controller
     public function store(ProductRequest $request)
     {
         $product = $this->repository->create($request->all());
-        return fractal($product, new ProductTransformer);
+        return fractal($product, new ProductsTransformer);
     }
 
     /**
@@ -71,17 +73,21 @@ class ProductController extends Controller
      */
     public function show($id): Fractal
     {
-        
-        $product = $this->repository->find($id);
-        $useraccount = \Auth::user();
-        $accountID =  $useraccount->id;
-        
-        ProductsAccountsSeen::create([
-                'account_id' => $accountID,
-                'product_id' => $product->id
-            ]);
+        try{
+            $id = Helper::customDecrypt($id);
+            $product = $this->repository->find($id);
+            $useraccount = \Auth::user();
+            $accountID =  $useraccount->id;
+            
+            ProductsAccountsSeen::create([
+                    'account_id' => $accountID,
+                    'product_id' => $product->id
+                ]);
 
-        return fractal($product, new ProductsTransformer);
+            return fractal($product, new ProductsTransformer);
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
     }
 
 
@@ -121,7 +127,7 @@ class ProductController extends Controller
     {
         $products = $this->service->search($request->query('keyword'));
 
-        return fractal($products, new ProductTransformer);
+        return fractal($products, new ProductsTransformer);
     }
 
     public function searchAdvance(Request $request)
@@ -169,16 +175,19 @@ class ProductController extends Controller
                 'order' => ($order)?$order:'desc',
             ];
 
-            $file = (Carbon::now())->toDateString().'-AllRewardsData.xlsx';
-            $path = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
-            $responsePath = "/export-file/{$pid}/{$file}";
-            Excel::store(new RewardsExports($param), $path);
+            $file = Carbon::now()->timestamp.'-AllRewardsData.xlsx';
+            // $path = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
+            $path = public_path('uploaded/'.$pid.'/users/csv/exported/'.$file);
+            // $responsePath = "/export-file/{$pid}/{$file}";
+            $responsePath = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
+            // Excel::store(new RewardsExports($param), $path);
+            Excel::store(new RewardsExports($param), 'uploaded/'.$pid.'/users/csv/exported/'.$file, 'real_public');
             return response()->json([
                 'file_path' => url($responsePath),
             ]);
         } else {
 
-            return fractal($products, new ProductTransformer);
+            return fractal($products, new ProductsTransformer);
         }
     }
     public function searchAdvance1(Request $request)
@@ -224,16 +233,19 @@ class ProductController extends Controller
                 'order' => ($order)?$order:'desc',
             ];
 
-            $file = (Carbon::now())->toDateString().'-AllRewardsData.xlsx';
-            $path = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
-            $responsePath = "/export-file/{$pid}/{$file}";
-            Excel::store(new RewardsExports($param), $path);
+            $file = Carbon::now()->timestamp.'-AllRewardsData.xlsx';
+            // $path = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
+            $path = public_path('uploaded/'.$pid.'/users/csv/exported/'.$file);
+            // $responsePath = "/export-file/{$pid}/{$file}";
+            $responsePath = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
+            // Excel::store(new RewardsExports($param), $path);
+            Excel::store(new RewardsExports($param), 'uploaded/'.$pid.'/users/csv/exported/'.$file, 'real_public');
             return response()->json([
                 'file_path' => url($responsePath),
             ]);
         } else {
             
-            return fractal($products, new ProductTransformer);
+            return fractal($products, new ProductsTransformer);
         }
     }
 
@@ -335,6 +347,7 @@ class ProductController extends Controller
 
             if($id !== null && $request->action === 'update') {
 
+                $id = Helper::customDecrypt($id);
                 $this->service->update($productData, $id);
 
                 DB::table('products')
@@ -514,6 +527,8 @@ class ProductController extends Controller
 
     public function updateProductStatus(Request $request) {
         try {
+            $request['id'] =  Helper::customDecrypt($request->id);
+
             $rules = [
                 'id' => 'required|integer|exists:products,id',
                 'status' => 'required|integer',

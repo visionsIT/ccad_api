@@ -40,6 +40,7 @@ use Modules\Nomination\Transformers\UserClaimTransformer;
 use Modules\Nomination\Models\CampaignSettings;
 use Modules\User\Models\UsersPoint;
 use Modules\Nomination\Repositories\RippleSettingsRepository;
+use Modules\User\Repositories\PointRepository;
 use Modules\User\Models\RippleBudgetLog;
 use Modules\User\Models\UserCampaignsBudget;
 use Modules\User\Models\UserCampaignsBudgetLogs;
@@ -74,7 +75,8 @@ class UserNominationController extends Controller
         $this->point_service = $point_service;
         $this->account_service = $account_service;
         $this->ripple_repository = $ripple_repository;
-        $this->middleware('auth:api')->only(['nominations']);
+        //$this->middleware('auth:api')->only(['nominations']);
+        $this->middleware('auth:api');
     }
 
     /**
@@ -199,7 +201,7 @@ class UserNominationController extends Controller
     }
 
     public function sendNomination(Request $request)
-    {		
+    {
         try{
 
             $newname = '';
@@ -224,14 +226,14 @@ class UserNominationController extends Controller
                 $teamNomination = UserNomination::CLAIM_NOMINATION;
             }
 
-            /****** Campaign Setting ********/ 
+            /****** Campaign Setting ********/
 
             $setting_slug = $request->campaign_slug;
             $getCampaignData = $this->ripple_repository->getCampaignIDBySLug($setting_slug);
             $campaign_id = $getCampaignData->id;
 
             $result = $this->ripple_repository->getDataCampaignID($campaign_id);
-			
+
 			$certificate_image = (!empty($result) && isset($result->certificate_image) && !empty($result->certificate_image)) ? str_replace(" ", "_", $result->certificate_image) : false;
 
             /* $newImage = '';
@@ -244,32 +246,32 @@ class UserNominationController extends Controller
                 $urlPath = url('/uploaded/certificate_images/') . '/';
 				$certificate_image_path = $path.$certificate_image;
 				$certificate_image_url = $urlPath.$certificate_image;
-				
+
 				if(File::exists($certificate_image_path)) {
 
                     $randm = rand(100,1000000);
                     $newImage = $randm.time().'-'.$certificate_image;
 
 					$image_mesaage = str_replace(" ","%20",$request->reason);#bcs_send_in_url
-					
+
 					$conv = new \Anam\PhantomMagick\Converter();
 					$options = [
 						'width' => 800,'quality' => 90
 					];
-					
+
                     $image_mesaage = $request->reason;
 
                     $destinationPath = $path.$newImage;
                     //$destinationPathUrl = $urlPath.$newImage;
 					$destinationPathUrl = env('FRONT_APP_URL').'uploaded/certificate_images/'.$newImage;
-            
+
                     $conv->source(url('/newCertificateImage/'.$certificate_image.'/'.$image_mesaage))
                     ->toPng($options)
                     ->save($destinationPath);
-								
-				}		
+
+				}
 			} */
-			
+
             $points_allowed = $result->points_allowed;
 
             $approval_request = $result->approval_request_status;
@@ -278,6 +280,8 @@ class UserNominationController extends Controller
 
             $level_1_approval = $result->level_1_approval;
             $level_2_approval = $result->level_2_approval;
+
+            $request['value'] =  Helper::customDecrypt($request->value);
 
             $inputPoint = NominationType::where('id', $request->value)->first();
             $inputValueName = $inputPoint->name;
@@ -289,12 +293,15 @@ class UserNominationController extends Controller
             $receiverIds = explode(',', $request->user);
             $recevrCount = count($receiverIds);
 
+            $request['sender_id'] =  Helper::customDecrypt($request->sender_id);
+
             $senderUser = ProgramUsers::find($request->sender_id);
-            
+
             $failed = [];
 
             // Get Sender program id using account_id
-            $sender_account_id = $request->account_id; 
+            $request['account_id'] =  Helper::customDecrypt($request->account_id);
+            $sender_account_id = $request->account_id;
             $program_user_receiver = ProgramUsers::select('id')->where('account_id', $sender_account_id)->first();
             $sender_program_id = $program_user_receiver->id;
 
@@ -305,10 +312,11 @@ class UserNominationController extends Controller
             if(!empty($receiverIds)){
                 foreach ($receiverIds as $key => $receiverid_v) {
 
+                    $receiverid_v =  Helper::customDecrypt($receiverid_v);
 
                     $program_user_receiver = ProgramUsers::select('id')->where('account_id', $receiverid_v)->first();
                     $receiverid = $program_user_receiver->id;
-                   
+
                     $sendToUser = ProgramUsers::find($receiverid);
 
                     $newImage = '';
@@ -320,34 +328,34 @@ class UserNominationController extends Controller
 						$urlPath = url('/uploaded/certificate_images/') . '/';
 						$certificate_image_path = $path.$certificate_image;
 						$certificate_image_url = $urlPath.$certificate_image;
-						
+
 						if(File::exists($certificate_image_path)) {
 
 							$randm = rand(100,1000000);
 							$newImage = $randm.time().'-'.$certificate_image;
 
 							$image_mesaage = str_replace(" ","%20",$request->reason);#bcs_send_in_url
-							
+
 							$conv = new \Anam\PhantomMagick\Converter();
 							$options = [
 								'width' => 800,'quality' => 90
 							];
-							
+
 							$image_mesaage = $request->reason;
 
 							$destinationPath = $path.$newImage;
 							//$destinationPathUrl = $urlPath.$newImage;
 							$destinationPathUrl = env('FRONT_APP_URL').'uploaded/certificate_images/'.$newImage;
-					
+
 							$presented_to 	= $sendToUser->first_name. ' '. $sendToUser->last_name;
 							$core_value 	= $inputValueName;
 							$conv->source(url('/newCertificateImage/'.$certificate_image.'/'.$image_mesaage.'/'.$presented_to.'/'.$core_value))
 							->toPng($options)
 							->save($destinationPath);
-										
-						}		
+
+						}
 					}
-                        
+
                     DB::beginTransaction();
 
                     try {
@@ -358,46 +366,46 @@ class UserNominationController extends Controller
 
                         if( $approval_request == 0 && $points_allowed == 1){
 
-                            if($budget_type == 1){ 
+                            if($budget_type == 1){
 
                                 // Campaign_Budget of current logged user
-            
+
                                 $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
-            
+
                                 if(!$campaign_budget){
-                                    
+
                                     return response()->json(['message'=>'Budget is not allocated yet', 'status'=>'error']);
-                                    
+
                                 }else{
-            
+
                                     $campaign_budget_bal =  $campaign_budget->budget ? $campaign_budget->budget : 0;
-                                    
+
                                     if($campaign_budget_bal < ($inputPoint)) {
                                         return response()->json(['message'=>"You don't have enough balance to nominate", 'status'=>'error']);
                                     }
                                 }
-            
+
                                 // campaign Deduction
-            
+
                                 $campaign_budget = UserCampaignsBudget::select('budget')->where('program_user_id',$request->sender_id)->where('campaign_id',$campaign_id)->latest()->first();
                                 $campaign_budget_bal =  $campaign_budget->budget;
-            
+
                                 $currentBud = $campaign_budget_bal;
                                 $finalBud = $currentBud-$inputPoint;
-            
+
                                 $updateSenderBudget = UserCampaignsBudget::where('program_user_id', $request->sender_id)->where('campaign_id',$campaign_id)->update([
                                             'budget' => $finalBud,
                                         ]);
-            
+
                                 // Logs
-                                
+
                                 $createRippleLog = UserCampaignsBudgetLogs::create([
                                     'program_user_id' => $request->sender_id,
                                     'campaign_id' => $campaign_id,
                                     'budget' => $inputPoint,
                                     'current_balance' => $campaign_budget_bal ? $campaign_budget_bal : 0,
-                                    'description' => "direct nomination without approval",   
-                                    'created_by_id' => $request->account_id,     
+                                    'description' => "direct nomination without approval",
+                                    'created_by_id' => $request->account_id,
                                 ]);
 
                                 $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
@@ -413,18 +421,18 @@ class UserNominationController extends Controller
                                     'level_1_approval' => 2,
                                     'level_2_approval' => 2,
                                     'point_type' => $budget_type,
-                                    'reason' => $request->reason,
+                                    'reason' => strip_tags($request->reason),
                                     'value' => $request->value,
                                     'points'  => $inputPoint,
                                     'attachments' => $newname,
                                     'project_name' => $request->project_name ? $request->project_name : '',
                                     'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
                                     'nominee_function' => $request->nominee_function,
-                                    'personal_message' => $request->personal_message,
+                                    'personal_message' => strip_tags($request->personal_message),
                                     'certificate_image_path' => $newImage
                                 ]);
-            
-            
+
+
                             } else {
                                 $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
                                 // Get lowest role of receiver
@@ -439,21 +447,21 @@ class UserNominationController extends Controller
                                     'level_1_approval' => 2,
                                     'level_2_approval' => 2,
                                     'point_type' => $budget_type,
-                                    'reason' => $request->reason,
+                                    'reason' => strip_tags($request->reason),
                                     'value' => $request->value,
                                     'points'  => $inputPoint,
                                     'attachments' => $newname,
                                     'project_name' => $request->project_name ? $request->project_name : '',
                                     'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
                                     'nominee_function' => $request->nominee_function,
-                                    'personal_message' => $request->personal_message,
+                                    'personal_message' => strip_tags($request->personal_message),
 									'certificate_image_path' => $newImage
                                 ]);
                             }
 
                             //update receiver budget
                             $currentBud = UsersPoint::select('balance')->where('user_id',$receiverid)->latest()->first();
-                            
+
                             $currentBud = $currentBud ? $currentBud->balance : 0;
                             $finalPoints = $currentBud+$inputPoint;
                             $updateReciverBudget = UsersPoint::create([
@@ -466,11 +474,11 @@ class UserNominationController extends Controller
                                 'created_by_id' => $request->sender_id // Who send
                             ]);
 
-                            
+
                             $subject = "TAKREEM - Notification of nomination successful";
-                            
+
                             $nominator = $senderUser->first_name.' '.$senderUser->last_name;
-                            
+
                             $emailcontent["template_type_id"] = '21';
 
                             $certificate_text = "<a href=".url('/uploaded/certificate_images/').'/'.$user_nomination->certificate_image_path.">Click here</a> to view the certificate.";
@@ -479,8 +487,8 @@ class UserNominationController extends Controller
 
                             $emailcontent["email_to"] = $sendToUser->email;
                             $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
-                            
-                            //$this->nomination_service->sendmail($sendToUser->email,$subject,$message); 
+
+                            //$this->nomination_service->sendmail($sendToUser->email,$subject,$message);
 
                             $mail_content = "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$request->reason}'.</p>";
                             $mail_content .= "<p>Keep up the good work.</p>";
@@ -490,8 +498,8 @@ class UserNominationController extends Controller
                         }
 
                         /********************* If Approval Required ***************************/
-                      
-                        if($approval_request == 1 && $points_allowed == 1){ 
+
+                        if($approval_request == 1 && $points_allowed == 1){
 
                             $groupData = $this->ripple_repository->getLevel1Leads($receiverid); // 2 for L1 & 3 for L2
 
@@ -499,7 +507,7 @@ class UserNominationController extends Controller
                             // Get lowest role of receiver
                             $groupId  = $groupData['user_group_id'];
 
-                            
+
                             if($level_1_approval == 0){
                                 $update_vale_l1 = 2;
                              }else{
@@ -513,7 +521,7 @@ class UserNominationController extends Controller
                              }
 
                             // Update User Nomination table so that L1 or L2 can approve
-            
+
                             $user_nomination = UserNomination::create([
                                 'user'   => $sendToUser->account_id, // Receiver
                                 'account_id' => $request->account_id, // Sender
@@ -523,14 +531,14 @@ class UserNominationController extends Controller
                                 'level_1_approval' => $update_vale_l1,
                                 'level_2_approval' => $update_vale_l2,
                                 'point_type' => $budget_type,
-                                'reason' => $request->reason,
+                                'reason' => strip_tags($request->reason),
                                 'value' => $request->value,
                                 'points'  => $inputPoint,
                                 'attachments' => $newname,
                                 'project_name' => $request->project_name ? $request->project_name : '',
                                 'team_nomination' => $request->project_name ? UserNomination::TEAM_NOMINATION : $teamNomination,
                                 'nominee_function' => $request->nominee_function,
-                                'personal_message' => $request->personal_message,
+                                'personal_message' => strip_tags($request->personal_message),
 								'certificate_image_path' => $newImage
                             ]);
 
@@ -542,7 +550,7 @@ class UserNominationController extends Controller
                                 $emailcontents["template_type_id"] =  '26';
                                 $emailcontents["dynamic_code_value"] = array($senderUser->first_name.' '.$senderUser->last_name,$sendToUser->first_name.' '.$sendToUser->last_name,$user_nomination->type->name,$user_nomination->points,$request->reason,$user_nomination->campaignid->name);
                             }
-                            
+
                             $emailcontents["email_to"] = $senderUser->email;
                             $emaildatas = Helper::emailDynamicCodesReplace($emailcontents);
 
@@ -558,11 +566,11 @@ class UserNominationController extends Controller
                                     })->filter();
 
                                 $subject = "TAKREEM - Notification of nomination";
-                    
+
                                 $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
                                 $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                                 $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
-                        
+
                                 foreach ($l2User as $account)
                                 {
                                     $link = "Please <a href=".$link.">click here</a>";
@@ -577,7 +585,7 @@ class UserNominationController extends Controller
                                     $saveNotification = $this->notification_service->creat_notification($account->account_id,$request->account_id, $user_nomination->id, Null, '5', $mail_content);
 
                                 }
-                                
+
                             } else {
 
                                 $l1_id = $sendToUser->vp_emp_number;
@@ -587,11 +595,11 @@ class UserNominationController extends Controller
 
                                     if(!empty($l1_account_data)){
                                         $subject = "TAKREEM - Notification of nomination";
-                        
+
                                         $link = env('frontendURL')."/page/campaign/".$user_nomination->campaign_id;
                                         $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                                         $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
-                                    
+
                                         $link = "Please <a href=".$link.">click here</a>";
                                         //L1_is_required
                                         if($level_2_approval == 0){
@@ -601,7 +609,7 @@ class UserNominationController extends Controller
                                             //L2+is_required
                                             $emailcontent["template_type_id"] = '27';
                                         }
-                                    
+
                                         $emailcontent["dynamic_code_value"] = array($l1_account_data->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$request->reason,$link);
                                         $emailcontent["email_to"] = $l1_account_data->email;
                                         $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
@@ -623,13 +631,13 @@ class UserNominationController extends Controller
                                 $l1User = $accounts->map(function ($account){
                                         return $account->programUserData;
                                     })->filter();
-                        
+
                                 $subject = "TAKREEM - Notification of nomination";
-                        
+
                                 $link = env('frontendURL')."/pages/campaign/".$user_nomination->campaign_id;
                                 $nominator = $senderUser->first_name.' '.$senderUser->last_name;
                                 $nominee = $sendToUser->first_name.' '.$sendToUser->last_name;
-                        
+
                                 $message = "<p>You have a nomination waiting for approval.</p>";
                                 $message .= "<strong>Nominee: </strong>{$nominee}<br>";
                                 $message .= "<strong>Nominator: </strong>{$nominator}<br>";
@@ -637,10 +645,10 @@ class UserNominationController extends Controller
                                 $message .= "<strong>Level: </strong>{$user_nomination->campaignid->name}<br>";
                                 $message .= "<strong>Points: </strong>{$user_nomination->points}<br>";
                                 $message .= "<strong>Reason: </strong>{$request->reason}<br>";
-                        
+
                                 $message .= "<p><a href=".$link.">Please log in to confirm or decline this nomination.</a></p>";
-                        
-                        
+
+
                                 foreach ($l1User as $account)
                                 {
                                     $this->nomination_service->sendmail($account->email,$subject,$message);
@@ -648,11 +656,11 @@ class UserNominationController extends Controller
                             }
 
                             DB::commit();
-                            
+
                         }
-                     
+
                     } catch (\Exception $e) {
-                        
+
                         DB::rollBack();
                         array_push($failed, $e->getMessage());
 
@@ -664,7 +672,7 @@ class UserNominationController extends Controller
                 } else {
                     return response()->json(['message'=>'Nomination has sent successfully.', 'status'=>'success']);
                 }
-               
+
             } else {
                 return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
             }
@@ -672,8 +680,8 @@ class UserNominationController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message'=>$e->getMessage(), 'status'=>'error']);
         }
-        
-        
+
+
     }
     // public function sendNomination(Request $request)
     // {
@@ -1064,9 +1072,15 @@ class UserNominationController extends Controller
      */
     public function show($id): Fractal
     {
-        $user_nomination = $this->repository->find($id);
+        try{
+            $id =  Helper::customDecrypt($id);
+            $user_nomination = $this->repository->find($id);
 
-        return fractal($user_nomination, new UserNominationTransformer);
+            return fractal($user_nomination, new UserNominationTransformer);
+        } catch (\Exception $e) {
+
+           return response()->json(['message'=> $e->getMessage(), 'status'=>'error','error_description'=>'Please check id and try again']);
+        }
     }
 
 
@@ -1230,10 +1244,14 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
     DB::beginTransaction();
     try {
+        $id =  Helper::customDecrypt($id);
+        $request['approver_account_id'] =  Helper::customDecrypt($request->approver_account_id);
         $user_nomination = $this->user_nomination_service->find($id);
         $campaign_id = $user_nomination->campaign_id;
         $approval_status = $request->level_1_approval; // 1 for acceted and -1 decline
-
+        if($user_nomination->level_1_approval == 1 || $user_nomination->level_1_approval == -1 || $user_nomination->level_1_approval == 2) {
+            return response()->json(['message'=>'Nomination status already updated.', 'status'=>'error']);
+        }
 
         // Get receiver program user id
         $receiver_account_id = $user_nomination->user;
@@ -1363,7 +1381,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
                     $mail_content =  "<p>You have been nominated by {$nominator} for the {$user_nomination->type->name} points. They nominated you for '{$user_nomination->reason}'.</p>";
                     $mail_content .= "<p>Keep up the good work.</p>";
-            
+
                     $saveNotification = $this->notification_service->creat_notification($receiver_account_id,$user_nomination->account_id, $user_nomination->id, Null, '5', $mail_content);
 
                 } // Close Campiagn type condition
@@ -1397,7 +1415,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ];
                     try {
 
-                        $link_to_ecard = $data['link_to_ecard'];        
+                        $link_to_ecard = $data['link_to_ecard'];
                         $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
                         $emailcontent["template_type_id"] = '7';
                         $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
@@ -1554,6 +1572,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
         DB::beginTransaction();
 
         try {
+            $id =  Helper::customDecrypt($id);
+            $request['approver_account_id'] =  Helper::customDecrypt($request->approver_account_id);
 
             $nominationData = [
                 'level_2_approval' => $request->level_2_approval
@@ -1570,6 +1590,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             // Nomination Data
             $user_nomination = $this->user_nomination_service->find($id);
             $campaign_id = $user_nomination->campaign_id;
+
+            if($user_nomination->level_2_approval == 1 || $user_nomination->level_2_approval == -1 || $user_nomination->level_2_approval == 2) {
+                return response()->json(['message'=>'Nomination status already updated.', 'status'=>'error']);
+            }
 
 
             // Get receiver program user id
@@ -1730,7 +1754,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 ];
                 try {
 
-                    $link_to_ecard = $data['link_to_ecard'];        
+                    $link_to_ecard = $data['link_to_ecard'];
                     $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
                     $emailcontent["template_type_id"] = '7';
                     $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
@@ -1837,7 +1861,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 }
                 if($request->campaign_type == 4) {
                     $sender_email = $program_user_sender->email;
-                    
+
                     $emailcontent["template_type_id"] = '19';
                     $emailcontent["dynamic_code_value"] = array($program_user_sender->first_name,$program_user_receiver->first_name.' '. $program_user_receiver->last_name,$user_nomination->type->name,$request->decline_reason);
                     $emailcontent["email_to"] = $sender_email;
@@ -1866,113 +1890,78 @@ public function updateLevelOne(Request $request, $id): JsonResponse
      * @return Fractal
      */
 
-     public function getUsersBy($nomination_id, Account $account_id,$status = null) {
+    public function getUsersBy($nomination_id, $account_id,$status = null) {
         $queryString = \Illuminate\Support\Facades\Request::get('q');
-        $logged_user_id = $account_id->id;
+        $queryString = $queryString ? Helper::customDecrypt($queryString) : '';
+        $logged_user_id = Helper::customDecrypt($account_id);
+        // $logged_user_id = $account_id->id;
         $user_group_data =  DB::table('users_group_list')
         ->whereIn('user_role_id', ['2','3']) // 2 for Level1, 3 for level 2
         ->where('account_id', $logged_user_id)
         ->where('status', '1')
         ->get()->toArray();
-
         foreach ($user_group_data as $key => $value) {
             $groupids_role[$key] =  $value->user_role_id;
-            $groupids[$key] = $value->user_group_id;
+            if($value->user_role_id !=2){
+             $groupids[$key] = $value->user_group_id;
+            }
         }
-        if(!empty($groupids)){
-            if($status == 1){      // approved records
+        // print_r($groupids);dd();
+        if(empty($groupids) || !isset($groupids) ){
+            $groupids = array();
+        }
+        if($status == 1){      // approved records
 
-                $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
-                ->where(function($q) use ($logged_user_id){
-                        $q->where(function($query) use ($logged_user_id){
-                            $query->where(['user_nominations.level_1_approval' => '1', 'user_nominations.approver_account_id' => $logged_user_id]);
-                        })
-                        ->orWhere(function($query) use ($logged_user_id){
-                            $query->where(['user_nominations.level_2_approval' => '1', 'user_nominations.approver_account_id' => $logged_user_id]);
-                            $query->orWhere(['user_nominations.level_2_approval' => '1', 'user_nominations.l2_approver_account_id' => $logged_user_id]);
+            $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user');
+            $approved->where(function($query) use ($groupids,$logged_user_id){
+                $query->where('user_nominations.approver_account_id',$logged_user_id)->orWhere('user_nominations.l2_approver_account_id',$logged_user_id);
+            });
+                if($queryString) {
+                    $approved->where('user_nominations.user', $queryString);
+                }
+                $approved->where('user_nominations.campaign_id', $nomination_id);
+                
+                $result = $approved->orderBY('user_nominations.id','desc')->paginate(12);
 
+        } else if($status == 2){      // declined records
 
-                        });
-                    });
-                    // 2 for L1
-                    if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id);
-                    }else{
-                    //3 for L2
-                        $approved->whereIn('user_nominations.group_id', $groupids);
-                    }
-                    if($queryString) {
-                        $approved->where('user_nominations.user', $queryString);
-                    }
-                    /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
-                    $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
+            $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
+            ->where('user_nominations.rajecter_account_id',$logged_user_id);
+                if($queryString) {
+                    $approved->where('user_nominations.user', $queryString);
+                }
+                /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
+                $approved->where('user_nominations.campaign_id', $nomination_id);
 
+                $result = $approved->orderBY('user_nominations.id','desc')->paginate(12);
 
-                    $result = $approved->paginate(12);
+        } else{                     // pending records
+                $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user');
 
-            } else if($status == 2){      // declined records
-
-                $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user')
-                ->where(function($q) use ($logged_user_id){
-                        $q->where(function($query) use ($logged_user_id){
-                            $query->where('user_nominations.rajecter_account_id', $logged_user_id);
-                        });
-                    });
-                    // 2 for L1
-                    if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id);
-                    }else{
-                    //3 for L2
-                        $approved->whereIn('user_nominations.group_id', $groupids);
-                    }
-                    if($queryString) {
-                        $approved->where('user_nominations.user', $queryString);
-                    }
-                    /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
-                    $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
-
-                    $result = $approved->paginate(12);
-
-
-            } else{                     // pending records
-                    $approved = UserNomination::select('user_nominations.*')->leftJoin('program_users', 'program_users.account_id', '=', 'user_nominations.user');
-
-                    // 2 for L1
-                    if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id);
-                        $approved->where('user_nominations.level_1_approval', '0'); // L1
-                    }else{
-                    //3 for L2
-
-                        $approved->whereIn('user_nominations.group_id', $groupids);
-                        $approved->where(function($q){
-
-                            $q->orWhere(function($query){
-
-                                $query->where(function($query1){
-                                    $query1->where('user_nominations.level_1_approval', '1')
+                $approved->where(function($masterQuery) use ($groupids,$logged_user_id){
+                    $masterQuery->where(function($query) use  ($logged_user_id) {
+                        $query->where('program_users.vp_emp_number', $logged_user_id);
+                        $query->where('user_nominations.level_1_approval', '0'); 
+                    })->orWhere(function($query1) use ($groupids){
+                        $query1->whereIn('user_nominations.group_id', $groupids);
+                        $query1->where(function($q){
+                            $q->orWhere(function($query2){
+                                $query2->where(function($query3){
+                                    $query3->where('user_nominations.level_1_approval', '1')
                                     ->orWhere('user_nominations.level_1_approval', '2');
                                 });
-
-                                $query->where('user_nominations.level_2_approval', '0'); //L2
-
-
+                                $query2->where('user_nominations.level_2_approval', '0'); //L2
                             });
                         });
-
-                    }
-                    if($queryString) {
-                        $approved->where('user_nominations.user', $queryString);
-                    }
-                    /*->where('user_nominations.account_id', '!=' , $logged_user_id)*/
-                    $approved->where('user_nominations.campaign_id', $nomination_id)->orderBY('user_nominations.id','desc');
-
-                    $result = $approved->paginate(12);
-            }
-        } else {
-            $result = array();
+                    });
+                });
+                $approved->where('user_nominations.campaign_id', $nomination_id);
+                if($queryString) {
+                    $approved->where('user_nominations.user', $queryString);
+                }
+                $approved->where('user_nominations.campaign_id', $nomination_id);
+                $result = $approved->orderBY('user_nominations.id','desc')->paginate(12);
         }
-
         return fractal($result, new UserNominationTransformer());
     }
 
@@ -2543,6 +2532,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
     public function getCampaignReport(Request $request)
     {
         try {
+            $request['account_id'] = Helper::customDecrypt($request['account_id']);
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
                  'campaign_id' => 'required|integer|exists:value_sets,id',
@@ -2587,7 +2577,12 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         }
                         */
                         $groupids_role[$value->user_group_id] =  $value->user_role_id;
-                        $groupids[$key] = $value->user_group_id;
+                        if($value->user_role_id == 3){
+                            $groupids[$key] = $value->user_group_id;
+                        }
+                        if(!isset($groupids) || empty($groupids)){
+                            $groupids = array();
+                        }
                     }
 
 
@@ -2596,13 +2591,11 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->where('user_nominations.campaign_id', $campaign_id);
 
 
-                    // 2 for L1
-                    if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id);
-                    }else{
-                    //3 for L2
-                        $approved->whereIn('user_nominations.group_id', $groupids);
-                    }
+                    
+                        $approved->where(function($query) use ($logged_user_id,$groupids){
+                            $query->where('program_users.vp_emp_number', $logged_user_id)->orWhereIn('user_nominations.group_id', $groupids);
+                        });
+                    
                     $result = $approved->get();
 
 
@@ -2718,6 +2711,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
     {
 
         try {
+            $request['account_id'] =  Helper::customDecrypt($request->account_id);
             $rules = [
                 'account_id' => 'required|integer|exists:accounts,id',
                 //'campaign_id' => 'required|integer|exists:value_sets,id',
@@ -2752,7 +2746,12 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     foreach ($user_group_data as $key => $value) {
 
                         $groupids_role[$value->user_group_id] =  $value->user_role_id;
-                        $groupids[$key] = $value->user_group_id;
+                        if($value->user_role_id != 2){
+                            $groupids[$key] = $value->user_group_id;
+                        }
+                    }
+                    if(empty($groupids) || !isset($groupids)){
+                        $groupids = array();
                     }
 
                     $approved = UserNomination::select('value_sets.name','campaign_id', DB::raw('count(*) as total'))
@@ -2760,38 +2759,28 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     ->leftJoin('value_sets', 'value_sets.id', '=', 'user_nominations.campaign_id')
                     ->leftJoin('campaign_types', 'campaign_types.id', '=', 'value_sets.campaign_type_id');
 
-                    if(in_array('2', $groupids_role)){
-                        $approved->where('user_nominations.level_1_approval', '0'); // L1
-                    }else{
-
-                        $approved->where(function($q){
-
-                            $q->orWhere(function($query){
-
-                                $query->where(function($query1){
-                                    $query1->where('user_nominations.level_1_approval', '1')
-                                    ->orWhere('user_nominations.level_1_approval', '2');
+                    $approved->where(function($masterQuery) use ($groupids,$logged_user_id){
+                        $masterQuery->where(function($query) use  ($logged_user_id) {
+                            $query->where('program_users.vp_emp_number', $logged_user_id);
+                            $query->where('user_nominations.level_1_approval', '0'); 
+                        })->orWhere(function($query1) use ($groupids){
+                            $query1->whereIn('user_nominations.group_id', $groupids);
+                            $query1->where(function($q){
+                                $q->orWhere(function($query2){
+                                    $query2->where(function($query3){
+                                        $query3->where('user_nominations.level_1_approval', '1')
+                                        ->orWhere('user_nominations.level_1_approval', '2');
+                                    });
+                                    $query2->where('user_nominations.level_2_approval', '0'); //L2
                                 });
-
-                                $query->where('user_nominations.level_2_approval', '0'); //L2
-
-
                             });
                         });
-
-
-                    }
+                    });
 
                     $approved->where('user_nominations.account_id', '!=' , $logged_user_id);
                     $approved->where('campaign_types.id', '4');
 
-                    // 2 for L1
-                    if(in_array('2', $groupids_role)){
-                        $approved->where('program_users.vp_emp_number', $logged_user_id);
-                    }else{
-                    //3 for L2
-                        $approved->whereIn('user_nominations.group_id', $groupids);
-                    }
+                   
                     $approved->groupBy('user_nominations.campaign_id');
 
 
@@ -2874,7 +2863,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $l2_approver_account = Null;
                 $l1_approver_account = Null;
                 $reject_reason = Null;
-               
+
 
                 if($nomination[9] == 'approved_l1'){
                     $update_vale_l1 = 1;
@@ -2922,7 +2911,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         'level_1_approval' => $update_vale_l1,
                         'level_2_approval' => $update_vale_l2,
                         'point_type' => 2,
-                        'reason' => $nomination[8],
+                        'reason' => strip_tags($nomination[8]),
                         'value' => $value_id->id,
                         'points'  => $nomination[7],
                         'reject_reason' => $reject_reason,
@@ -2958,7 +2947,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
     import user ecards
     ******************/
     public function importUserEcards(Request $request){
-      
+
         try{
             $file = $request->file('ecards_file');
             $request->validate([
@@ -3016,7 +3005,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $str = str_replace("_x005F","",$str);
                 $str = str_replace("&#39;","",$str);
                 $str = html_entity_decode($str, ENT_QUOTES);
-                
+
                 if($nomination[9] == 'Sent'){
                     $sent_status = 1;
                 }else{
@@ -3110,7 +3099,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 'error_file' => $th->getFile()
             ]);
         }
-        
+
     }/*******fn_ends*******/
 
     /**************************
@@ -3136,7 +3125,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 foreach($timezoneData as $key=>$ecards){
 
                     date_default_timezone_set($timezone);
-                    $select_timezone = date('Y-m-d H:i:s');  
+                    $select_timezone = date('Y-m-d H:i:s');
                     $current_time = date('H:i:s');
                     $plus5_min_time = Date("Y-m-d H:i:s", strtotime("5 minutes", strtotime($current_time)));
 
@@ -3165,8 +3154,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                             'full_img_path' => $new_img_path,
                             'link_to_ecard' => $new_img_path
                         ];
-                        
-                        $link_to_ecard = $data['link_to_ecard'];        
+
+                        $link_to_ecard = $data['link_to_ecard'];
                         $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
                         $emailcontent["template_type_id"] = '7';
                         $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
@@ -3181,18 +3170,18 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             }#end_foreach
         }
 
-        
+
     }/***********fn_ends_here**********/
 
     /**********  Generate existing nominations certificates script  ******* */
     public function generateCertificateImage()
-    { 
+    {
        $user_nomination = UserNomination::where("is_active",1)->get();
        if(!empty($user_nomination))
        {
            $path = public_path('/uploaded/certificate_images/');
            $urlPath = url('/uploaded/certificate_images/') . '/';
-                       
+
            for($i=0;$i<count($user_nomination);$i++)
            {
                $campaign_id = $user_nomination[$i]->campaign_id;
@@ -3204,49 +3193,49 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                    {
                        $certificate_image_path = $path.$certificate_image;
                        $certificate_image_url = $urlPath.$certificate_image;
-                       
+
                        if(File::exists($certificate_image_path)) {
 
                            $randm = rand(100,1000000);
                            $newImage = $randm.time().'-'.$certificate_image;
-                           
+
                            $image_mesaage = $user_nomination[$i]->reason;
                            $destinationPath = $path.$newImage;
-                           
+
                            //echo $image_mesaage."<br>";
                            //echo $destinationPath."<br>";
-                   
+
                            $conv = new \Anam\PhantomMagick\Converter();
                            $options = [
                                'width' => 800,'quality' => 90
                            ];
-                           
+
                            $sendToUser 	= ProgramUsers::where("account_id",$user_nomination[$i]->user)->first();
                            $first_name 	= (!empty($sendToUser) && isset($sendToUser->first_name) && !empty($sendToUser->first_name)) ? $sendToUser->first_name : "";
                            $last_name 		= (!empty($sendToUser) && isset($sendToUser->last_name) && !empty($sendToUser->last_name)) ? $sendToUser->last_name : "";
-                           
+
                            $presented_to 	= "";
                            if(!empty($first_name))
                                $presented_to .= $first_name." ";
                            if(!empty($last_name))
                                $presented_to .= $last_name;
-                               
+
                            if(empty($presented_to))
                                $presented_to = "N-A";
-                               
+
                            $NominationTypeData = NominationType::where('id', $user_nomination[$i]->value)->first();
                            $core_value 		= (!empty($NominationTypeData) && isset($NominationTypeData->name) && !empty($NominationTypeData->name)) ? $NominationTypeData->name : "N-A";
-                                   
+
                            $NominationTypeData = NominationType::where('id', $user_nomination[$i]->value)->first();
                            $core_value 		= (!empty($NominationTypeData) && isset($NominationTypeData->name) && !empty($NominationTypeData->name)) ? $NominationTypeData->name : "N-A";
-                           
+
                            $conv->source(url('/newCertificateImage/'.$certificate_image.'/'.$image_mesaage.'/'.$presented_to.'/'.$core_value))
                                    ->toPng($options)
                                    ->save($destinationPath);
 
                            UserNomination::where(['id' => $user_nomination[$i]->id, 'campaign_id' => $user_nomination[$i]->campaign_id])->update(['certificate_image_path' => $newImage]);
-                                       
-                       }		
+
+                       }
                    }
                }
            }

@@ -28,8 +28,13 @@ use Helper;
 
 class ImportsController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
     public function import(Request $request, $program_id)
     {
+	
         //todo move uploaded file to a folder
         $file = $request->file('products');
 
@@ -353,6 +358,8 @@ class ImportsController extends Controller
         }
 
     }/******import user ends*****/
+
+    
 
     public function sendPasswordCodeToAccount($email,$name,$password)
     {
@@ -753,4 +760,6 @@ class ImportsController extends Controller
             ]);
         }
     }/*******fn ends*******/
+
+    
 }

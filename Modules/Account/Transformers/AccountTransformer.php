@@ -7,6 +7,7 @@ use Modules\User\Models\UsersPoint;
 use Modules\Nomination\Models\CampaignSettings;
 use Modules\User\Models\ProgramUsers;
 use DB;
+use Helper;
 
 
 class AccountTransformer extends TransformerAbstract
@@ -31,13 +32,25 @@ class AccountTransformer extends TransformerAbstract
         }else{
             $last_login = null;
         }
+        $accountID = Helper::customCrypt($account->id);
+        $userID = Helper::customCrypt(optional($account->user)->id);
+
+        $userRoles = DB::table('users_group_list')->where('account_id', $account->id)->get();
+        if(!empty($userRoles)) {
+            foreach($userRoles as $key1 => $value) {
+                $rand = mt_rand(1000, 9999);
+                $key = $rand+($value->user_role_id*2);
+                $code = $key.'_'.$rand*2;
+                $value->key = $code;
+            }
+        }
 
         return [
-            'id'              => $account->id,
+            'id'              => $accountID,
             'name'            => ucfirst($account->user->first_name).' '.ucfirst($account->user->last_name),
             'email'           => $account->email,
             'type'            => $account->type,
-            'user_id'         => optional($account->user)->id,
+            'user_id'         => $userID,
             'title'           => optional($account->user)->title,
             'program_id'      => $account->client_admins->client->programs->id ?? $account->user->program_id, //TODO WTF REALLY
             'last_login'      => $last_login,
@@ -50,7 +63,7 @@ class AccountTransformer extends TransformerAbstract
             'badges'          => $account->badges()->pluck('name', 'active_url'),
             'user_type'       => ($account->user->id == $account->user->vp_emp_number)?'lead':'employee',
             'lead_permissions'=> DB::table('model_has_roles')->select('roles.*')->where(['model_id' => $account->id])->join('roles', 'roles.id', '=', 'model_has_roles.role_id')->get()->first(),
-            'group_roles'     => DB::table('users_group_list')->where('account_id', $account->id)->get(),
+            'group_roles'     => $userRoles,
             'CampaignSettings'=> $account->campaign($account->id),
             'user_country'    => $userCountry[0]['country'],
             'user_country_id'    => $userCountry[0]['country_id']

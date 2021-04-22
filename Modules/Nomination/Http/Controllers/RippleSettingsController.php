@@ -37,6 +37,7 @@ class RippleSettingsController extends Controller
     {
         $this->repository = $repository;
         $this->notification_service = $userNotificationService;
+		$this->middleware('auth:api');
     }
 
     /**
@@ -133,7 +134,7 @@ class RippleSettingsController extends Controller
 
     public function createEcardsRipple(Request $request) {
         try {
-
+            $request['campaign_id'] =  Helper::customDecrypt($request->campaign_id);
             $rules = [
                 'card_title' => 'required|unique:ecards,card_title',
                 'image'   => 'required'
@@ -177,7 +178,7 @@ class RippleSettingsController extends Controller
      public function updateEcardsRipple(Request $request) {
 
         try {
-
+            $request['id'] =  Helper::customDecrypt($request->id);
             $rules = [
                 'id' => 'required|integer|exists:ecards,id',
             ];
@@ -250,7 +251,7 @@ class RippleSettingsController extends Controller
 
      public function ecardStatusChange(Request $request) {
         try {
-
+            $request['id'] =  Helper::customDecrypt($request->id);
             $rules = [
                 'id' => 'required|integer|exists:ecards,id',
             ];
@@ -312,6 +313,8 @@ class RippleSettingsController extends Controller
 
         try {
             //$email_address=  $request->email_add;
+            $request['program_user_id'] =  Helper::customDecrypt($request->program_user_id);
+
             $budget_bal = $this->repository->getRippleBudget($request);
 
             return response()->json(['data' => $budget_bal], 200);
@@ -329,6 +332,13 @@ class RippleSettingsController extends Controller
     public function sendEcardRipple(Request $request)
     {
 
+        try{
+            $request['sender_id'] =  Helper::customDecrypt($request->sender_id);
+            $request['ecard_id'] = Helper::customDecrypt($request->ecard_id);
+
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check sender_id,send_to_id,ecard_id and try again.', 'errors' => $th->getMessage()], 402);
+        }
 
         $data = array();
 
@@ -413,6 +423,7 @@ class RippleSettingsController extends Controller
 
             foreach ($receiverIds as $key => $receiverid) {
 
+                $receiverid = Helper::customDecrypt($receiverid);
                 $sendToUser = ProgramUsers::find($receiverid);
 
                 DB::beginTransaction();
@@ -502,7 +513,7 @@ class RippleSettingsController extends Controller
                         'ecard_id' => $request->ecard_id,
                         'sent_to' => $receiverid,
                         'campaign_id' => $campaign_id,
-                        'image_message' => $request->image_message,
+                        'image_message' => strip_tags($request->image_message),
                         'sent_by' => $request->sender_id,
                         'points' => $inputPoint,
                         'send_type' => $request->send_type,
@@ -606,7 +617,7 @@ class RippleSettingsController extends Controller
                         if($update === 1){
                             $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
 
-                            $image_mesaage = str_replace(" ","%20",$request->image_message);#bcs_send_in_url
+                            $image_mesaage = str_replace(" ","%20",strip_tags($request->image_message));#bcs_send_in_url
                             $destinationPath = public_path('uploaded/e_card_images/new/'.$newImage);
                             $conv = new \Anam\PhantomMagick\Converter();
                             $options = [
@@ -627,7 +638,7 @@ class RippleSettingsController extends Controller
                             'card_title' => $eCardDetails->card_title,
                             'sendername' => $senderUser->first_name.' '. $senderUser->last_name,
                             'image' => env('APP_URL')."/uploaded/e_card_images/".$eCardDetails->card_image,
-                            'image_message' => $request->image_message,
+                            'image_message' => strip_tags($request->image_message),
                             'color_code' => "#e6141a",
                             'new_image' => $newImage,
                             'file_path' => $file_path,

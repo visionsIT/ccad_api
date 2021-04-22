@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Mail;
 use File;
 use Spatie\Fractal\Fractal;
 use Spatie\Browsershot\Browsershot;
+use Helper;
 
 class ProgramController extends Controller
 {
@@ -30,6 +31,7 @@ class ProgramController extends Controller
     {
         $this->program_service = $program_service;
         $this->service = $service;
+		$this->middleware('auth:api');
         // $this->middleware('auth:api', ['sendEcard']);
         // $this->middleware('auth:api')->only(['sendEcard']);
         // $this->middleware('guest');
@@ -241,7 +243,8 @@ class ProgramController extends Controller
                 } /*else if($voucher_use->timezone != $input['timezone']) {
                     return response()->json(['status' => true, 'message'=>'Voucher not available in your locale.']);
                 }*/ else {
-
+                    $account_id = Helper::customDecrypt($input['account_id']);
+                    $user_id = Helper::customDecrypt($input['user_id']);
                     $check = UserVouchers::where('voucher_id', $voucher_use->id)->where('account_id', $input['account_id'])->first();
 
                     if($check) {

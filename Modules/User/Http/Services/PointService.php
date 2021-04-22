@@ -1,8 +1,8 @@
 <?php namespace Modules\User\Http\Services;
 
 use Illuminate\Validation\ValidationException;
-use Modules\User\Http\Repositories\PointRepository;
-use Modules\User\Http\Repositories\UserRepository;
+use Modules\User\Repositories\PointRepository;
+use Modules\User\Repositories\UserRepository;
 
 class PointService
 {

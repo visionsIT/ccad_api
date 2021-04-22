@@ -31,6 +31,8 @@ use Modules\User\Transformers\UserCampaignTransformer;
 use DB;
 use Modules\User\Models\UsersGroupList;
 use Helper;
+use Modules\User\Exports\CampaignUserBudgetExports;
+use Throwable;
 
 class UserManageController extends Controller
 {
@@ -39,6 +41,7 @@ class UserManageController extends Controller
     public function __construct(ProgramRepository $program_repository)
     {
         $this->program_repository = $program_repository;
+		$this->middleware('auth:api');
     }
 
 
@@ -168,10 +171,13 @@ class UserManageController extends Controller
      */
     public function export($program_id)
     {
-        $file = (Carbon::now())->toDateString().'-AllUserData.csv';
-        $path = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
-        $responsePath = "/export-file/{$program_id}/{$file}";
-        Excel::store(new UserExport(), $path);
+        $file = Carbon::now()->timestamp.'-AllUserData.csv';
+        // $path = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
+        $path = public_path('uploaded/'.$program_id.'/users/csv/exported/'.$file);
+        // $responsePath = "/export-file/{$program_id}/{$file}";
+        $responsePath = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
+        // Excel::store(new UserExport(), $path);
+        Excel::store(new UserExport(), 'uploaded/'.$program_id.'/users/csv/exported/'.$file, 'real_public');
         return response()->json([
             'file_path' => url($responsePath),
         ]);
@@ -265,6 +271,15 @@ class UserManageController extends Controller
 
             $recentFiveOrders = $recentFiveOrders_Arr;
 
+            $recentFiveOrders_all = $recentFiveOrders;
+            foreach ($recentFiveOrders_all as $key1 => $answer) {
+                unset($recentFiveOrders_all[$key1]['id']);
+            }
+
+            foreach ($recentFiveOrders as $key => $value) {
+                $recentFiveOrders_all[$key]['id'] = Helper::customCrypt($value['id']);
+            }
+
             $approved = UserNomination::where(['level_1_approval' => 1])->orWhere(['level_2_approval' => 1])->count();
             $decline = UserNomination::where(['level_1_approval' => -1])->orWhere(['level_2_approval' => -1])->count();
             $pending = UserNomination::where(['level_1_approval' => 0, 'level_2_approval' => 0])->count();
@@ -291,7 +306,7 @@ class UserManageController extends Controller
                     'gift_card_orders' =>$giftCartOrders,
                     'physical_product_orders' =>$physicalProductOrders,
                 ],
-                'recent_five_orders' => $recentFiveOrders,
+                'recent_five_orders' => $recentFiveOrders_all,
 
             ], 200);
         } catch (\Throwable $th) {
@@ -301,7 +316,8 @@ class UserManageController extends Controller
 
     public function uploadUsersBudget(Request $request) {
         try {
-
+            $loggedID = Helper::customDecrypt($request->logged_user_id);
+            $request['logged_user_id'] = $loggedID;
             $rules = [
                 'budget_file' => 'required',
                 'logged_user_id' => 'required|exists:program_users,id',
@@ -462,7 +478,15 @@ class UserManageController extends Controller
     add user budget(individualy)
     ***************************/
     public function addUserCampaignsBudget(Request $request,$id = null) {
-
+        try{
+            if($id){
+                $id = Helper::customDecrypt($id);
+            }
+            //$request['campaign_id'] =  Helper::customDecrypt($request->campaign_id);
+            $request['logged_user_id'] =  Helper::customDecrypt($request->logged_user_id);
+        }catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
         try {
             $date = date('Y-m-d h:i:s');
             if($id == null){
@@ -624,4 +648,42 @@ class UserManageController extends Controller
         die('welcome');
     }
 
+	/***********Start Campaign User Budget Export************/
+	
+	public function UserBudgetExport(Request $request)
+    {
+		$rules = [
+			'campaignID' => 'required|integer|exists:value_sets,id',
+		];
+
+		$input = $request->all();
+		$validator = \Validator::make($request->all(), $rules);
+
+		if ($validator->fails())
+		{
+			return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+		}
+		else
+		{
+			if(isset($input['campaignID']) && !empty($input['campaignID']))
+			{
+				$file = Carbon::now()->timestamp.'-CampaignUserBudget.xlsx';				
+				$path = public_path('uploaded/campaign/userbudget/'.$file); 
+				$responsePath = 'uploaded/campaign/userbudget/'.$file;  
+				Excel::store(new CampaignUserBudgetExports($input), 'uploaded/campaign/userbudget/'.$file, 'real_public');
+				return response()->json([
+					'file_path' => url($responsePath),
+				]);
+				
+				//return Excel::download(new CampaignUserBudgetExports($input), $file);
+			}
+			else
+			{
+				return response()->json(['message' => 'campaign ID is missing'], 422);
+			}
+		}
+    }
+
+	/***********End Campaign User Budget Export************/
+	
 }

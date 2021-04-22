@@ -10,6 +10,7 @@ use Modules\Account\Models\Account;
 use Modules\User\Http\Requests\TeamRequest;
 use Modules\User\Http\Services\UserService;
 use Validator;
+use Helper;
 
 class TeamController extends Controller
 {
@@ -19,6 +20,7 @@ class TeamController extends Controller
     {
         $this->service = $service;
         $this->teams = $teams;
+		$this->middleware('auth:api', ['except' => ['newFeedback']]);
     }
 
     /**
@@ -101,6 +103,15 @@ class TeamController extends Controller
 
     public function newFeedback(Request $request)
     {
+        if(isset($request->user_id)){
+            $this->middleware('auth:api');
+            try{
+                $request['user_id'] =  Helper::customDecrypt($request->user_id);
+
+            }catch (\Throwable $th) {
+                return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+            }
+        }
         $rules = [
             'email'    => 'required|email',
             'feedback' => 'required|string|min:5|max:600',

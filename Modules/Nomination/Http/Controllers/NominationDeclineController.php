@@ -16,6 +16,7 @@ class NominationDeclineController extends Controller
     {
         $this->nomination_service         = $nomination_service;
         $this->nomination_decline_service = $nomination_decline_service;
+		$this->middleware('auth:api');
     }
 
 

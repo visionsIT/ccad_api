@@ -8,7 +8,7 @@ use Modules\Nomination\Models\Nomination;
 use Modules\Nomination\Models\UserNomination;
 use Modules\Nomination\Repositories\NominationRepository;
 use Modules\Account\Repositories\TokensRepository;
-use Modules\Account\Http\Repositories\AccountRepository;
+use Modules\Account\Repositories\AccountRepository;
 use Illuminate\Support\Facades\Mail;
 use Modules\Nomination\Repositories\SetApprovalRepository;
 use Modules\User\Http\Services\UserService;

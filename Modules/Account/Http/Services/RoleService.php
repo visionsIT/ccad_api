@@ -1,6 +1,6 @@
 <?php namespace Modules\Account\Http\Services;
 
-use Modules\Account\Http\Repositories\RoleRepository;
+use Modules\Account\Repositories\RoleRepository;
 use Modules\Account\Models\Account;
 
 /**

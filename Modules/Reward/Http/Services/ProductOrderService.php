@@ -44,7 +44,7 @@ class ProductOrderService
         //$order = $this->repository->find($id);
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
-        $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
+        $actual_val = ProductDenomination::withTrashed()->select('value')->where('id',$order->denomination_id)->first();
         $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         $value = $currency->code.' '.$actual_val->value;
 
@@ -94,7 +94,7 @@ class ProductOrderService
         //$order = $this->repository->find($id);
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
-        $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
+        $actual_val = ProductDenomination::withTrashed()->select('value')->where('id',$order->denomination_id)->first();
         $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         $value = $currency->code.' '.$actual_val->value;
 
@@ -145,8 +145,8 @@ class ProductOrderService
     {
         //$order = $this->repository->find($id);
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
+        $actual_val = ProductDenomination::withTrashed()->select('value')->where('id',$order->denomination_id)->first();
 
-        $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
         $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         $value = $currency->code.' '.$actual_val->value;
 

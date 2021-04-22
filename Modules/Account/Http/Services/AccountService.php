@@ -1,7 +1,7 @@
 <?php namespace Modules\Account\Http\Services;
 
 use Carbon\Carbon;
-use Modules\Account\Http\Repositories\AccountRepository;
+use Modules\Account\Repositories\AccountRepository;
 use Modules\Account\Models\Account;
 
 /**

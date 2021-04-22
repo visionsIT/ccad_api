@@ -24,6 +24,7 @@ class ProductCategoryController extends Controller
     {
         $this->repository = $repository;
         $this->prod_repository = $prod_repository;
+		$this->middleware('auth:api');
     }
 
     /**

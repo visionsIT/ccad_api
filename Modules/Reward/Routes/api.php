@@ -56,3 +56,9 @@ Route::post('users/assign_user_vp', 'ImportsController@assignUserVpApi');
 Route::post('users/email_update_vp', 'ImportsController@sendEmailUpdateVp');
 Route::post('users/welcome_email', 'ImportsController@sendWelcomeEmail');
 Route::post('users/remove_pre_groups','ImportsController@removeExistingGroups');
+
+// Order Export 
+Route::get('orders_export', 'ProductOrderController@OrdersExport');
+
+// Order Detail Export
+Route::get('orders_detail_export', 'ProductOrderController@OrdersDetailExport');
