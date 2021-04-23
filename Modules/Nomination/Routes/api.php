@@ -104,3 +104,8 @@ Route::get('user_submission_export', 'CampaignQuestionsController@SubmissionReco
 Route::get('user_nomination_export', 'CampaignQuestionsController@NominationRecordsExport');
 Route::get('user_sendEcard_export', 'CampaignQuestionsController@sendEcardRecordsExport');
 Route::get('user_anniversary_export', 'CampaignQuestionsController@AnniversaryRecordsExport');
+
+Route::get('get_campaignleads', 'NominationController@getCampaignLeadUsers');
+Route::post('save_campaign_roles', 'NominationController@SaveCampaignRoles');
+Route::post('delete_campaign_roles', 'NominationController@DeleteCampaignRoles');
+Route::get('get_campaign_roles', 'NominationController@getCampaignRoles');

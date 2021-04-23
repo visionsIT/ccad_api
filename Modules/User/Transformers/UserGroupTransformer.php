@@ -6,6 +6,7 @@ use Modules\User\Models\UsersPoint;
 use Modules\Reward\Models\ProductOrder;
 use Modules\User\Models\UsersGroupList;
 use Helper;
+use DB;
 class UserGroupTransformer extends TransformerAbstract
 {
     /**
@@ -15,6 +16,11 @@ class UserGroupTransformer extends TransformerAbstract
      */
     public function transform(UsersGroupList $User): array
     {
+        $programUserData = $User->programUserData->toArray();
+        $toId = Helper::customCrypt($programUserData['id']);
+        unset($programUserData['id']);
+        $programUserData['id'] = $toId;
+        
         $id = $User->uglId;
         if($id == '' || $id == null){
             $id = $User->id;

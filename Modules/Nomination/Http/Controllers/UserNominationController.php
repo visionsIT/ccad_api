@@ -483,7 +483,7 @@ class UserNominationController extends Controller
 
                             $certificate_text = "<a href=".url('/uploaded/certificate_images/').'/'.$user_nomination->certificate_image_path.">Click here</a> to view the certificate.";
 
-                            $emailcontent["dynamic_code_value"] = array($sendToUser->first_name,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$request->reason,$certificate_text);
+                            $emailcontent["dynamic_code_value"] = array($sendToUser->first_name,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,strip_tags($request->reason),$certificate_text);
 
                             $emailcontent["email_to"] = $sendToUser->email;
                             $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
@@ -545,10 +545,10 @@ class UserNominationController extends Controller
                             #nomination_sumitted_email_to_sender
                             if(strpos($user_nomination->campaignid->name, "Excellence Award") !== false){
                                 $emailcontents["template_type_id"] =  '25';
-                                $emailcontents["dynamic_code_value"] = array($senderUser->first_name.' '.$senderUser->last_name,$sendToUser->first_name.' '.$sendToUser->last_name,$user_nomination->type->name,$user_nomination->points,$request->reason,$user_nomination->campaignid->name);
+                                $emailcontents["dynamic_code_value"] = array($senderUser->first_name.' '.$senderUser->last_name,$sendToUser->first_name.' '.$sendToUser->last_name,$user_nomination->type->name,$user_nomination->points,strip_tags($request->reason),$user_nomination->campaignid->name);
                             }else{
                                 $emailcontents["template_type_id"] =  '26';
-                                $emailcontents["dynamic_code_value"] = array($senderUser->first_name.' '.$senderUser->last_name,$sendToUser->first_name.' '.$sendToUser->last_name,$user_nomination->type->name,$user_nomination->points,$request->reason,$user_nomination->campaignid->name);
+                                $emailcontents["dynamic_code_value"] = array($senderUser->first_name.' '.$senderUser->last_name,$sendToUser->first_name.' '.$sendToUser->last_name,$user_nomination->type->name,$user_nomination->points,strip_tags($request->reason),$user_nomination->campaignid->name);
                             }
 
                             $emailcontents["email_to"] = $senderUser->email;
@@ -575,7 +575,7 @@ class UserNominationController extends Controller
                                 {
                                     $link = "Please <a href=".$link.">click here</a>";
                                     $emailcontent["template_type_id"] = '23';
-                                    $emailcontent["dynamic_code_value"] = array($account->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$request->reason,$link);
+                                    $emailcontent["dynamic_code_value"] = array($account->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,strip_tags($request->reason),$link);
                                     $emailcontent["email_to"] = $account->email;
                                     $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -610,7 +610,7 @@ class UserNominationController extends Controller
                                             $emailcontent["template_type_id"] = '27';
                                         }
 
-                                        $emailcontent["dynamic_code_value"] = array($l1_account_data->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,$request->reason,$link);
+                                        $emailcontent["dynamic_code_value"] = array($l1_account_data->first_name,$nominee,$nominator,$user_nomination->type->name,$user_nomination->campaignid->name,$user_nomination->points,strip_tags($request->reason),$link);
                                         $emailcontent["email_to"] = $l1_account_data->email;
                                         $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -1273,7 +1273,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         if ($request->level_1_approval == -1 ) {
 
-            $nominationData['reject_reason'] = $request->decline_reason;
+            $nominationData['reject_reason'] = strip_tags($request->decline_reason);
             $nominationData['rajecter_account_id'] = $request->approver_account_id;
 
         } else {
@@ -1467,7 +1467,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }
                 }
             }
-            $nominationData['reject_reason'] = $request->decline_reason;
+            $nominationData['reject_reason'] = strip_tags($request->decline_reason);
             $nominationData['approver_account_id'] = $request->approver_account_id;
             $msgResponse ="Nomination has been approved successfully.";
         }
@@ -1529,7 +1529,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             if($request->campaign_type == 4) {
                 $sender_email = $program_user_sender->email;
                 $emailcontent["template_type_id"] = '19';
-                $emailcontent["dynamic_code_value"] = array($program_user_sender->first_name,$program_user_receiver->first_name.' '. $program_user_receiver->last_name,$user_nomination->type->name,$request->decline_reason);
+                $emailcontent["dynamic_code_value"] = array($program_user_sender->first_name,$program_user_receiver->first_name.' '. $program_user_receiver->last_name,$user_nomination->type->name,strip_tags($request->decline_reason));
                 $emailcontent["email_to"] = $sender_email;
                 $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -1580,10 +1580,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
             ];
 
             if ($request->level_2_approval == -1 ) {
-                $nominationData['reject_reason'] = $request->decline_reason;
+                $nominationData['reject_reason'] = strip_tags($request->decline_reason);
                 $nominationData['rajecter_account_id'] = $request->approver_account_id;
             } else {
-                $nominationData['reject_reason'] = $request->decline_reason;
+                $nominationData['reject_reason'] = strip_tags($request->decline_reason);
                 $nominationData['l2_approver_account_id'] = $request->approver_account_id;
             }
 
@@ -1863,7 +1863,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $sender_email = $program_user_sender->email;
 
                     $emailcontent["template_type_id"] = '19';
-                    $emailcontent["dynamic_code_value"] = array($program_user_sender->first_name,$program_user_receiver->first_name.' '. $program_user_receiver->last_name,$user_nomination->type->name,$request->decline_reason);
+                    $emailcontent["dynamic_code_value"] = array($program_user_sender->first_name,$program_user_receiver->first_name.' '. $program_user_receiver->last_name,$user_nomination->type->name,strip_tags($request->decline_reason));
                     $emailcontent["email_to"] = $sender_email;
                     $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -1922,6 +1922,16 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                 $approved->where('user_nominations.campaign_id', $nomination_id);
                 
                 $result = $approved->orderBY('user_nominations.id','desc')->paginate(12);
+
+                foreach($result as $key => $value) {
+                    $status = '-';
+                    if($value['approver_account_id'] == $logged_user_id) {
+                        $value['status'] = 'Approved level 1';
+                    }
+                    if($value['l2_approver_account_id'] == $logged_user_id) {
+                        $value['status'] = 'Approved level 2';
+                    }
+                }
 
         } else if($status == 2){      // declined records
 

@@ -868,6 +868,7 @@ class UserController extends Controller
             if($account_id == null || $account_id == ''){
                 return response()->json(['message' => 'Please provide account id.','status'=>'error']);
             }
+            $account_id = Helper::customDecrypt($account_id);
             $getUserNotifications = UserNotifications::where('receiver_account_id', $account_id)->orderBy('id', 'desc')->get();
             return fractal($getUserNotifications, new UserNotificationTransformer());
         }catch (\Throwable $th) {
