@@ -24,6 +24,7 @@ use Modules\Nomination\Models\UserNomination;
 use DB;
 use Helper;
 use Modules\Nomination\Transformers\UserCampaignRoleTransformer;
+use Modules\Nomination\Transformers\GetUserCampaignRoleTransformer;
 use Modules\Nomination\Models\UserCampaignRole;
 use Modules\User\Models\ProgramUsers;
 
@@ -306,15 +307,18 @@ class NominationController extends Controller
 
 	public function getCampaignLeadUsers()
 	{
-        $data = ProgramUsers::where('is_active',1)->get();
+        $data = ProgramUsers::where('program_users.is_active',1)
+							->join('users_group_list','users_group_list.account_id','program_users.account_id')
+							->where('user_role_id','!=',4)->where('user_role_id','!=',5)
+							->groupBy('program_users.account_id')
+							->get('program_users.*');
 		$userList = fractal($data,new UserCampaignRoleTransformer());
         return $userList;
     }
 	
 	public function SaveCampaignRoles(Request $request)
 	{
-		
-		$input = $request->all();
+		$input = $request->all();		
         try{
 
             $rules = [
@@ -329,26 +333,81 @@ class NominationController extends Controller
 			}
             else
 			{
-				$accountIDs 	= $input['account_id'];
-				$userRoleIDs 	= $input['user_role_id'];
+				$accountIDs 	= (isset($input['account_id']) && !empty($input['account_id'])) ? $input['account_id'] : false;
+				$userRoleIDs 	= (isset($input['user_role_id']) && !empty($input['user_role_id'])) ? $input['user_role_id'] : false;
+				
+				$ApiCheck 		= (!empty($input) && isset($input['l1_approver_flag'])) ? "L1" : "L2";
+				$UserRoleID		= 3;
+				if(!empty($ApiCheck) && $ApiCheck == "L1")
+				{
+					CampaignSettings::where('campaign_id',$request['campaign_id'])->update(['l1_approver'=>$request['l1_approver_flag']]);
+					$UserRoleID		= 2;
+				}
+				
+				$campaign_id = $input['campaign_id'];
+				$RolesArray  = array();
+				
+				if(!empty($campaign_id))
+				{
+					$UserCampaignRoleData = UserCampaignRole::where(array("campaign_id" => $campaign_id, "user_role_id" => $UserRoleID ,'deleted_at' => null))
+											->select(DB::raw('group_concat(account_id) as Account_IDs'))
+											->first();
+											
+					if(!empty($UserCampaignRoleData) && isset($UserCampaignRoleData->Account_IDs) && !empty($UserCampaignRoleData->Account_IDs))
+					{
+						$RolesArray = explode(",",$UserCampaignRoleData->Account_IDs);
+					}
+				}
+							
+							
+				if(!empty($RolesArray))
+				{	
+					if(!empty($accountIDs))
+					{
+						$DeleteAccountIDs = $RolesArray;
+						for($i=0;$i<count($accountIDs);$i++)
+						{
+							$account_id = Helper::customDecrypt($accountIDs[$i]);	
+							if(in_array($account_id, $RolesArray))
+							{
+								if (($key = array_search($account_id, $DeleteAccountIDs)) !== false) {
+									unset($DeleteAccountIDs[$key]);
+								}
+							}
+						}
+						
+						if(!empty($DeleteAccountIDs))
+						{
+							UserCampaignRole::where(array("campaign_id" => $campaign_id,"user_role_id" => $UserRoleID,'deleted_at' => null))
+											->whereIn('account_id',$DeleteAccountIDs)
+											  ->delete();
+						}
+					}
+					else
+					{
+						UserCampaignRole::where(array("campaign_id" => $campaign_id,"user_role_id" => $UserRoleID,'deleted_at' => null))
+												->delete();
+					}
+				}
+				
 				if(!empty($accountIDs))
-				{					
+				{
 					for($i=0;$i<count($accountIDs);$i++)
 					{
 						$account_id = Helper::customDecrypt($accountIDs[$i]);
-						$check = UserCampaignRole::where(array("campaign_id" => $input['campaign_id'],"account_id" => $account_id,"user_role_id" => $userRoleIDs[$i],'deleted_at' => null))->exists();
-						
+						$check = UserCampaignRole::where(array("campaign_id" => $campaign_id,"account_id" => $account_id,"user_role_id" => $userRoleIDs[$i],'deleted_at' => null))->exists();
 						if(empty($check))
 						{
 							$saveArray = array();
-							$saveArray['campaign_id'] 	= $input['campaign_id'];
+							$saveArray['campaign_id'] 	= $campaign_id;
 							$saveArray['account_id'] 	= $account_id;
 							$saveArray['user_role_id'] 	= $userRoleIDs[$i];
 							UserCampaignRole::create($saveArray);
 						}
 					}
-					return response()->json(['message'=>'Saved successfully.', 'status'=>'success']);
 				}
+				
+				return response()->json(['message'=>$ApiCheck .' Data successfully Updated.', 'status'=>'success']);
 			}
         } catch (\Throwable $th) {
             return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
@@ -414,8 +473,9 @@ class NominationController extends Controller
 			}
             else
 			{
-				$id = UserCampaignRole::find(array("campaign_id" => $input['campaign_id'],"account_id" => $input['account_id'],"user_role_id" => $input['user_role_id'],'deleted_at' => null));
-				$id->softDeletes();
+				UserCampaignRole::where(array("campaign_id" => $input['campaign_id'],"account_id" => $input['account_id'],"user_role_id" => $input['user_role_id'],'deleted_at' => null))
+								->delete();
+				
 				return response()->json(['message'=>'Deleted successfully.', 'status'=>'success']);
 			}
         } catch (\Throwable $th) {
@@ -445,7 +505,11 @@ class NominationController extends Controller
 											->join("program_users","program_users.account_id","user_campaign_roles.account_id")
 											->join("user_roles","user_roles.id","user_campaign_roles.user_role_id")
 											->get(['user_campaign_roles.*','program_users.first_name','program_users.last_name','user_roles.name as role_name']);
-				return $data;	
+				
+				$userCampaignRoleList = fractal($data,new GetUserCampaignRoleTransformer());
+				return $userCampaignRoleList;
+		
+				//return $data;	
 			}
         } catch (\Throwable $th) {
             return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
@@ -453,4 +517,60 @@ class NominationController extends Controller
 		
     }
 	
+	public function saveUserCampaignRoleSettings(Request $request)
+	{
+        try{
+
+            $rules = [
+                'l1_approver_flag' => 'required|in:0,1',
+                'campaign_id'=>'required|exists:campaign_settings,campaign_id',
+            ];
+
+            $validator = \Validator::make($request->all(), $rules);
+
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+            CampaignSettings::where('campaign_id',$request->campaign_id)->update(['l1_approver'=>$request->l1_approver_flag]);
+
+            return response()->json(['message'=>'Saved successfully.', 'status'=>'success']);exit;
+
+        } catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
+        }
+    }
+
+    public function getUserCampaignRoleSettings(Request $request)
+	{
+		
+		$input = $request->all();
+        try{
+
+            $rules = [
+                'campaign_id' => 'required|exists:value_sets,id',
+            ];
+
+            $validator = \Validator::make($input, $rules);
+
+            if ($validator->fails())
+			{
+				 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+			}
+            else
+			{
+				$campaign_id = $input['campaign_id'];
+				$check_campaign = CampaignSettings::where('campaign_id','=',$campaign_id)->first();
+				if(!empty($check_campaign)){
+					$get_l1_approver_setting = CampaignSettings::select('l1_approver')->where('campaign_id','=',$campaign_id)->first();
+
+				   return response()->json(['message'=>'Get Successfully.', 'status'=>'success','l1_approver_setting'=>$get_l1_approver_setting->l1_approver]);exit;
+				}else{
+					return response()->json(['message'=>'Campaign missing.', 'status'=>'error']);exit;
+				}
+			} 
+        } catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
+        }
+    }
+
 }
