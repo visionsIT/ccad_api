@@ -111,3 +111,4 @@ Route::post('delete_campaign_roles', 'NominationController@DeleteCampaignRoles')
 Route::get('get_campaign_roles', 'NominationController@getCampaignRoles');
 Route::get('get_campaign_roles_setting', 'NominationController@getUserCampaignRoleSettings');
 Route::post('save_campaign_roles_setting', 'NominationController@saveUserCampaignRoleSettings');
+Route::get('user_check_campaign/{account_id}', 'NominationController@checkUserInCampaignSetting');

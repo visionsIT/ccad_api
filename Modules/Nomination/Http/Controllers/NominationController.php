@@ -573,4 +573,72 @@ class NominationController extends Controller
         }
     }
 
+    /***************************************************************
+    api to check user in campaign setting and in vp_emp_num of users
+    ****************************************************************/
+    public function checkUserInCampaignSetting($account_id = null){
+
+        if($account_id == null){
+            return response()->json(['status'=>'error','message' => 'Please provide account id.', 'errors' => $validator->errors()], 422);
+        }else{
+
+            $account_id =  Helper::customDecrypt($account_id);
+
+            $account = Account::where('id',$account_id)->get();
+            $final_arr = array();
+            $admin_tab = 0;
+            if(!empty($account)){
+                $all_campaigns = ValueSet::where('status','1')->get();
+                if(!empty($all_campaigns)){
+                    foreach($all_campaigns as $key=>$campaign){
+
+                        $data=array();
+                        //Check_forL1
+                        $campaign_setting = CampaignSettings::where('campaign_id',$campaign->id)->first();
+                        if($campaign_setting->l1_approver == '1'){
+                            //specific_user
+                            $check_role_campaign = UserCampaignRole::where(['account_id'=>$account_id,'user_role_id'=>'2','campaign_id'=>$campaign->id])->first();
+                            if(!empty($check_role_campaign)){
+                                $admin_tab = 1;
+                                $data['id'] = $campaign->id;
+                                $data['name'] = $campaign->name;
+                            }
+                        }else{
+                            //vp_emp_number
+                            $check_vp_emp = ProgramUsers::where('vp_emp_number',$account_id)->first();
+                            if(!empty($check_vp_emp)){
+                                $admin_tab = 1;
+                                $data['id'] = $campaign->id;
+                                $data['name'] = $campaign->name;
+                            }
+                        }
+
+                        //check_L2
+                        //if($admin_tab == 0){
+                            $check_roleL2_campaign = UserCampaignRole::where(['account_id'=>$account_id,'user_role_id'=>'3','campaign_id'=>$campaign->id])->first();
+                            if(!empty($check_roleL2_campaign)){
+                                $admin_tab = 1;
+                                $data['id'] = $campaign->id;
+                                $data['name'] = $campaign->name;
+                            }
+                        //}
+
+                        if(!empty($data)){
+                            $final_arr[$key] = $data;
+                        }
+                        
+                    }
+
+                    return response()->json(['status'=>'success','message' => 'Get data successfully.','admin_tab'=>$admin_tab,'campaigns'=>$final_arr], 200);
+
+                }else{
+                    return response()->json(['status'=>'error','message' => 'No campaign Focund.', 'errors' => $validator->errors()], 422);
+                }
+            }else{
+                return response()->json(['status'=>'error','message' => 'Wrong account id.', 'errors' => $validator->errors()], 422);
+            }
+            
+        }
+    }/*****************fn_ends_here****************/
+
 }

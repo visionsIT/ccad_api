@@ -2,6 +2,7 @@
 
 use League\Fractal\TransformerAbstract;
 use Helper;
+use Modules\Nomination\Models\CampaignSettings;
 
 class GetUserCampaignRoleTransformer extends TransformerAbstract
 {
@@ -12,6 +13,7 @@ class GetUserCampaignRoleTransformer extends TransformerAbstract
      */
     public function transform($data): array
     {		
+
         return [
             'id' => $data->id,
             'campaign_id' => $data->campaign_id,
