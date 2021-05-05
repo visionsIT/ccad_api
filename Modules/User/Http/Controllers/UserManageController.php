@@ -10,7 +10,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Account\Models\Account;
-use Modules\Program\Http\Repositories\ProgramRepository;
+use Modules\Program\Repositories\ProgramRepository;
 use Modules\User\Exports\UserExport;
 use Modules\User\Imports\UserImport;
 use Modules\User\Models\ProgramUsers;

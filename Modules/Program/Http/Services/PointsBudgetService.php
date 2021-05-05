@@ -1,6 +1,6 @@
 <?php namespace Modules\Program\Http\Services;
 
-use Modules\Program\Http\Repositories\PointsBudgetRepository;
+use Modules\Program\Repositories\PointsBudgetRepository;
 
 class PointsBudgetService
 {

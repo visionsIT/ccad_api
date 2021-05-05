@@ -1,6 +1,6 @@
 <?php namespace Modules\Program\Http\Services;
 
-use Modules\Program\Http\Repositories\PointRepository;
+use Modules\Program\Repositories\PointRepository;
 
 class PointExpiriesService
 {

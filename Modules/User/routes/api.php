@@ -80,3 +80,6 @@ Route::get('notification_detail/{notification_id}','UserController@notificationD
 
 // Campaign User Budget Export 
 Route::get('user_budget_export', 'UserManageController@UserBudgetExport'); 
+
+// Password reset by Admin
+Route::post('password-reset', 'UserController@passwordReset');

@@ -7,7 +7,7 @@ use Modules\Account\Http\Services\PasswordsService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
-use Modules\Account\Http\Repositories\AccountRepository;
+use Modules\Account\Repositories\AccountRepository;
 use Modules\User\Models\UsersGroupList;
 
 /**

@@ -177,7 +177,7 @@ class NominationService
 
         if($search === NULL) {
 
-            $data = UserNomination::select('user_nominations.*')->where(function($q){
+            $data = UserNomination::select(['user_nominations.*','campaign_settings.like_flag','campaign_settings.comment_flag'])->where(function($q){
                     $q->where(function($query){
                         $query->where('user_nominations.level_1_approval', '1')
                         ->where('user_nominations.level_2_approval', '2');
@@ -210,7 +210,7 @@ class NominationService
 
         }else{
 
-            $data = UserNomination::select('user_nominations.*')->where(function($q){
+            $data = UserNomination::select(['user_nominations.*','campaign_settings.like_flag','campaign_settings.comment_flag'])->where(function($q){
                     $q->where(function($query){
                         $query->where('user_nominations.level_1_approval', '1')
                         ->where('user_nominations.level_2_approval', '2');

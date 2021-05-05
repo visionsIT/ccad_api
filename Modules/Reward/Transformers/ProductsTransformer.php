@@ -16,7 +16,9 @@ class ProductsTransformer extends TransformerAbstract
      */
     public function transform(Product $product): array
     {  
-       /* if ($handle = opendir( public_path().'/storage/products_img/')) {
+		$user_country_id = (isset($_GET['country_id']) && !empty($_GET['country_id'])) ? $_GET['country_id'] : false;
+       
+	   /* if ($handle = opendir( public_path().'/storage/products_img/')) {
             while (false !== ($fileName = readdir($handle))) {
                 $newName = strtolower($fileName);
 
@@ -47,11 +49,18 @@ class ProductsTransformer extends TransformerAbstract
             $category_name = '';
         }
 
-        $country_data =  DB::table('products_countries')->select('countries.name', 'countries.id as country_id')->where(['products_countries.product_id' => $product->id])->join('countries', 'countries.id', '=', 'products_countries.country_id')->get();
+        $country_data =  DB::table('products_countries')->select('countries.name', 'countries.id as country_id', 'countries.currency_code')->where(['products_countries.product_id' => $product->id])->join('countries', 'countries.id', '=', 'products_countries.country_id')->get();
 
         $productID = Helper::customCrypt($product->id);
 
-        $denomination = $product->denominations()->select('id', 'value', 'points')->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy(DB::raw("points+0"), 'ASC')->get()->toArray();
+		if(!empty($user_country_id))
+		{
+			$denomination = $product->denominations()->select('id', 'value', 'points')->where('country_id',$user_country_id)->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy(DB::raw("points+0"), 'ASC')->groupby('value')->get()->toArray();
+		}
+		else
+		{
+			$denomination = $product->denominations()->select('id', 'value', 'points')->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy(DB::raw("points+0"), 'ASC')->groupby('value')->get()->toArray();
+		}
 
         $denomination_all = $denomination;
         foreach ($denomination_all as $key1 => $answer) {

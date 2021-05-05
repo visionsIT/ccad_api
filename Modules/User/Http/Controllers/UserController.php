@@ -34,6 +34,7 @@ use Modules\User\Transformers\UserNotificationTransformer;
 use Modules\User\Transformers\UserNotificationDetailTransformer;
 use Helper;
 use Modules\User\Models\VpempNumberLog;
+use Hash;
 
 class UserController extends Controller
 {
@@ -823,9 +824,11 @@ class UserController extends Controller
                 return response()->json(['message'=>'Please provide 1 for admin']);
             }else{
                 if($admin == 1){
-                    $get_users = UsersGroupList::where('user_role_id','4')->orWhere('user_role_id','5')->paginate(20);
+                    // $get_users = UsersGroupList::where('user_role_id','4')->orWhere('user_role_id','5')->paginate(20);
+                    $get_users = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status as status1','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where('user_role_id','4')->orWhere('user_role_id','5')->paginate(20);
                 }else{
-                    $get_users = UsersGroupList::where('user_role_id','!=','4')->where('user_role_id','!=','5')->get();
+                    // $get_users = UsersGroupList::where('user_role_id','!=','4')->where('user_role_id','!=','5')->get();
+                    $get_users = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status as status1','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where('user_role_id','!=','4')->where('user_role_id','!=','5')->get();
                 }
                 $userList = fractal($get_users, new UserGroupTransformer());
                 return $userList;
@@ -935,6 +938,56 @@ class UserController extends Controller
         }
     }/******fn_ends*******/
 
+
+   
+   
+    /***********Password Reset Via Admin**************/
+    public function passwordReset(Request $request){
+        
+        try{
+
+            if(strlen($request->account_id) > 10){
+                $request['account_id'] = Helper::customDecrypt($request->account_id);
+            }
+            
+            $rules = [
+                'account_id' => 'required|integer|exists:accounts,id',
+                'new_password' => 'required|min:6'
+            ];
+
+            $validator = \Validator::make($request->all(), $rules);
+
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            
+                $admin_data = Auth::user();
+
+            if(!empty($admin_data)){
+
+                $admin_role = UsersGroupList::where('account_id',$admin_data->id)->where(function($query){
+                    $query->where('user_role_id',4)->orWhere('user_role_id',5);
+                })->count();
+
+                if($admin_role > 0){
+                    $password = Hash::make($request->new_password);
+                    Account::where('id',$request->account_id)->update(['password'=>$password]);
+                    DB::table('oauth_access_tokens')->where('user_id',$request->account_id)->update(['revoked'=>1]);
+                    return response()->json(['message' => 'Password changed successfully.', 'status' => 'Success'], 200);
+                }
+                else{
+                    return response()->json(['message' => 'Unauthorized request.', 'errors' => 'Invalid user request'], 402);
+                }
+
+            }
+            else{
+                return response()->json(['message' => 'Unauthorized request.', 'errors' => 'Invalid user request'], 402);
+            }
+        }
+        catch(\Throwable $th){
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+       
+    }
 
     
 

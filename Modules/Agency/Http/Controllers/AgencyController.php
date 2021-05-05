@@ -2,7 +2,7 @@
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
-use Modules\Agency\Http\Repositories\AgencyRepository;
+use Modules\Agency\Repositories\AgencyRepository;
 use Modules\Agency\Http\Requests\AgencyRequest;
 use Modules\Agency\Models\Agency;
 use Modules\Agency\Transformers\AgencyTransformer;

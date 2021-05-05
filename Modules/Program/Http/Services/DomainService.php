@@ -1,6 +1,6 @@
 <?php namespace Modules\Program\Http\Services;
 
-use Modules\Program\Http\Repositories\DomainRepository;
+use Modules\Program\Repositories\DomainRepository;
 
 class DomainService
 {

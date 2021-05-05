@@ -2,7 +2,7 @@
 
 use Carbon\Carbon;
 use Modules\Account\Models\Account;
-use Modules\Access\Http\Repositories\AccessTypeRepository;
+use Modules\Access\Repositories\AccessTypeRepository;
 use Modules\Program\Models\Program;
 
 /**

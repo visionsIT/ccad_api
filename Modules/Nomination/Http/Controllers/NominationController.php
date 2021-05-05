@@ -27,6 +27,8 @@ use Modules\Nomination\Transformers\UserCampaignRoleTransformer;
 use Modules\Nomination\Transformers\GetUserCampaignRoleTransformer;
 use Modules\Nomination\Models\UserCampaignRole;
 use Modules\User\Models\ProgramUsers;
+use Modules\Nomination\Models\CampaignLike;
+use Modules\Nomination\Models\CampaignComment;
 
 class NominationController extends Controller
 {
@@ -272,6 +274,8 @@ class NominationController extends Controller
 
             $rules = [
                 'wall_post' => 'required|in:0,1',
+				'is_like' => 'required|in:0,1',
+                'is_comment' => 'required|in:0,1',
                 'campaign_id'=>'required|exists:campaign_settings,campaign_id',
             ];
 
@@ -280,7 +284,7 @@ class NominationController extends Controller
             if ($validator->fails())
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
-            CampaignSettings::where('campaign_id',$request->campaign_id)->update(['wall_settings'=>$request->wall_post]);
+            CampaignSettings::where('campaign_id',$request->campaign_id)->update(['wall_settings'=>$request->wall_post,'like_flag'=>$request->is_like,'comment_flag'=>$request->is_comment]);
 
             return response()->json(['message'=>'Saved successfully.', 'status'=>'success']);exit;
 
@@ -293,9 +297,9 @@ class NominationController extends Controller
         try{
             $check_campaign = CampaignSettings::where('campaign_id','=',$campaign_id)->first();
             if(!empty($check_campaign)){
-                $get_wall_setting = CampaignSettings::select('wall_settings')->where('campaign_id','=',$campaign_id)->first();
+                $get_wall_setting = CampaignSettings::select('wall_settings','like_flag','comment_flag')->where('campaign_id','=',$campaign_id)->first();
 
-               return response()->json(['message'=>'Get Successfully.', 'status'=>'success','wall_settings'=>$get_wall_setting->wall_settings]);exit;
+               return response()->json(['message'=>'Get Successfully.', 'status'=>'success','wall_settings'=>$get_wall_setting->wall_settings,'comment_flag'=>$get_wall_setting->comment_flag,'like_flag'=>$get_wall_setting->like_flag]);exit;
             }else{
                 return response()->json(['message'=>'Campaign missing.', 'status'=>'error']);exit;
             }
@@ -305,6 +309,100 @@ class NominationController extends Controller
         }
     }#fn_ends
 
+	public function UpdateLikeFlag(Request $request)
+    {
+		if(isset($request['account_id']) && !empty($request['account_id']))
+		{
+			$request['account_id'] =  Helper::customDecrypt($request->account_id);
+			
+			$validator = \Validator::make($request->all(), [
+				'account_id' => 'required|exists:accounts,id',
+				'user_nomination_id' => 'required|exists:user_nominations,id',
+				'like' => 'required',
+			]);
+
+			if ($validator->fails()) {
+				return response()->json(['message' => 'The given data was invalid.'], 422);
+			}else{
+				
+				$account_id 		= $request['account_id'];
+				$user_nomination_id = $request['user_nomination_id'];
+				$like 				= $request['like'];
+				
+				$array['account_id'] 			= $account_id;
+				$array['user_nomination_id'] 	= $user_nomination_id;
+				$array['is_like'] 				= $like;
+					
+				$where = array('account_id' => $account_id,'user_nomination_id' => $user_nomination_id);
+				$check = CampaignLike::where($where)->exists();
+				if(!empty($check))
+				{
+					CampaignLike::where($where)->update(array('is_like' => $like));
+				}
+				else
+				{
+					CampaignLike::create($array);
+				}
+				
+				return response()->json(['message' => 'Data Successfully Updated'], 200);
+			}
+		}
+		else
+		{
+			return response()->json(['message' => 'Account ID is missing.'], 422);
+		}
+		
+    }
+	
+	public function AddComment(Request $request)
+    {
+		if(isset($request['account_id']) && !empty($request['account_id']))
+		{
+			$request['account_id'] =  Helper::customDecrypt($request->account_id);
+		
+			$validator = \Validator::make($request->all(), [
+				'account_id' => 'required|exists:accounts,id',
+				'user_nomination_id' => 'required|exists:user_nominations,id',
+				'comments' => 'required',
+			]);
+
+			if ($validator->fails()) {
+				return response()->json(['message' => 'The given data was invalid.'], 422);
+			}else{
+				
+				$pri_id 			= $request['id'];
+				$account_id 		= $request['account_id'];
+				$user_nomination_id = $request['user_nomination_id'];
+				$comments 			= $request['comments'];
+				
+				$array['account_id'] 			= $account_id;
+				$array['user_nomination_id'] 	= $user_nomination_id;
+				$array['comments'] 				= $comments;
+					
+				if(!empty($pri_id))
+				{
+					$where = array('id' => $pri_id);
+					$check = CampaignComment::where($where)->exists();
+					if(!empty($check))
+					{
+						CampaignComment::where($where)->update(array('comments' => $comments));
+					}
+				}
+				else
+				{
+					CampaignComment::create($array);
+				}
+				
+				return response()->json(['message' => 'Data Successfully Updated'], 200);
+			}
+		}
+		else
+		{
+			return response()->json(['message' => 'Account ID is missing.'], 422);
+		}
+		
+    }
+	
 	public function getCampaignLeadUsers()
 	{
         $data = ProgramUsers::where('program_users.is_active',1)

@@ -2,7 +2,7 @@
 
 use Carbon\Carbon;
 use Modules\Program\Models\Program;
-use Modules\Access\Http\Repositories\RegistrationFormRepository;
+use Modules\Access\Repositories\RegistrationFormRepository;
 
 /**
  * Class PasswordsService

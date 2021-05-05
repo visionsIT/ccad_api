@@ -127,16 +127,21 @@ class ImportsController extends Controller
                     'brand_id' => $brand->id,
                     'currency_id' => $product[14],
                 ]);
+				
+				// for single country
+				/*
                 ProductsCountries::create([
                     'product_id' => $addedProduct->id,
                     'country_id' => $product[13],
                 ]);
+				
                 $defaultCurrency = PointRateSettings::select('points')->where('currency_id','=',$product[14])->first();
                 if(empty($defaultCurrency)){
                     $getCurrencyPoints = '10';
                 }else{
                     $getCurrencyPoints = $defaultCurrency->points;
                 }
+								
                 if($product[5]!=""){
                     $denomi = explode(',', $product[5]);
                     foreach($denomi as $denoValue){
@@ -147,6 +152,38 @@ class ImportsController extends Controller
                         ]);
                     }
                 }
+				*/
+				
+				// for multiple country
+				if($product[13]!=""){
+                    $countriesArray = explode(',', $product[13]);
+                    foreach($countriesArray as $countryValue){
+                        ProductsCountries::create([
+							'product_id' => $addedProduct->id,
+							'country_id' => $countryValue,
+						]);
+						
+						$defaultCurrency = PointRateSettings::select('points')->where('country_id','=',$countryValue)->first();
+						if(empty($defaultCurrency)){
+							$getCurrencyPoints = '10';
+						}else{
+							$getCurrencyPoints = $defaultCurrency->points;
+						}
+				
+						if($product[5]!=""){
+							$denomi = explode(',', $product[5]);
+							foreach($denomi as $denoValue){
+								ProductDenomination::create([
+									'value' => $denoValue,
+									'points' => ((float)$denoValue*(float)$getCurrencyPoints),
+									'product_id' => $addedProduct->id,
+									'country_id' => $countryValue,
+								]);
+							}
+						}
+                    }
+                }
+				
             }
             return response()->json([
                 'uploaded_file' => url('uploaded/product_import_file/'.$uploaded->getFilename()),
@@ -159,6 +196,27 @@ class ImportsController extends Controller
                 'error_file' => $th->getFile()
             ]);
         }
+    }
+
+    public function getProductImage(){
+        ///echo storage_path();die;
+        $file_name = "/reports/without-image-product.csv";
+        $columns = array("ID","Product Name",'Category','Sub-Category','Brand','Image');
+        $new_csv = fopen(public_path($file_name) , 'w');
+        fputcsv($new_csv, $columns);
+        $product_data = Product::with(['category','catalog','brand'])->where('id','>','2032')->get()->toArray();
+        $count = 0;
+        foreach($product_data as $key => $value){
+            if((file_exists(storage_path('products_img1/'.$value["image"]))) == false){
+                
+                Product::where('id',$value["id"])->update(['status'=>'0']);
+                fputcsv($new_csv,array($value["id"],$value["name"],$value["category"]["name"],$value["catalog"]["name"],$value["brand"]["name"],$value["image"]));
+            }
+            $count++;
+        }
+        fclose($new_csv);
+
+        return $count;
     }
 
     /******************

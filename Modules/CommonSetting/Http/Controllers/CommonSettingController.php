@@ -49,8 +49,6 @@ class CommonSettingController extends Controller
                     ->where('role_id', $group_id)->get()->toArray();
                 $date = date('Y-m-d h:i:s');
 
-               // echo "<pre>";print_r($get_data);die;
-
                 if(!empty($get_data)){
                     foreach($get_data as $key=>$value){
                         $account_id = $value->model_id;
