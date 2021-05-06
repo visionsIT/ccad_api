@@ -2733,7 +2733,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     }
 
                     $totalAwardedPoints = array_sum($points_approved);
-                    $conversionData = PointRateSettings::where(['currency_id'=>1])->get()->first();
+                    $conversionData = PointRateSettings::where(['country_id'=>228])->get()->first();
                     $conversion_rate = $conversionData->points;
                     if($totalAwardedPoints != 0){
                         $total_cost = $totalAwardedPoints/$conversion_rate;
