@@ -5,7 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Modules\Account\Models\Account;
 use Modules\Program\Models\Program;
-use Modules\User\Http\Repositories\UserRepository;
+use Modules\User\Repositories\UserRepository;
 use Modules\User\Http\Requests\ProgramUsersRequest;
 use Modules\User\Models\ProgramUsers;
 use Modules\User\Models\UsersPoint;
@@ -13,7 +13,9 @@ use Spatie\Fractal\Fractal;
 use Spatie\Permission\Models\Role;
 use Modules\User\Models\UsersGroupList;
 use Modules\Nomination\Models\CampaignSettings;
+use Modules\User\Models\VpempNumberLog;
 use DB;
+use Helper;
 class UserService
 {
     public $repository;
@@ -37,7 +39,7 @@ class UserService
             //         });
             // }
 
-            $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->where(['users_group_list.user_role_id'=>$role_id,'users_group_list.user_group_id'=>$group_id])->join('accounts','users_group_list.account_id','accounts.id');
+            $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status as status1','accounts.*')->where(['users_group_list.user_role_id'=>$role_id,'users_group_list.user_group_id'=>$group_id])->join('accounts','users_group_list.account_id','accounts.id');
 
             if($role_id == 1){
                 $userdata = $userdata->where( function ($q) use ($search) {
@@ -56,9 +58,9 @@ class UserService
         } else {
 
             if($role_id == 1){
-                $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20);
+                $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status as status1','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->paginate(20);
             }else{
-                $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->get()->sortBy('account.name',SORT_NATURAL|SORT_FLAG_CASE);
+                $userdata = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status as status1','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where(['user_role_id'=>$role_id,'user_group_id'=>$group_id])->get()->sortBy('account.name',SORT_NATURAL|SORT_FLAG_CASE);
             }
 
             return $userdata;
@@ -187,8 +189,10 @@ class UserService
             })
             ->leftJoin('users_group_list as t1', "t1.account_id","=","program_users.account_id")
             ->where('t1.account_id','!=',$accountID)
-            ->where('t1.user_role_id','1')
-            ->where('t1.status','1');
+            //->where('t1.user_role_id','1')
+            ->where('t1.user_role_id','!=','4')
+            ->where('t1.user_role_id','!=','4')
+            ->where('t1.user_group_id','!=','46');
             if (count($group_ids) > 0) {
                 $data->whereIn('t1.user_group_id', $group_ids);
             }
@@ -313,8 +317,91 @@ class UserService
      */
     public function update($request, $id): void
     {
-        $request['id'] = Helper::customDecrypt($request->id);
-        $this->repository->update($request->all(), $id);
+        // $request['id'] = Helper::customDecrypt($request->id);
+        // $this->repository->update($request->all(), $id);
+        try {
+
+            $request['id'] = Helper::customDecrypt($request->id);
+            if(isset($request->frontend)){
+                //frontend
+                unset($request['frontend']);
+                $accountUser = ProgramUsers::where('id',$id)->first();
+                $accountUser->emp_number = $request['emp_number'] ? $request['emp_number'] : $accountUser->emp_number;
+                $accountUser->vp_emp_number = $request['vp_emp_number'] ? $request['vp_emp_number'] : $accountUser->vp_emp_number;
+                $accountUser->title = $request['title'] ? $request['title'] : $accountUser->title;
+                $accountUser->first_name = $request['first_name'] ? $request['first_name'] : $accountUser->first_name;
+                $accountUser->last_name = $request['last_name'] ? $request['last_name'] : $accountUser->last_name;
+                $accountUser->username = $request['username'] ? $request['username'] : $accountUser->username;
+                $accountUser->company = $request['company'] ? $request['company'] : $accountUser->company;
+                $accountUser->job_title = $request['job_title'] ? $request['job_title'] : $accountUser->job_title;
+                $accountUser->address_1 = $request['address_1'] ? $request['address_1'] : $accountUser->address_1;
+                $accountUser->address_2 = $request['address_2'] ? $request['address_2'] : $accountUser->address_2;
+                $accountUser->town = $request['town'] ? $request['town'] : $accountUser->town;
+                $accountUser->postcode = $request['postcode'] ? $request['postcode'] : $accountUser->postcode;
+                $accountUser->country = $request['country'] ? $request['country'] : $accountUser->country;
+                $accountUser->country_id = $request['country_id'] ? $request['country_id'] : $accountUser->country_id;
+                $accountUser->telephone = $request['telephone'] ? $request['telephone'] : $accountUser->telephone;
+                $accountUser->mobile = $request['mobile'] ? $request['mobile'] : $accountUser->mobile ;
+                $accountUser->date_of_birth = $request['date_of_birth'] ? $request['date_of_birth'] : $accountUser->date_of_birth;
+                $accountUser->communication_preference = $request['communication_preference'] ? $request['communication_preference'] : $accountUser->communication_preference;
+                $accountUser->language = $request['language'] ? $request['language'] : $accountUser->language;
+                $accountUser->save();
+                // $this->repository->update($request->all(), $id);
+            }else{
+                //dashboard
+
+                $date = date('Y-m-d h:i:s');
+
+                $accountUser = ProgramUsers::where('id',$id)->first();
+                $account = Account::where('id',$accountUser->account_id)->first();
+
+                $groupdata = json_decode($request->groupData);
+
+                foreach($groupdata as $group) {
+                    UsersGroupList::where(['account_id'=>$account->id,'user_group_id'=>$group->group_id,'user_role_id'=>$group->role_id])->update(['user_role_id'=>$group->new_role_id]);
+                }
+
+                
+                if($request->vp_emp_number != ''){
+                    if($accountUser->vp_emp_number != $request->vp_emp_number){
+                           
+                        #maintain_log
+                        VpempNumberLog::create([
+                            'user_account_id' => $account->id,
+                            'previous_vp_emp' =>  $accountUser->vp_emp_number ?? Null,
+                            'new_vp_emp_number' => $request->vp_emp_number,
+                        ]);
+
+                    }
+
+                    $accountUser->vp_emp_number = $request->vp_emp_number;
+                    $accountUser->save();
+
+                    UsersGroupList::where(['account_id'=>$request->vp_emp_number])->where('user_group_id', '!=', '46')->update(['user_role_id'=>2]);
+                }
+                
+                if(isset($request['group_id'])){
+                    unset($request['group_id']);
+                    unset($request['role_id']); 
+                    unset($request['existing_group_id']);
+                }
+
+                if(isset($request['fromPage'])){
+                    unset($request['fromPage']);
+                }
+                
+                if(isset($request['groupData'])){
+                    unset($request['groupData']);
+                }
+
+                $programUser  = ProgramUsers::findOrFail($id);
+                $input = $request->all();
+                $programUser->fill($input)->save();
+            }
+            
+        } catch (\Throwable $th) {
+            echo $th->getMessage();
+        }
     }
 
     /**

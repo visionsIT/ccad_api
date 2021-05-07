@@ -50,3 +50,4 @@ Route::get('get_ecard_details/{id}', 'ProgramController@getCardDetails');
 Route::post('ecard_update_info/{id}', 'ProgramController@updateEcardDetails');
 Route::post('send_ecard', 'ProgramController@sendEcard');
 Route::post('program/ecard_status', 'ProgramController@updateEcardStatus');
+Route::get('get_user_list','ProgramController@getUserList');

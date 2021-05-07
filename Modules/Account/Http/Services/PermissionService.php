@@ -1,7 +1,7 @@
 <?php namespace Modules\Account\Http\Services;
 
 use Modules\Account\Models\Account;
-use Modules\Account\Http\Repositories\PermissionRepository;
+use Modules\Account\Repositories\PermissionRepository;
 use Modules\Account\Models\Permission;
 
 /**

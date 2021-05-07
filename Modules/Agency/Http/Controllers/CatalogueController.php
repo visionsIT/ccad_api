@@ -5,7 +5,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Modules\Agency\Http\Requests\CatalogueRequest;
 use Modules\Agency\Transformers\CatalogueTransformer;
-use Modules\Agency\Http\Repositories\CatalogueRepository;
+use Modules\Agency\Repositories\CatalogueRepository;
 
 class CatalogueController extends Controller
 {

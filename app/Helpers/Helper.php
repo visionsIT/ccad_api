@@ -58,10 +58,10 @@ class Helper
 	        ];
 
 
-	        // Mail::send('emails.CommonMailTemplate', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
-	        //     $m->from('noreply@meritincentives.com','Takreem');
-	        //     $m->to($data["email_to"])->subject($data['subject']);
-	        // });
+	        Mail::send('emails.CommonMailTemplate', ['data' => $data, 'image_url'=>$image_url], function ($m) use($data) {
+	            $m->from('noreply@meritincentives.com','Takreem');
+	            $m->to($data["email_to"])->subject($data['subject']);
+	        });
 
 	        return $data;
 		}

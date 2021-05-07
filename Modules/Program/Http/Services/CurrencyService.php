@@ -1,6 +1,6 @@
 <?php namespace Modules\Program\Http\Services;
 
-use Modules\Program\Http\Repositories\CurrencyRepository;
+use Modules\Program\Repositories\CurrencyRepository;
 
 class CurrencyService
 {

@@ -15,6 +15,12 @@ use Modules\Reward\Http\Requests\ProductOrderRequest;
 use Modules\Reward\Transformers\ProductOrderTransformer;
 use Modules\Reward\Repositories\ProductOrderRepository;
 use Modules\User\Models\UsersGroupList;
+use Modules\Reward\Exports\OrdersExports;
+use Modules\Reward\Exports\OrdersDetailExports;
+use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use Throwable;
+use Modules\User\Models\UsersPoint;
 use Helper;
 
 class ProductOrderController extends Controller
@@ -104,51 +110,67 @@ class ProductOrderController extends Controller
      * @return Fractal
      */
     public function store(Request $request)
-    {
-        $get_points = ProductDenomination::select('points')->where('id',$request->value)->first();
+    {   
+        try{
+            $accountID = Helper::customDecrypt($request->account_id);
+            $productID = Helper::customDecrypt($request->product_id);
+            $denominationID = Helper::customDecrypt($request->value);
+            $get_points = ProductDenomination::select('points')->where('id',$denominationID)->first();
+            $request['account_id'] = $accountID;
+            $request['product_id'] = $productID;
+            $request['value'] = $get_points->points;
+            $request['denomination_id'] = $denominationID;
 
-        $request['denomination_id'] = $request->value;
-        $request['value'] = $get_points->points;
+            $rules = [
+                'value'      => 'required|numeric',
+                'account_id' => 'required|exists:accounts,id',
+                'product_id' => 'required|exists:products,id',
+                'first_name' => 'required',
+                'last_name'  => 'required',
+                'email'      => 'required|email',
+                'phone'      => 'required',
+                'address'    => 'required',
+                'city'       => 'required',
+                'country'    => 'required',
+                'is_gift'    => 'required|bool',
+                'quantity'   => 'required',
+                'denomination_id'   => 'required|exists:product_denominations,id',
+            ];
+            $validator = \Validator::make($request->all(), $rules);
 
-        $rules = [
-            'value'      => 'required|numeric',
-            'account_id' => 'required|exists:accounts,id',
-            'product_id' => 'required|exists:products,id',
-            'first_name' => 'required',
-            'last_name'  => 'required',
-            'email'      => 'required|email',
-            'phone'      => 'required',
-            'address'    => 'required',
-            'city'       => 'required',
-            'country'    => 'required',
-            'is_gift'    => 'required|bool',
-            'quantity'   => 'required',
-            'denomination_id'   => 'required|exists:product_denominations,id',
-        ];
-        $validator = \Validator::make($request->all(), $rules);
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
-        if ($validator->fails())
-            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            $user = ProgramUsers::where('account_id', $request->account_id)->first();
 
-        $user = ProgramUsers::where('account_id', $request->account_id)->first();
+            
+            $request['value'] = $get_points->points * $request->quantity;
+            
+            $current_budget_bal = UsersPoint::select('balance')->where('user_id',$user->id)->latest()->first();
+            if($current_budget_bal->balance < $request->value) {
+                return response()->json(['message' => "You don't have sufficient balance to place this order.", 'errors' => 'Insufficient Balance'], 402);
+            }
 
-        $request['value'] = $get_points->points * $request->quantity;
+            $Category = $this->repository->create($request->all());
 
-        $Category = $this->repository->create($request->all());
+    //        //todo fix this later
+    //        $user_points = UsersPoint::where([ 'user_id' => $user->id, 'value' => $current ])->first();
+    //
+    //        $user_points->update([ 'value' => $new ]);
 
-//        //todo fix this later
-//        $user_points = UsersPoint::where([ 'user_id' => $user->id, 'value' => $current ])->first();
-//
-//        $user_points->update([ 'value' => $new ]);
+            $data['value']       = $request->value;
+            $data['description'] = '';
+            $data['product_order_id'] = $Category->id;
+            $Category->status = true;
+            $this->point_service->store($user, $data, '-');
+            $this->service->placeOrder($Category->id);
 
-        $data['value']       = $request->value;
-        $data['description'] = '';
-        $data['product_order_id'] = $Category->id;
-        $Category->status = true;
-        $this->point_service->store($user, $data, '-');
-        $this->service->placeOrder($Category->id);
-
-        return fractal($Category, new ProductOrderTransformer);
+            return fractal($Category, new ProductOrderTransformer);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please check product id,account id and denomination id in value parameter.', 'errors' => $th->getMessage()], 402);
+        }
+        
     }
 
     /**
@@ -255,6 +277,7 @@ class ProductOrderController extends Controller
     {   
         try{
             $id = Helper::customDecrypt($id);
+             
             if ($this->service->cancelOrder($id)) {
                 return response()->json([ 'message' => 'The order has been cancelled Successfully' ]);
             }
@@ -306,4 +329,42 @@ class ProductOrderController extends Controller
 
     }/******fn ends******/
 
+	/***********Start Order Export************/
+	
+	public function OrdersExport(Request $request)
+    {
+		$input = $request->all();
+
+		$file = Carbon::now()->timestamp.'-OrdersExport.xlsx';				
+		$path = public_path('uploaded/campaign/orders/'.$file); 
+		$responsePath = 'uploaded/campaign/orders/'.$file;  
+		Excel::store(new OrdersExports($input), 'uploaded/campaign/orders/'.$file, 'real_public');
+		return response()->json([
+			'file_path' => url($responsePath),
+		]);
+		
+		//return Excel::download(new OrdersExports($input), $file);
+    }
+
+	/***********End Order Export************/
+	
+	/***********Start Order Detail Export************/
+	
+	public function OrdersDetailExport(Request $request)
+    {
+		$input = $request->all();
+
+		$file = Carbon::now()->timestamp.'-OrdersDetailExport.xlsx';				
+		$path = public_path('uploaded/campaign/orders/'.$file); 
+		$responsePath = 'uploaded/campaign/orders/'.$file;  
+		Excel::store(new OrdersDetailExports($input), 'uploaded/campaign/orders/'.$file, 'real_public');
+		return response()->json([
+			'file_path' => url($responsePath),
+		]);
+		 
+		//return Excel::download(new OrdersDetailExports($input), $file);
+    }
+
+	/***********End Order Detail Export************/
+	
 }

@@ -13,7 +13,7 @@ return [
     */
 
     'supportsCredentials'    => FALSE,
-    'allowedOrigins'         => [ '*', 'https://ccadapi.takreem.ae/' ],
+    'allowedOrigins'         => [ 'http://localhost:3002', 'https://ccadapi.takreem.ae', 'https://ccaddashboard.takreem.ae', 'https://ccad.takreem.ae','https://ccaddashboard.meritincentives.com', 'https://ccad.meritincentives.com', 'https://adfs.clevelandclinicabudhabi.ae' ],
     'allowedOriginsPatterns' => [],
     'allowedHeaders'         => [ '*' ],
     'allowedMethods'         => [ '*' ],

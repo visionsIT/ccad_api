@@ -30,7 +30,7 @@ class UserTransformer extends TransformerAbstract
         $all_group_data =  DB::table('users_group_list')->select('users_group_list.user_group_id', 'roles.name','users_group_list.user_role_id','user_roles.name as user_role_name'  )
         ->join('roles', 'roles.id', '=', 'users_group_list.user_group_id')
         ->join('user_roles', 'user_roles.id', '=', 'users_group_list.user_role_id')
-        ->where(['users_group_list.account_id' => $User->account_id])
+        ->where(['users_group_list.account_id' => $User->account_id, 'users_group_list.status' => '1'])
         ->get();
 
 

@@ -34,6 +34,7 @@ use Modules\User\Transformers\UserNotificationTransformer;
 use Modules\User\Transformers\UserNotificationDetailTransformer;
 use Helper;
 use Modules\User\Models\VpempNumberLog;
+use Hash;
 
 class UserController extends Controller
 {
@@ -73,10 +74,10 @@ class UserController extends Controller
         $userList = fractal($users, new UserTransformer());
 
         if(isset($request->pid) && $request->pid == 1){
-            $file = (Carbon::now())->toDateString().'-AllUserData.xlsx';
-            $path = 'uploaded/'.$request->pid.'/users/csv/exported/'.$file;
-            $responsePath = "/export-file/{$request->pid}/{$file}";
-            Excel::store(new UserExport($param), $path);
+            $file = Carbon::now()->timestamp.'-AllUserData.xlsx';
+            $path = public_path('uploaded/'.$request->pid.'/users/csv/exported/'.$file);
+            $responsePath = 'uploaded/'.$request->pid.'/users/csv/exported/'.$file;
+            Excel::store(new UserExport($param), 'uploaded/'.$request->pid.'/users/csv/exported/'.$file, 'real_public');
             return response()->json([
                 'file_path' => url($responsePath),
             ]);
@@ -87,9 +88,16 @@ class UserController extends Controller
 
     public function getSearchedUsers(Request $request) {
         $data = $this->service->getSearchedUsers($request);
+        $data = $data->toArray();
+        foreach($data as $key => $value) {
+            $data[$key]['account_id'] = Helper::customCrypt($value['account_id']);
+            $id = $data[$key]['id'];
+            unset($data[$key]['id']);
+            $data[$key]['id'] = Helper::customCrypt($id);
+        }
         return  response()->json([
-                    'users' => $data,
-                ]);
+            'users' => $data,
+        ]);
     }
 
     /**
@@ -113,10 +121,10 @@ class UserController extends Controller
         $userList = fractal($users, new UserTransformer());
 
         if(isset($request->pid) && $request->pid == 1){
-            $file = (Carbon::now())->toDateString().'-AllUserData.xlsx';
-            $path = 'uploaded/'.$request->pid.'/users/csv/exported/'.$file;
-            $responsePath = "/export-file/{$request->pid}/{$file}";
-            Excel::store(new UserExport($param), $path);
+            $file = Carbon::now()->timestamp.'-AllUserData.xlsx';
+            $path = public_path('uploaded/'.$request->pid.'/users/csv/exported/'.$file);
+            $responsePath = 'uploaded/'.$request->pid.'/users/csv/exported/'.$file;
+            Excel::store(new UserExport($param), 'uploaded/'.$request->pid.'/users/csv/exported/'.$file, 'real_public');
             return response()->json([
                 'file_path' => url($responsePath),
             ]);
@@ -315,6 +323,9 @@ class UserController extends Controller
                 $get_users = Account::whereNotIn('id',$excludeUsers)->get()->toArray();
 
                 if(!empty($get_users)){
+                    foreach($get_users as $key => $value){
+                        $get_users[$key]['account_id'] = $value['id'];
+                    }
                     return response()->json(['message'=>'Data successfully.', 'status'=>'success','data'=>$get_users]);exit;
                 }else{
                     return response()->json(['message'=>"No Record Found", 'status'=>'success']);
@@ -670,6 +681,12 @@ class UserController extends Controller
         }
     }/****fn_ends****/
 
+    public function getLeadUsers() {
+        $data = UsersGroupList::whereHas('programUserData')->where('user_role_id','!=',4)->where('user_role_id','!=',5)->get();
+        $userList = fractal($data, new UserGroupTransformer());
+        return $userList;
+    }
+
     /**********************
     upload user profile pic
     **********************/
@@ -807,9 +824,11 @@ class UserController extends Controller
                 return response()->json(['message'=>'Please provide 1 for admin']);
             }else{
                 if($admin == 1){
-                    $get_users = UsersGroupList::where('user_role_id','4')->orWhere('user_role_id','5')->paginate(20);
+                    // $get_users = UsersGroupList::where('user_role_id','4')->orWhere('user_role_id','5')->paginate(20);
+                    $get_users = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status as status1','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where('user_role_id','4')->orWhere('user_role_id','5')->paginate(20);
                 }else{
-                    $get_users = UsersGroupList::where('user_role_id','!=','4')->where('user_role_id','!=','5')->get();
+                    // $get_users = UsersGroupList::where('user_role_id','!=','4')->where('user_role_id','!=','5')->get();
+                    $get_users = UsersGroupList::select('users_group_list.id as uglId','users_group_list.user_group_id','users_group_list.user_role_id','users_group_list.account_id','users_group_list.status as status1','accounts.*')->join('accounts','users_group_list.account_id','accounts.id')->where('user_role_id','!=','4')->where('user_role_id','!=','5')->get();
                 }
                 $userList = fractal($get_users, new UserGroupTransformer());
                 return $userList;
@@ -852,6 +871,7 @@ class UserController extends Controller
             if($account_id == null || $account_id == ''){
                 return response()->json(['message' => 'Please provide account id.','status'=>'error']);
             }
+            $account_id = Helper::customDecrypt($account_id);
             $getUserNotifications = UserNotifications::where('receiver_account_id', $account_id)->orderBy('id', 'desc')->get();
             return fractal($getUserNotifications, new UserNotificationTransformer());
         }catch (\Throwable $th) {
@@ -865,22 +885,22 @@ class UserController extends Controller
     *******************************************/
     public function userNotificationsStatus(Request $request){
         try{
-
-            $rules = [
-                'notification_id' => 'required|integer|exists:user_notifications,id',
-            ];
-
-            $validator = \Validator::make($request->all(), $rules);
-
-            if ($validator->fails())
-                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
-
-            $getUserNotifications = UserNotifications::where('id', $request->notification_id)->update(['read_status'=>'1']);
-            return response()->json(['message' => 'Status Changed Successfully.', 'status' => 'success']);
-
-        }catch (\Throwable $th) {
-            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
-        }
+            $request['notification_id'] = Helper::customDecrypt($request->notification_id);
+             $rules = [
+                 'notification_id' => 'required|integer|exists:user_notifications,id',
+             ];
+ 
+             $validator = \Validator::make($request->all(), $rules);
+ 
+             if ($validator->fails())
+                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+ 
+             $getUserNotifications = UserNotifications::where('id', $request->notification_id)->update(['read_status'=>'1']);
+             return response()->json(['message' => 'Status Changed Successfully.', 'status' => 'success']);
+ 
+         }catch (\Throwable $th) {
+             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+         }
 
     }/****fn_ends*****/
 
@@ -893,6 +913,7 @@ class UserController extends Controller
                 return response()->json(['message' => 'Please provide account id.','status'=>'error']);
             }
 
+            $account_id = Helper::customDecrypt($account_id);
             $count_Notifications = UserNotifications::where('receiver_account_id', $account_id)->count();
             return response()->json(['data'=>$count_Notifications,'message' => 'Get count Successfully.', 'status' => 'success']);
         }catch (\Throwable $th) {
@@ -903,11 +924,12 @@ class UserController extends Controller
     /**notification details**/
     public function notificationDetail($notification_id = null){
         try{
-
+            
             if($notification_id == null || $notification_id == ''){
                 return response()->json(['message' => 'Please provide notification id.','status'=>'error']);
             }
-
+            
+            $notification_id = Helper::customDecrypt($notification_id);
             $notification_detail = UserNotifications::where('id', $notification_id)->first();
 
             return fractal($notification_detail, new UserNotificationDetailTransformer());
@@ -916,6 +938,56 @@ class UserController extends Controller
         }
     }/******fn_ends*******/
 
+
+   
+   
+    /***********Password Reset Via Admin**************/
+    public function passwordReset(Request $request){
+        
+        try{
+
+            if(strlen($request->account_id) > 10){
+                $request['account_id'] = Helper::customDecrypt($request->account_id);
+            }
+            
+            $rules = [
+                'account_id' => 'required|integer|exists:accounts,id',
+                'new_password' => 'required|min:6'
+            ];
+
+            $validator = \Validator::make($request->all(), $rules);
+
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            
+                $admin_data = Auth::user();
+
+            if(!empty($admin_data)){
+
+                $admin_role = UsersGroupList::where('account_id',$admin_data->id)->where(function($query){
+                    $query->where('user_role_id',4)->orWhere('user_role_id',5);
+                })->count();
+
+                if($admin_role > 0){
+                    $password = Hash::make($request->new_password);
+                    Account::where('id',$request->account_id)->update(['password'=>$password]);
+                    DB::table('oauth_access_tokens')->where('user_id',$request->account_id)->update(['revoked'=>1]);
+                    return response()->json(['message' => 'Password changed successfully.', 'status' => 'Success'], 200);
+                }
+                else{
+                    return response()->json(['message' => 'Unauthorized request.', 'errors' => 'Invalid user request'], 402);
+                }
+
+            }
+            else{
+                return response()->json(['message' => 'Unauthorized request.', 'errors' => 'Invalid user request'], 402);
+            }
+        }
+        catch(\Throwable $th){
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+       
+    }
 
     
 

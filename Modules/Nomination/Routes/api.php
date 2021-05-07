@@ -98,3 +98,20 @@ Route::post('import_user_ecards','UserNominationController@importUserEcards');
 Route::get('user/schedule-ecards','UserNominationController@getScheduledEcards');
 
 Route::get('generateCertificateImage/', 'UserNominationController@generateCertificateImage');
+
+// Campaign Record Export
+Route::get('user_submission_export', 'CampaignQuestionsController@SubmissionRecordsExport');
+Route::get('user_nomination_export', 'CampaignQuestionsController@NominationRecordsExport');
+Route::get('user_sendEcard_export', 'CampaignQuestionsController@sendEcardRecordsExport');
+Route::get('user_anniversary_export', 'CampaignQuestionsController@AnniversaryRecordsExport');
+
+Route::get('get_campaignleads', 'NominationController@getCampaignLeadUsers');
+Route::post('save_campaign_roles', 'NominationController@SaveCampaignRoles');
+Route::post('delete_campaign_roles', 'NominationController@DeleteCampaignRoles');
+Route::get('get_campaign_roles', 'NominationController@getCampaignRoles');
+Route::get('get_campaign_roles_setting', 'NominationController@getUserCampaignRoleSettings');
+Route::post('save_campaign_roles_setting', 'NominationController@saveUserCampaignRoleSettings');
+Route::get('user_check_campaign/{account_id}', 'NominationController@checkUserInCampaignSetting');
+
+Route::post('update_like_flag', 'NominationController@UpdateLikeFlag');
+Route::post('add_comment', 'NominationController@AddComment');

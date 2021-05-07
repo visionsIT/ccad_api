@@ -1,4 +1,4 @@
-<?php namespace Modules\Access\Http\Repositories;
+<?php namespace Modules\Access\Repositories;
 
 use App\Repositories\Repository;
 use Modules\Access\Models\AccessType;

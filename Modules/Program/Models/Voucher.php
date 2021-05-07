@@ -4,7 +4,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Voucher extends Model
 {
-    protected $fillable = [ 'voucher_name', 'voucher_points', 'start_datetime', 'end_datetime', 'quantity', 'timezone', 'used_count', 'description', 'status'];
+    protected $fillable = [ 'voucher_name', 'voucher_points', 'start_datetime', 'end_datetime', 'quantity', 'timezone', 'used_count', 'description', 'status','users'];
 
     public static function getVouchers($filterData){
 

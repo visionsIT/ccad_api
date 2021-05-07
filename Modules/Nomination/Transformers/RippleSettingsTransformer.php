@@ -43,6 +43,7 @@ class RippleSettingsTransformer extends TransformerAbstract
             'e_card_data' => $ecards_data ? $ecards_data : NULL,
             'points_allowed' => $model->points_allowed,
             'campaign_type_id' => $campain_data->campaign_type_id,
+            'l1_approver' => $model->l1_approver,
             'ecard_scheduler' => $model->ecard_scheduler != null || $model->ecard_scheduler != 0 ? (int)$model->ecard_scheduler : 0
         ];
     }

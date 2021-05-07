@@ -10,7 +10,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Account\Models\Account;
-use Modules\Program\Http\Repositories\ProgramRepository;
+use Modules\Program\Repositories\ProgramRepository;
 use Modules\User\Exports\UserExport;
 use Modules\User\Imports\UserImport;
 use Modules\User\Models\ProgramUsers;
@@ -31,6 +31,8 @@ use Modules\User\Transformers\UserCampaignTransformer;
 use DB;
 use Modules\User\Models\UsersGroupList;
 use Helper;
+use Modules\User\Exports\CampaignUserBudgetExports;
+use Throwable;
 
 class UserManageController extends Controller
 {
@@ -169,10 +171,13 @@ class UserManageController extends Controller
      */
     public function export($program_id)
     {
-        $file = (Carbon::now())->toDateString().'-AllUserData.csv';
-        $path = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
-        $responsePath = "/export-file/{$program_id}/{$file}";
-        Excel::store(new UserExport(), $path);
+        $file = Carbon::now()->timestamp.'-AllUserData.csv';
+        // $path = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
+        $path = public_path('uploaded/'.$program_id.'/users/csv/exported/'.$file);
+        // $responsePath = "/export-file/{$program_id}/{$file}";
+        $responsePath = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
+        // Excel::store(new UserExport(), $path);
+        Excel::store(new UserExport(), 'uploaded/'.$program_id.'/users/csv/exported/'.$file, 'real_public');
         return response()->json([
             'file_path' => url($responsePath),
         ]);
@@ -643,4 +648,42 @@ class UserManageController extends Controller
         die('welcome');
     }
 
+	/***********Start Campaign User Budget Export************/
+	
+	public function UserBudgetExport(Request $request)
+    {
+		$rules = [
+			'campaignID' => 'required|integer|exists:value_sets,id',
+		];
+
+		$input = $request->all();
+		$validator = \Validator::make($request->all(), $rules);
+
+		if ($validator->fails())
+		{
+			return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+		}
+		else
+		{
+			if(isset($input['campaignID']) && !empty($input['campaignID']))
+			{
+				$file = Carbon::now()->timestamp.'-CampaignUserBudget.xlsx';				
+				$path = public_path('uploaded/campaign/userbudget/'.$file); 
+				$responsePath = 'uploaded/campaign/userbudget/'.$file;  
+				Excel::store(new CampaignUserBudgetExports($input), 'uploaded/campaign/userbudget/'.$file, 'real_public');
+				return response()->json([
+					'file_path' => url($responsePath),
+				]);
+				
+				//return Excel::download(new CampaignUserBudgetExports($input), $file);
+			}
+			else
+			{
+				return response()->json(['message' => 'campaign ID is missing'], 422);
+			}
+		}
+    }
+
+	/***********End Campaign User Budget Export************/
+	
 }

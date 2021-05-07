@@ -8,6 +8,7 @@ use Modules\User\Models\ProgramUsers;
 use Modules\Program\Models\UsersEcards;
 use DB;
 use Carbon\Carbon;
+use Helper;
 class UserNotificationDetailTransformer extends TransformerAbstract
 {
     /**
@@ -52,7 +53,7 @@ class UserNotificationDetailTransformer extends TransformerAbstract
             }
 
             return [
-                'id'                        =>  $model->id,
+                'id'                        =>  Helper::customCrypt($model->id),
                 'campaign_id'               => $model->user_nomination->campaignid,
                 //'submission_id'             => $model->user_nomination->submission_id,
                 'ecard_id'                  => $model->user_nomination->ecard_id,
@@ -104,13 +105,13 @@ class UserNotificationDetailTransformer extends TransformerAbstract
                 $currentOrderStatus = 'Cancelled';
             }
 
-            $account_ID = $model->user_order->account_id;
+            $account_ID = Helper::customCrypt($model->user_order->account_id);
             $user_data_program = ProgramUsers::where('account_id', $model->user_order->account_id)->first()->toArray();
             $user_info = $user_data_program;
             unset($user_info['id']);
             unset($user_info['account_id']);
-            $user_info['id'] = $user_data_program['id'];
-            $user_info['account_id'] = $user_data_program['account_id'];
+            $user_info['id'] = Helper::customCrypt($user_data_program['id']);
+            $user_info['account_id'] = Helper::customCrypt($user_data_program['account_id']);
 
             $pointss = $model->user_order->value / $model->user_order->quantity;
 
@@ -126,7 +127,7 @@ class UserNotificationDetailTransformer extends TransformerAbstract
             }
 
             return [
-                'id'                 => $model->id,
+                'id'                 => Helper::customCrypt($model->id),
                 'order_number'       => 'mrw-00'.$model->user_order->id,
                 'value'              => $model->user_order->product->currency->code.' '.$model->user_order->denomination->value,
                 'denomination_value' => $model->user_order->denomination->value,

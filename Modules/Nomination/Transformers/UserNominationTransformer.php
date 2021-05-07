@@ -15,7 +15,12 @@ class UserNominationTransformer extends TransformerAbstract
     public function transform(UserNomination $model): array
     {
         $protocol = strtolower(substr($_SERVER["SERVER_PROTOCOL"],0,5))=='https'?'https':'http';
-        $imgUrl = $protocol.'://'.$_SERVER['HTTP_HOST'].'/uploaded/user_nomination_files/';
+        if(isset($_SERVER['HTTP_HOST'])){
+            $imgUrl = $protocol.'://'.$_SERVER['HTTP_HOST'].'/uploaded/user_nomination_files/';
+        }else{
+            $imgUrl = $protocol.'://'.$_SERVER['REMOTE_ADDR'].'/uploaded/user_nomination_files/';
+        }
+        
 
 
 
@@ -46,6 +51,7 @@ class UserNominationTransformer extends TransformerAbstract
             'Approved for level 2'      => $model->level_2_approval,
             'Approved for level 1 Id'   => $model->approver_account_id,
             'Approved for level 2 Id'   => $model->l2_approver_account_id,
+            'status'                    => $model->status,    
             //'points'      => $model->points,
             'Decline reason'            => $model->reject_reason,
             'created_at'                => $model->created_at,

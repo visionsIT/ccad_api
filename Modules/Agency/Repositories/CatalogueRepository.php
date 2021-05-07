@@ -1,4 +1,4 @@
-<?php namespace Modules\Agency\Http\Repositories;
+<?php namespace Modules\Agency\Repositories;
 
 use App\Repositories\Repository;
 use Modules\Agency\Models\Catalogue;

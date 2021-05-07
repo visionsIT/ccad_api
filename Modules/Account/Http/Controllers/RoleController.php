@@ -14,7 +14,7 @@ use Illuminate\Routing\Controller;
 use Modules\Account\Http\Requests\RoleRequest;
 use Modules\Account\Http\Requests\PagePermissionRequest;
 use Modules\Account\Transformers\RoleTransformer;
-use Modules\Account\Http\Repositories\RoleRepository;
+use Modules\Account\Repositories\RoleRepository;
 
 class RoleController extends Controller
 {

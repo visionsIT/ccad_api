@@ -1,6 +1,6 @@
 <?php namespace Modules\Agency\Http\Services;
 
-use Modules\Agency\Http\Repositories\ClientRepository;
+use Modules\Agency\Repositories\ClientRepository;
 
 /**
  * Class ClientService

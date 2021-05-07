@@ -7,7 +7,7 @@ use Modules\Account\Http\Services\PasswordsService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
-use Modules\Account\Http\Repositories\AccountRepository;
+use Modules\Account\Repositories\AccountRepository;
 use Modules\User\Models\UsersGroupList;
 
 /**
@@ -88,11 +88,16 @@ class PasswordsController extends Controller
      */
     public function createNewPassword(CreatePasswordRequest $request): Response
     {
-        if ($this->password_service->createNewPassword($request->all())) {
-            return response([ 'message' => __('common.success-success-msg') ]);
-        }
+        try{
+            if ($this->password_service->createNewPassword($request->all())) {
+                return response([ 'message' => __('common.success-success-msg') ], 200);
+            }
 
-        return response([ 'message' => __('common.error-msg') ], 400);
+            return response([ 'message' => __('common.error-msg') ], 400);
+        }  catch (\Throwable $th) {
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
+        }
+        
     }
 
     /**

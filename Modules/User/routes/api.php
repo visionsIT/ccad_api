@@ -61,6 +61,7 @@ Route::get('get_sso_login_details', 'UserController@getssoLoginDetails');
 Route::post('user/save_sso_login_details', 'UserController@saveSsoLoginDetails');
 Route::post('user/add_suggestion', 'UserManageController@AddUserSuggestion');
 Route::get('get_group_leads/{group_id?}', 'UserController@getGroupLeadUsers');
+Route::get('get_leads', 'UserController@getLeadUsers');
 
 ##########Upload profile pic of user############
 Route::post('/upload_profile_pic','UserController@uploadUserProfilePic');
@@ -76,3 +77,9 @@ Route::get('user_notifications/{user_id}','UserController@userNotifications');
 Route::post('notification_status','UserController@userNotificationsStatus');
 Route::get('count_notifications/{account_id}','UserController@countUserNotifications');
 Route::get('notification_detail/{notification_id}','UserController@notificationDetail');
+
+// Campaign User Budget Export 
+Route::get('user_budget_export', 'UserManageController@UserBudgetExport'); 
+
+// Password reset by Admin
+Route::post('password-reset', 'UserController@passwordReset');

@@ -1,6 +1,6 @@
 <?php namespace Modules\Agency\Http\Services;
 
-use Modules\Agency\Http\Repositories\AgencyRepository;
+use Modules\Agency\Repositories\AgencyRepository;
 
 class AgencyService
 {

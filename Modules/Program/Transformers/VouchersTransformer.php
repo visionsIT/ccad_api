@@ -10,8 +10,13 @@ class VouchersTransformer extends TransformerAbstract
      *
      * @return array
      */
+    
     public function transform(Voucher $model): array
     {
+        $users = array();
+        if($model->users != ''){
+            $users = explode(',',$model->users);
+        }
         return [
             'id'                    => $model->id,
             'voucher_name'          => $model->voucher_name,
@@ -25,6 +30,7 @@ class VouchersTransformer extends TransformerAbstract
             'status'        => $model->status,
             'created_at'        => $model->created_at,
             'updated_at'        => $model->updated_at,
+        'users'                 => $users
         ];
     }
 }

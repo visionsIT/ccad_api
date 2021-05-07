@@ -161,6 +161,27 @@ class ImportsController extends Controller
         }
     }
 
+    public function getProductImage(){
+        ///echo storage_path();die;
+        $file_name = "/reports/without-image-product.csv";
+        $columns = array("ID","Product Name",'Category','Sub-Category','Brand','Image');
+        $new_csv = fopen(public_path($file_name) , 'w');
+        fputcsv($new_csv, $columns);
+        $product_data = Product::with(['category','catalog','brand'])->where('id','>','2032')->get()->toArray();
+        $count = 0;
+        foreach($product_data as $key => $value){
+            if((file_exists(storage_path('products_img1/'.$value["image"]))) == false){
+                
+                Product::where('id',$value["id"])->update(['status'=>'0']);
+                fputcsv($new_csv,array($value["id"],$value["name"],$value["category"]["name"],$value["catalog"]["name"],$value["brand"]["name"],$value["image"]));
+            }
+            $count++;
+        }
+        fclose($new_csv);
+
+        return $count;
+    }
+
     /******************
     fn to import users
     ******************/
@@ -358,6 +379,8 @@ class ImportsController extends Controller
         }
 
     }/******import user ends*****/
+
+    
 
     public function sendPasswordCodeToAccount($email,$name,$password)
     {
@@ -758,4 +781,6 @@ class ImportsController extends Controller
             ]);
         }
     }/*******fn ends*******/
+
+    
 }

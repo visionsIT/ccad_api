@@ -1,7 +1,7 @@
 <?php namespace Modules\Account\Http\Services;
 
 use Illuminate\Support\Str;
-use Modules\Account\Http\Repositories\AccountRepository;
+use Modules\Account\Repositories\AccountRepository;
 use Illuminate\Support\Facades\Hash;
 
 /**

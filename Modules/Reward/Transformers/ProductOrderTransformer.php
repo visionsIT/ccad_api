@@ -33,8 +33,7 @@ class ProductOrderTransformer extends TransformerAbstract
         $user_info['account_id'] = Helper::customCrypt($user_data_program['account_id']);
         $pointss = $ProductOrder->value / $ProductOrder->quantity;
 
-        $pointss = $ProductOrder->value / $ProductOrder->quantity;
-
+        
         return [
             'id'         => $ProductOrderID,
             'order_number'=> 'ccad-00'.$ProductOrder->id,

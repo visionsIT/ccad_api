@@ -73,15 +73,16 @@ class ProductController extends Controller
      */
     public function show($id): Fractal
     {
-        
-        $product = $this->repository->find($id);
-        $useraccount = \Auth::user();
-        $accountID =  $useraccount->id;
-        
-        ProductsAccountsSeen::create([
-                'account_id' => $accountID,
-                'product_id' => $product->id
-            ]);
+        try{
+            $id = Helper::customDecrypt($id);
+            $product = $this->repository->find($id);
+            $useraccount = \Auth::user();
+            $accountID =  $useraccount->id;
+            
+            ProductsAccountsSeen::create([
+                    'account_id' => $accountID,
+                    'product_id' => $product->id
+                ]);
 
             return fractal($product, new ProductsTransformer);
         }catch (\Throwable $th) {
@@ -174,10 +175,13 @@ class ProductController extends Controller
                 'order' => ($order)?$order:'desc',
             ];
 
-            $file = (Carbon::now())->toDateString().'-AllRewardsData.xlsx';
-            $path = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
-            $responsePath = "/export-file/{$pid}/{$file}";
-            Excel::store(new RewardsExports($param), $path);
+            $file = Carbon::now()->timestamp.'-AllRewardsData.xlsx';
+            // $path = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
+            $path = public_path('uploaded/'.$pid.'/users/csv/exported/'.$file);
+            // $responsePath = "/export-file/{$pid}/{$file}";
+            $responsePath = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
+            // Excel::store(new RewardsExports($param), $path);
+            Excel::store(new RewardsExports($param), 'uploaded/'.$pid.'/users/csv/exported/'.$file, 'real_public');
             return response()->json([
                 'file_path' => url($responsePath),
             ]);
@@ -229,10 +233,13 @@ class ProductController extends Controller
                 'order' => ($order)?$order:'desc',
             ];
 
-            $file = (Carbon::now())->toDateString().'-AllRewardsData.xlsx';
-            $path = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
-            $responsePath = "/export-file/{$pid}/{$file}";
-            Excel::store(new RewardsExports($param), $path);
+            $file = Carbon::now()->timestamp.'-AllRewardsData.xlsx';
+            // $path = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
+            $path = public_path('uploaded/'.$pid.'/users/csv/exported/'.$file);
+            // $responsePath = "/export-file/{$pid}/{$file}";
+            $responsePath = 'uploaded/'.$pid.'/users/csv/exported/'.$file;
+            // Excel::store(new RewardsExports($param), $path);
+            Excel::store(new RewardsExports($param), 'uploaded/'.$pid.'/users/csv/exported/'.$file, 'real_public');
             return response()->json([
                 'file_path' => url($responsePath),
             ]);

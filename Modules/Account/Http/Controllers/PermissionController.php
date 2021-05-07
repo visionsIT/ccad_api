@@ -11,7 +11,7 @@ use Spatie\Fractal\Fractal;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Modules\Account\Transformers\PermissionTransformer;
-use Modules\Account\Http\Repositories\PermissionRepository;
+use Modules\Account\Repositories\PermissionRepository;
 use DB;
 
 class PermissionController extends Controller

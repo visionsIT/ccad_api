@@ -6,6 +6,7 @@ use Modules\User\Http\Services\GoalItemService;
 use Modules\User\Transformers\GoalItemTransformer;
 use Spatie\Fractal\Fractal;
 use Helper;
+use Illuminate\Http\Request;
 
 class GoalItemController extends Controller
 {
@@ -28,12 +29,9 @@ class GoalItemController extends Controller
      *
      * @return Fractal
      */
-    public function store($user_id, GoalItemRequest $request): Fractal
+    public function store($user_id, Request $request): Fractal
     {
-        // $goal_item = $this->service->store($user_id, $request->all());
 
-
-        // return fractal($goal_item, new GoalItemTransformer());
         try{
             $user_id = Helper::customDecrypt($user_id);
             $product_id = $request->product_id;
@@ -55,14 +53,15 @@ class GoalItemController extends Controller
         }catch (\Throwable $th) {
             return response()->json(['message' => 'Something get wrong! Please check user_id, product_id and try again.', 'errors' => $th->getMessage()], 402);
         }
-    }
 
+    }
+        
     /**
      * @param $user_id
      *
      * @return Fractal
      */
-    public function getUserGoalItem($user_id): Fractal
+    public function getUserGoalItem($user_id)
     {
         try{
             $user_id = Helper::customDecrypt($user_id);
@@ -80,12 +79,9 @@ class GoalItemController extends Controller
      *
      * @return Fractal
      */
-    public function removeGoalItem($user_id, GoalItemRequest $request): Fractal
+    public function removeGoalItem($user_id, Request $request): Fractal
     {
-        // $goal_item = $this->service->remove($user_id, $request->all());
 
-        // return fractal($goal_item, new GoalItemTransformer());
-        //return fractal($goal_item, new GoalItemTransformer());
         try{
             $user_id = Helper::customDecrypt($user_id);
             $product_id = $request->product_id;

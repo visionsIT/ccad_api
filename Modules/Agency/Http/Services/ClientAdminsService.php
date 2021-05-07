@@ -3,7 +3,7 @@
 use Carbon\Carbon;
 use DB;
 use Modules\Account\Http\Services\AccountService;
-use Modules\Agency\Http\Repositories\ClientAdminsRepository;
+use Modules\Agency\Repositories\ClientAdminsRepository;
 
 class ClientAdminsService
 {
