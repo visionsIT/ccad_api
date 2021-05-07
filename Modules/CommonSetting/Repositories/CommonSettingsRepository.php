@@ -30,8 +30,8 @@ class CommonSettingsRepository extends Repository
         return $campaign_name->name;
     }
 
-    public function getAccountCurrencyPoints($currency_id){
-        $currency_points = PointRateSettings::select('points')->where('currency_id',$currency_id)->first();
+    public function getAccountCurrencyPoints($country_id){
+        $currency_points = PointRateSettings::select('points')->where('country_id',$country_id)->first();
         return $currency_points->points;
     }
     

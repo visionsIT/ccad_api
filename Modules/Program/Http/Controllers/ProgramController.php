@@ -311,7 +311,7 @@ class ProgramController extends Controller
                 }*/ else {
                     $account_id = Helper::customDecrypt($input['account_id']);
                     $user_id = Helper::customDecrypt($input['user_id']);
-                    $check = UserVouchers::where('voucher_id', $voucher_use->id)->where('account_id', $account_id)->first();
+                    $check = UserVouchers::where('voucher_id', $voucher_use->id)->where('account_id', $input['account_id'])->first();
 
                     if($check) {
                         return response()->json(['status' => false, 'message'=>'Voucher already used']);
