@@ -21,6 +21,7 @@ use File;
 use Spatie\Fractal\Fractal;
 use Spatie\Browsershot\Browsershot;
 use Helper;
+use DB;
 
 class ProgramController extends Controller
 {
@@ -129,19 +130,42 @@ class ProgramController extends Controller
     public function addVoucher(Request $request)
     {
 
+        
         $rules = [
             'voucher_name'    => 'required|unique:vouchers,voucher_name',
-            'voucher_points'    => 'required|integer',
+            'voucher_points'    => 'required|integer|gt:0',
             'start_datetime'    => 'required',
             'end_datetime'    => 'required',
             'timezone'    => 'required',
-            'quantity'    => 'required|integer',
+            'quantity'    => 'required|integer|gt:0',
+            'users'  => 'required'
         ];
-
         $validator = \Validator::make($request->all(), $rules);
 
         if ($validator->fails())
             return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+        $user_array =  explode(',',$request->users);
+        $image_url = [
+            'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
+        ];
+        $request['voucher_name'] = strip_tags($request->voucher_name);
+        if(!empty($user_array)){
+            $user_data = DB::table('accounts')->select('name','email')->whereIn('id',$user_array)->get();
+            if(!empty($user_data)){
+                foreach($user_data as $key => $value){
+
+                    $data['name'] = $value->name;
+                    $data['points'] = $request->voucher_points;
+                    $data['code'] = $request->voucher_name;
+
+                    Mail::send('emails.VoucherMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($value) {
+                        $m->from('noreply@meritincentives.com','Takreem');
+                        $m->to($value->email)->subject("Voucher Points Earned");
+                    });
+                }
+            }
+        }
 
         $voucherDetails = Voucher::create([
             'voucher_name'    => $request->voucher_name,
@@ -150,6 +174,7 @@ class ProgramController extends Controller
             'end_datetime'    => $request->end_datetime,
             'timezone'    => $request->timezone,
             'quantity'    => $request->quantity,
+            'users' => $request->users,
             'description'    => ($request->description && $request->description != '')?$request->description:null,
         ]);
        return response()->json(['voucherDetails'=>$voucherDetails, 'status'=>'success']);
@@ -192,25 +217,62 @@ class ProgramController extends Controller
     {
         $rules = [
             'voucher_name' => 'required:vouchers,voucher_name,'.$id,
-            'voucher_points'    => 'required|integer',
+            'voucher_points'    => 'required|integer|gt:0',
             'start_datetime'    => 'required',
             'end_datetime'    => 'required',
             'timezone'    => 'required',
-            'quantity'    => 'required|integer',
+            'quantity'    => 'required|integer|gt:0',
         ];
 
         $validator = \Validator::make($request->all(), $rules);
 
+        $voucherDetail = Voucher::find($id);
+
         if ($validator->fails())
             return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
-        $voucherDetail = Voucher::find($id);
-        $voucherDetail->voucher_name = $request->voucher_name;
+            if($request->users != ''){
+
+                $users_array =  explode(',',$request->users);
+                $image_url = [
+                    'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
+                ];
+
+                if(count($users_array) > 0){  
+
+                    foreach($users_array as $key => $value){
+                        $user_check  = DB::table('vouchers')->where('users','like',"%$value%")->where('id',$id)->count();
+                        
+                        if($user_check == 0){
+                           
+                            $user_data = DB::table('accounts')->select('name','email')->where('id',$value)->first();
+
+                            if(!empty($user_data)){
+
+                                $data['name'] = $user_data->name;
+                                $data['points'] = $request->voucher_points;
+                                $data['code'] = $voucherDetail->voucher_name;
+        
+                                Mail::send('emails.VoucherMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($user_data) {
+                                    $m->from('noreply@meritincentives.com','Takreem');
+                                    $m->to($user_data->email)->subject("Voucher Points Earned");
+                                });
+
+                            }
+
+                        }
+                    }
+                }
+            }
+        
+
+        
         $voucherDetail->voucher_points    = $request->voucher_points;
         $voucherDetail->start_datetime    = $request->start_datetime;
         $voucherDetail->end_datetime    = $request->end_datetime;
         $voucherDetail->timezone    = $request->timezone;
         $voucherDetail->quantity    = $request->quantity;
+        $voucherDetail->users    = $request->users;
         $voucherDetail->description    = ($request->description && $request->description != '')?$request->description:null;
         $voucherDetail->save();
         return fractal($voucherDetail, new VouchersTransformer());
@@ -234,12 +296,16 @@ class ProgramController extends Controller
 
         $timestamp = \Carbon\Carbon::parse($input['local_time'])->timestamp;
         $voucher_use = Voucher::where('voucher_name',$input["voucher"])->first();
+        
         if($voucher_use) {
+            if($voucher_use->status == 0){
+                return response()->json(['status' => false, 'message'=>'Currently voucher is not available.']);
+            }
             $voucherStartStamp = \Carbon\Carbon::parse($voucher_use->start_datetime)->timestamp;
             $voucherEndStamp = \Carbon\Carbon::parse($voucher_use->end_datetime)->timestamp;
             if($timestamp >= $voucherStartStamp && $timestamp <= $voucherEndStamp) {
                 if($voucher_use->quantity == $voucher_use->used_count) {
-                    return response()->json(['status' => true, 'message'=>'Voucher not available']);
+                    return response()->json(['status' => false, 'message'=>'Voucher not available']);
                 } /*else if($voucher_use->timezone != $input['timezone']) {
                     return response()->json(['status' => true, 'message'=>'Voucher not available in your locale.']);
                 }*/ else {
@@ -248,16 +314,16 @@ class ProgramController extends Controller
                     $check = UserVouchers::where('voucher_id', $voucher_use->id)->where('account_id', $input['account_id'])->first();
 
                     if($check) {
-                        return response()->json(['status' => true, 'message'=>'Voucher already used']);
+                        return response()->json(['status' => false, 'message'=>'Voucher already used']);
                     } else {
                         UserVouchers::create([
-                            'account_id'    => $input['account_id'],
+                            'account_id'    => $account_id,
                             'voucher_id'    => $voucher_use->id,
                             'voucher_points'    => $voucher_use->voucher_points,
                             'timezone'    => $voucher_use->timezone
                         ]);
 
-                        $points = UsersPoint::where('user_id', $input['user_id'])->orderBy('id', 'desc')->first();
+                        $points = UsersPoint::where('user_id', $user_id)->orderBy('id', 'desc')->first();
 
                         if($points) {
                             $newPointBalance = $points->balance + $voucher_use->voucher_points;
@@ -266,11 +332,11 @@ class ProgramController extends Controller
                         }
 
                         UsersPoint::create([
-                            'user_id'    => $input['user_id'],
+                            'user_id'    => $user_id,
                             'value'    => $voucher_use->voucher_points,
                             'transaction_type_id'    => 5,
                             'balance'    => $newPointBalance,
-                            'created_by_id' => $input['account_id']
+                            'created_by_id' => $account_id
                         ]);
 
                         $voucherDetail = Voucher::find($voucher_use->id);
@@ -281,11 +347,14 @@ class ProgramController extends Controller
                         return response()->json(['status' => true, 'message'=>'Voucher applied']);
                     }
                 }
-            } else {
-                return response()->json(['status' => true, 'message'=>'Voucher expired']);
+            }else if($timestamp >= $voucherStartStamp){
+                return response()->json(['status' => false, 'message'=>'Voucher expired']);
+            }
+             else {
+                return response()->json(['status' => false, 'message'=>'Voucher is not in use yet.']);
             }
         } else {
-            return response()->json(['status' => false, 'message'=>'Voucher Not Found.']);
+            return response()->json(['status' => false, 'message'=>'Voucher not found.']);
         }
     }
 
@@ -521,6 +590,14 @@ class ProgramController extends Controller
         }
         return response()->json(['message'=>"This card doesn't exist", 'status'=>'error']);
 
+    }
+
+
+    public function getUserList(){
+
+      $user_data =   DB::table('accounts')->select('id','name','email')->get()->toArray();
+      
+      return response()->json(['status' => 'success', 'message' => 'User list get successfully', 'data' => $user_data],200);
     }
 
 }

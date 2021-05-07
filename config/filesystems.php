@@ -55,6 +55,13 @@ return [
             'visibility' => 'public',
         ],
 
+        'real_public' => [
+            'driver' => 'local',
+            'root' => public_path(),
+            'url' => env('APP_URL'),
+            'visibility' => 'public',
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -63,6 +70,12 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'),
         ],
+		'real_public' => [
+			'driver' => 'local',
+			'root' => public_path(),
+			'url' => env('APP_URL'),
+			'visibility' => 'public',
+		],
 
     ],
 
