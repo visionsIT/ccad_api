@@ -66,3 +66,5 @@ Route::get('get_no_imgs_product', 'ImportsController@getProductImage');
 
 Route::get('denominationCountries', 'ProductOrderController@denominationCountries');
 Route::get('denominationMultipleCountries', 'ProductOrderController@denominationMultipleCountries');
+
+Route::get('mappProductOrderData', 'ProductOrderController@mappProductOrderData');

@@ -156,7 +156,8 @@ class ProductController extends Controller
         $_SESSION['minValue'] = $minValue;
         $_SESSION['maxValue'] = $maxvalue;
 
-        $denominationsList = ProductDenomination::select('product_id')->whereRaw('CAST(points AS DECIMAL(10,2)) >= ' . $minValue)->whereRaw('CAST(points AS DECIMAL(10,2)) <= ' . $maxvalue)->groupBy('product_id')->get()->all();
+        //$denominationsList = ProductDenomination::select('product_id')->whereRaw('CAST(points AS DECIMAL(10,2)) >= ' . $minValue)->whereRaw('CAST(points AS DECIMAL(10,2)) <= ' . $maxvalue)->groupBy('product_id')->get()->all();
+        $denominationsList = ProductDenomination::select('product_id')->whereRaw('CAST(value AS DECIMAL(10,2)) >= ' . $minValue)->whereRaw('CAST(value AS DECIMAL(10,2)) <= ' . $maxvalue)->groupBy('product_id')->get()->all();
 
         $productIds = [];
         foreach($denominationsList as $deno){
@@ -376,26 +377,36 @@ class ProductController extends Controller
                             'product_id'    => $id,
                             'country_id'    => $countyid,
                         ]);
-
+						/*
                         $defaultCurrency = PointRateSettings::select('points')->where('country_id','=',$countyid)->first();
                         if(empty($defaultCurrency)){
                             $getCurrencyPoints = '10';
                         }else{
                             $getCurrencyPoints = $defaultCurrency->points;
                         }
-
+						
                         foreach($denomi as $denoValue){
 
                             ProductDenomination::create([
                                     'value' => $denoValue,
-                                    'points' => (((float)$denoValue)*((float)$getCurrencyPoints)),
-                                    'country_id' => $countyid,
+                                    //'points' => (((float)$denoValue)*((float)$getCurrencyPoints)),
+                                    //'country_id' => $countyid,
                                     'product_id' => $id,
                                 ]);
                         }
-
+						*/
                     }
                 }
+				
+				if(!empty($denomi))
+				{
+					foreach($denomi as $denoValue){
+						ProductDenomination::create([
+							'value' => $denoValue,
+							'product_id' => $id,
+						]);
+                    }
+				}	
 
                 $str = "Product has been updated successfully.";
 
@@ -406,18 +417,18 @@ class ProductController extends Controller
                     ->update(['currency_id' => $request->currency_id]);*/
                 $denomi = explode(',', $request->denominations);
                 
-
                 /*** Add country ID[Multiple] ****/
                 
                 $country_id = explode(',', $request->country_id);
+				
+				
                 if(!empty($country_id)){
                     foreach($country_id as $countyid){
-                       
                         ProductsCountries::create([
                             'product_id'    => $product->id,
                             'country_id'    => $countyid,
                         ]);
-
+						/*
                         $defaultCurrency = PointRateSettings::select('points')->where('country_id','=',$countyid)->first();
                         if(empty($defaultCurrency)){
                             $getCurrencyPoints = '10';
@@ -433,9 +444,20 @@ class ProductController extends Controller
                                 'country_id' => $countyid,
                             ]);
                         }
+						*/
                     }
                 }
                 
+				if(!empty($denomi))
+				{
+					foreach($denomi as $denoValue){
+						ProductDenomination::updateOrCreate([
+							'value' => $denoValue,
+							'product_id' => $product->id,
+						]);
+					}
+				}
+						
                 $str = "Product has been added successfully.";
             }
             return response()->json([ 'message' => $str ]);

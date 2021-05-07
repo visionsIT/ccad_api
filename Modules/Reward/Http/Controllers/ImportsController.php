@@ -162,7 +162,7 @@ class ImportsController extends Controller
 							'product_id' => $addedProduct->id,
 							'country_id' => $countryValue,
 						]);
-						
+						/*
 						$defaultCurrency = PointRateSettings::select('points')->where('country_id','=',$countryValue)->first();
 						if(empty($defaultCurrency)){
 							$getCurrencyPoints = '10';
@@ -181,8 +181,19 @@ class ImportsController extends Controller
 								]);
 							}
 						}
+						*/
                     }
                 }
+				
+				if($product[5]!=""){
+					$denomi = explode(',', $product[5]);
+					foreach($denomi as $denoValue){
+						ProductDenomination::create([
+							'value' => $denoValue,
+							'product_id' => $addedProduct->id,
+						]);
+					}
+				}
 				
             }
             return response()->json([

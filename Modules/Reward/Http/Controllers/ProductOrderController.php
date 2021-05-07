@@ -453,7 +453,7 @@ class ProductOrderController extends Controller
 		
 		//echo '<pre>'; print_r($d); die;
     }
-		
+			
 	public function denominationCountries()
     {
 		$d = array();
@@ -489,4 +489,39 @@ class ProductOrderController extends Controller
 		//echo '<pre>'; print_r($d); die;
     }
 	
+	public function mappProductOrderData()
+    {
+		$productData = ProductOrder::all();
+		//echo '<pre>'; print_r($productData->toArray()); die;
+		if(!empty($productData))
+		{
+			foreach($productData as $prod)
+			{
+				$UserData = DB::Table('program_users')->select('country_id')->where('account_id','=',$prod->account_id)->get()->first();
+				$UserCountryID = (!empty($UserData) && isset($UserData->country_id) && !empty($UserData->country_id)) ? $UserData->country_id : false;
+				
+				//echo $prod->account_id ."   ======  ". $UserCountryID."<br>";
+				
+				$DenoData = DB::Table('product_denominations')->select('value')->where('id','=',$prod->denomination_id)->get()->first();
+				$DenoValue = (!empty($DenoData) && isset($DenoData->value) && !empty($DenoData->value)) ? $DenoData->value : false;
+				
+				$perUnitValue = 0;
+				if(!empty($prod->value) && !empty($prod->quantity))
+					$perUnitValue = $prod->value / $prod->quantity;
+				
+				$rate = 0;	
+				if(!empty($perUnitValue) && !empty($DenoValue))
+					$rate = round($perUnitValue / $DenoValue,2);
+					
+				$array = array();
+				$array['country_id'] = $UserCountryID;
+				$array['conversion_rate'] = $rate;
+				
+				ProductOrder::where(array('id' => $prod->id))->update($array);
+			}
+			
+			echo 'done';
+		}
+    }		
+
 }

@@ -67,7 +67,8 @@ class RewardsExports implements FromCollection, WithHeadings
 
                         #get_one_country_because_for_all_countries_same_denominations_Added
                         $getCountriesFirst = DB::table('products_countries')->select('country_id')->where('product_id', $value->id)->first();
-                        $getDenominations = DB::table('product_denominations')->select('value')->where(['product_id'=>$value->id,'country_id'=>$getCountriesFirst->country_id])->get();
+                        //$getDenominations = DB::table('product_denominations')->select('value')->where(['product_id'=>$value->id,'country_id'=>$getCountriesFirst->country_id])->get();
+                        $getDenominations = DB::table('product_denominations')->select('value')->where(['product_id'=>$value->id])->orderBy(DB::raw("value+0"), 'ASC')->groupby('value')->get();
                         $denominationList = '';
                         if(count($getDenominations)>0){
                             foreach ($getDenominations as $keyd => $valued) {
