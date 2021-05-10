@@ -142,4 +142,47 @@ class PermissionController extends Controller
             return response()->json(['status' => false, 'message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
         }
     }
+
+    public function fetchReportsAccess() {
+        try {
+
+            $response = response()->json(['status' => false, 'message' => 'no data found', 'data' => []]);
+
+            $reports = DB::table('permissions')
+            ->where('name', 'reports_emp_access')
+            ->orWhere('name', 'reports_l1_access')
+            ->orWhere('name', 'reports_l2_access')
+            ->get();
+
+            if ($reports && count($$reports->toArray()) > 0) {
+                $response = response()->json(['status' => true, 'message' => 'settings data', 'data' => $reports->toArray()]);
+            }
+
+            return $response;
+        } catch (\Throwable $th) {
+            return response()->json(['status' => false, 'message' => 'Something went wrong! Please try again.', 'errors' => $th->getMessage(), 'line' => $th->getLine()], 402);
+        }
+    }
+
+    public function reportsAccessUpdates(Request $request) {
+        try {
+            $input =  $request->all();
+            $rules = [
+                'name' => 'required',
+                'status' => 'required|integer',
+            ];
+            $validator = \Validator::make($request->all(), $rules);
+            if ($validator->fails())
+                return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+            DB::table('permissions')
+            ->where('name', $request->name)
+            ->update(['status' => $request->status]);
+
+            return response()->json(['status' => true, 'message' => 'Setting has been updated successfully.']);
+
+        } catch (\Throwable $th) {
+            return response()->json(['status' => false, 'message' => 'Something went wrong! Please try again.', 'errors' => $th->getMessage(), 'line' => $th->getLine()], 402);
+        }
+    }
 }

@@ -158,10 +158,11 @@ class ProgramController extends Controller
                     $data['name'] = $value->name;
                     $data['points'] = $request->voucher_points;
                     $data['code'] = $request->voucher_name;
+                    $data['end_datetime'] = $request->end_datetime;
 
                     Mail::send('emails.VoucherMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($value) {
-                        $m->from('noreply@meritincentives.com','Takreem');
-                        $m->to($value->email)->subject("Voucher Points Earned");
+                        $m->from('info@meriteincentives.com','Takreem');
+                        $m->to($value->email)->subject("Takreem - You have received an Instant Points Voucher!");
                     });
                 }
             }
@@ -252,10 +253,11 @@ class ProgramController extends Controller
                                 $data['name'] = $user_data->name;
                                 $data['points'] = $request->voucher_points;
                                 $data['code'] = $voucherDetail->voucher_name;
+                                $data['end_datetime'] = $request->end_datetime;
         
                                 Mail::send('emails.VoucherMail', ['data' => $data, 'image_url'=>$image_url], function ($m) use($user_data) {
-                                    $m->from('noreply@meritincentives.com','Takreem');
-                                    $m->to($user_data->email)->subject("Voucher Points Earned");
+                                    $m->from('info@meriteincentives.com','Takreem');
+                                    $m->to($user_data->email)->subject("Takreem - You have received an Instant Points Voucher!");
                                 });
 
                             }
@@ -311,7 +313,7 @@ class ProgramController extends Controller
                 }*/ else {
                     $account_id = Helper::customDecrypt($input['account_id']);
                     $user_id = Helper::customDecrypt($input['user_id']);
-                    $check = UserVouchers::where('voucher_id', $voucher_use->id)->where('account_id', $input['account_id'])->first();
+                    $check = UserVouchers::where('voucher_id', $voucher_use->id)->where('account_id', $account_id)->first();
 
                     if($check) {
                         return response()->json(['status' => false, 'message'=>'Voucher already used']);

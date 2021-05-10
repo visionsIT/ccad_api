@@ -127,21 +127,16 @@ class ImportsController extends Controller
                     'brand_id' => $brand->id,
                     'currency_id' => $product[14],
                 ]);
-				
-				// for single country
-				/*
                 ProductsCountries::create([
                     'product_id' => $addedProduct->id,
                     'country_id' => $product[13],
                 ]);
-				
                 $defaultCurrency = PointRateSettings::select('points')->where('currency_id','=',$product[14])->first();
                 if(empty($defaultCurrency)){
                     $getCurrencyPoints = '10';
                 }else{
                     $getCurrencyPoints = $defaultCurrency->points;
                 }
-								
                 if($product[5]!=""){
                     $denomi = explode(',', $product[5]);
                     foreach($denomi as $denoValue){
@@ -152,49 +147,6 @@ class ImportsController extends Controller
                         ]);
                     }
                 }
-				*/
-				
-				// for multiple country
-				if($product[13]!=""){
-                    $countriesArray = explode(',', $product[13]);
-                    foreach($countriesArray as $countryValue){
-                        ProductsCountries::create([
-							'product_id' => $addedProduct->id,
-							'country_id' => $countryValue,
-						]);
-						/*
-						$defaultCurrency = PointRateSettings::select('points')->where('country_id','=',$countryValue)->first();
-						if(empty($defaultCurrency)){
-							$getCurrencyPoints = '10';
-						}else{
-							$getCurrencyPoints = $defaultCurrency->points;
-						}
-				
-						if($product[5]!=""){
-							$denomi = explode(',', $product[5]);
-							foreach($denomi as $denoValue){
-								ProductDenomination::create([
-									'value' => $denoValue,
-									'points' => ((float)$denoValue*(float)$getCurrencyPoints),
-									'product_id' => $addedProduct->id,
-									'country_id' => $countryValue,
-								]);
-							}
-						}
-						*/
-                    }
-                }
-				
-				if($product[5]!=""){
-					$denomi = explode(',', $product[5]);
-					foreach($denomi as $denoValue){
-						ProductDenomination::create([
-							'value' => $denoValue,
-							'product_id' => $addedProduct->id,
-						]);
-					}
-				}
-				
             }
             return response()->json([
                 'uploaded_file' => url('uploaded/product_import_file/'.$uploaded->getFilename()),

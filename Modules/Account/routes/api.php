@@ -25,6 +25,8 @@ Route::get('get/permissions/claim_award_permission', 'PermissionController@getPe
 Route::post('permissions/change_claimAward_permission', 'PermissionController@updateClaimAwardPermisssion');
 Route::post('permissions/update_campaign_msg', 'RoleController@updateCampaignMessage');
 Route::post('permissions/global_birthday_campaign_permission', 'PermissionController@changeBirthdayPermissionsGlobal');
+Route::get('reportsAccessible', 'AccountController@fetchReportsAccess');
+Route::post('reportsAccessUpdate', 'AccountController@reportsAccessUpdates');
 
 Route::post('change_ecards_permission', 'PermissionController@ecardPermission');
 Route::post('change_permission_status', 'PermissionController@changePermissionStatus');

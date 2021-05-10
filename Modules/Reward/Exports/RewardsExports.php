@@ -51,24 +51,7 @@ class RewardsExports implements FromCollection, WithHeadings
                 //echo "<pre>"; print_r($getRewardsList); die;
                 if(count($getRewardsList)>0){
                     foreach ($getRewardsList as $key => $value) {
-
-                        $getCountries = DB::table('products_countries')->select('country_id','countries.name')->join('countries','countries.id','products_countries.country_id')->where('product_id', $value->id)->get();
-                        $countries = '';
-                        if(count($getCountries)>0){
-                            foreach ($getCountries as $key_coun => $value_con) {
-                                if($countries == ''){
-                                    $countries = $value_con->name;
-                                } else {
-                                    $countries = $countries.', '.$value_con->name;
-                                }
-                            }
-                        }
-                        $getRewardsList[$key]->country = $countries;
-
-                        #get_one_country_because_for_all_countries_same_denominations_Added
-                        $getCountriesFirst = DB::table('products_countries')->select('country_id')->where('product_id', $value->id)->first();
-                        //$getDenominations = DB::table('product_denominations')->select('value')->where(['product_id'=>$value->id,'country_id'=>$getCountriesFirst->country_id])->get();
-                        $getDenominations = DB::table('product_denominations')->select('value')->where(['product_id'=>$value->id])->orderBy(DB::raw("value+0"), 'ASC')->groupby('value')->get();
+                        $getDenominations = DB::table('product_denominations')->select('value')->where('product_id', $value->id)->get();
                         $denominationList = '';
                         if(count($getDenominations)>0){
                             foreach ($getDenominations as $keyd => $valued) {
@@ -79,8 +62,7 @@ class RewardsExports implements FromCollection, WithHeadings
                                 }
                             }
                         }
-                        $getRewardsList[$key]->denominations = $denominationList;                    
-                    }
+                        $getRewardsList[$key]->denominations = $denominationList;                    }
                 }
             return $getRewardsList;
         }
@@ -91,6 +73,6 @@ class RewardsExports implements FromCollection, WithHeadings
      */
     public function headings(): array
     {
-        return ['#', 'Name', 'Image', 'SKU', 'Type', 'Validity', 'Description', 'Terms & Condition',  'Brand',  'Category',  'Sub Category', 'Status', 'Country', 'Denominations',];
+        return ['#', 'Name', 'Image', 'SKU', 'Type', 'Validity', 'Description', 'Terms & Condition',  'Brand',  'Category',  'Sub Category', 'Status', 'Denominations',];
     }
 }

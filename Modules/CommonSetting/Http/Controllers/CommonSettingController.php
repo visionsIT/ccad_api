@@ -27,7 +27,7 @@ class CommonSettingController extends Controller
 {
     public function __construct(CommonSettingsRepository $common_repository,CommonService $common_service)
     {
-        //$this->middleware('auth:api', ['except' => ['loginVisit']]);
+        $this->middleware('auth:api', ['except' => ['loginVisit']]);
         $this->common_service = $common_service;
         $this->common_repository = $common_repository;
     }
@@ -79,7 +79,7 @@ class CommonSettingController extends Controller
 
     public function getCurrencies(){
         try{
-            $currency_list = DB::table('countries')->select('id','currency_name as name','currency_code as code')->get();
+            $currency_list = Currency::all();
             if($currency_list){
                 return response()->json(['data'=>$currency_list, 'message'=>'Get List Successfully.', 'status'=>'success']);exit;
             }else{
@@ -102,7 +102,7 @@ class CommonSettingController extends Controller
             if($id != null){
 
                 $rules = [
-                    'country_id' => 'required|integer|exists:countries,id',
+                    'currency_id' => 'required|integer|exists:currencies,id',
                     'points' => 'required|numeric||min:1',
                 ];
 
@@ -118,16 +118,16 @@ class CommonSettingController extends Controller
                     $update_array =  array('points'=>$newPoints);
                 }
 
-                $update = PointRateSettings::where(['id'=>$id,'country_id'=>$request->country_id])->update($update_array);
+                $update = PointRateSettings::where(['id'=>$id,'currency_id'=>$request->currency_id])->update($update_array);
 
                 if($update){
-                   // $check_products = Product::where('country_id',$request->currency_id)->get();
-                    $country = $request->country_id;
-                    DB::transaction(function ()  use ($newPoints,$country){
-                       // if(!empty($check_products)){
-                            //foreach($check_products as $key=>$val){
+                    $check_products = Product::where('currency_id',$request->currency_id)->get();
+
+                    DB::transaction(function ()  use ($check_products,$newPoints){
+                        if(!empty($check_products)){
+                            foreach($check_products as $key=>$val){
                                 #update_product_denomination
-                                $get_product_denomi = ProductDenomination::where('country_id',$country)->get();
+                                $get_product_denomi = ProductDenomination::where('product_id',$val->id)->get();
                                 if(!empty($get_product_denomi)){
                                     foreach($get_product_denomi as $key1=>$val1){
                                         $get_denomi_val = ProductDenomination::where('id',$val1->id)->first();
@@ -138,8 +138,8 @@ class CommonSettingController extends Controller
                                         }
                                     }
                                 }
-                            /////}
-                        ///}
+                            }
+                        }
                     });
                     DB::commit();
 
@@ -150,7 +150,7 @@ class CommonSettingController extends Controller
             }else{
 
                 $rules = [
-                    'country_id' => 'required|unique:point_rate_settings,country_id|integer|exists:countries,id',
+                    'currency_id' => 'required|unique:point_rate_settings,currency_id|integer|exists:currencies,id',
                     'points' => 'required|numeric||min:1',
                 ];
 
@@ -160,7 +160,7 @@ class CommonSettingController extends Controller
                     return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
                 $PointRateSettings = new PointRateSettings;
-                $PointRateSettings->country_id = $request->country_id;
+                $PointRateSettings->currency_id = $request->currency_id;
                 $PointRateSettings->points = $request->points;
                 if(isset($request->status) && $request->status != ''){
                     $PointRateSettings->status = $request->status;
@@ -183,7 +183,7 @@ class CommonSettingController extends Controller
     **************************/
     public function getCurrenciesPoints(){
         try{
-            $currency_pts_list = PointRateSettings::with(['country'])->get();
+            $currency_pts_list = PointRateSettings::with(['currency'])->get();
             if($currency_pts_list){
                 return response()->json(['data'=>$currency_pts_list, 'message'=>'Get List successfully.', 'status'=>'success']);exit;
             }else{
@@ -223,7 +223,7 @@ class CommonSettingController extends Controller
     public function getCurrenciesCalculations(Request $request){
 
         $rules = [
-            'country_id' => 'required|integer|exists:point_rate_settings,country_id',
+            'currency_id' => 'required|integer|exists:point_rate_settings,currency_id',
             'amount' => 'required|numeric',
         ];
 
@@ -233,7 +233,7 @@ class CommonSettingController extends Controller
             return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
         try{
-            $get_currency_point = PointRateSettings::select('points','status')->where('country_id','=',$request->country_id)->first();
+            $get_currency_point = PointRateSettings::select('points','status')->where('currency_id','=',$request->currency_id)->first();
 
             if(!empty($get_currency_point) && $get_currency_point->status == '1'){
                 $points = $get_currency_point->points;
@@ -256,7 +256,7 @@ class CommonSettingController extends Controller
     ***************************/
     public function makeDefaultCurrency(Request $request){
         $rules = [
-            'country_id' => 'required|integer|exists:point_rate_settings,country_id',
+            'currency_id' => 'required|integer|exists:point_rate_settings,currency_id',
         ];
 
         $validator = \Validator::make($request->all(), $rules);
@@ -268,10 +268,10 @@ class CommonSettingController extends Controller
 
             PointRateSettings::where('default_currency','=','1')->update(['default_currency'=>'0']);
 
-            $check_status = PointRateSettings::select('status')->where('country_id','=',$request->country_id)->first();
+            $check_status = PointRateSettings::select('status')->where('currency_id','=',$request->currency_id)->first();
 
             if($check_status->status == '1'){
-                PointRateSettings::where('country_id','=',$request->country_id)->update(['default_currency'=>'1']);
+                PointRateSettings::where('currency_id','=',$request->currency_id)->update(['default_currency'=>'1']);
 
                 return response()->json(['message'=>'Default Currency Set Successfully.', 'status'=>'success']);exit;
             }else{
@@ -1300,9 +1300,9 @@ class CommonSettingController extends Controller
                         else{
                             $percent = round($value1["total_points"]*100/$value["all_points"],2);
                         }
-                        $country_id = '228';
+                        $currency_id = '1';
                         $currency_code = 'AED';
-                        $currency_points = $this->common_repository->getAccountCurrencyPoints($country_id);
+                        $currency_points = $this->common_repository->getAccountCurrencyPoints($currency_id);
                         $data = $currency_code." ".round((float)$value1["total_points"]/ (float)$currency_points,2);
                         $from = date_create($request->from);
                         $to = date_create($request->to);
