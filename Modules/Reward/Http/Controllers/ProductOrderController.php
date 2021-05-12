@@ -22,6 +22,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
 use Modules\User\Models\UsersPoint;
 use Helper;
+use DB;
 
 class ProductOrderController extends Controller
 {
@@ -111,20 +112,31 @@ class ProductOrderController extends Controller
      */
     public function store(Request $request)
     {   
+        
         try{
             $accountID = Helper::customDecrypt($request->account_id);
             $productID = Helper::customDecrypt($request->product_id);
             $denominationID = Helper::customDecrypt($request->value);
-            $get_points = ProductDenomination::select('points')->where('id',$denominationID)->first();
+            $conversion_rate = Helper::customDecrypt($request->conversion_rate);
+            /*$accountID =$request->account_id;
+            $productID = $request->product_id;
+            $denominationID = $request->value;
+            $conversion_rate = $request->conversion_rate;*/
+            $country_id = $request->country_id;
+            $get_points = ProductDenomination::select('value')->where('id',$denominationID)->first();
+            $conversion_rate_final = $conversion_rate * $get_points->value;
             $request['account_id'] = $accountID;
             $request['product_id'] = $productID;
-            $request['value'] = $get_points->points;
+            $request['value'] = $conversion_rate_final;
             $request['denomination_id'] = $denominationID;
+            $request['conversion_rate'] = $conversion_rate_final;
+            $request['country_id'] = $country_id;
 
             $rules = [
                 'value'      => 'required|numeric',
                 'account_id' => 'required|exists:accounts,id',
                 'product_id' => 'required|exists:products,id',
+                'country_id' => 'required|exists:countries,id',
                 'first_name' => 'required',
                 'last_name'  => 'required',
                 'email'      => 'required|email',
@@ -134,6 +146,7 @@ class ProductOrderController extends Controller
                 'country'    => 'required',
                 'is_gift'    => 'required|bool',
                 'quantity'   => 'required',
+                'conversion_rate'   => 'required',
                 'denomination_id'   => 'required|exists:product_denominations,id',
             ];
             $validator = \Validator::make($request->all(), $rules);
@@ -144,7 +157,7 @@ class ProductOrderController extends Controller
             $user = ProgramUsers::where('account_id', $request->account_id)->first();
 
             
-            $request['value'] = $get_points->points * $request->quantity;
+            $request['value'] = $conversion_rate_final * $request->quantity;
             
             $current_budget_bal = UsersPoint::select('balance')->where('user_id',$user->id)->latest()->first();
             if($current_budget_bal->balance < $request->value) {
@@ -153,10 +166,10 @@ class ProductOrderController extends Controller
 
             $Category = $this->repository->create($request->all());
 
-    //        //todo fix this later
-    //        $user_points = UsersPoint::where([ 'user_id' => $user->id, 'value' => $current ])->first();
-    //
-    //        $user_points->update([ 'value' => $new ]);
+            //        //todo fix this later
+            //        $user_points = UsersPoint::where([ 'user_id' => $user->id, 'value' => $current ])->first();
+            //
+            //        $user_points->update([ 'value' => $new ]);
 
             $data['value']       = $request->value;
             $data['description'] = '';
@@ -367,4 +380,160 @@ class ProductOrderController extends Controller
 
 	/***********End Order Detail Export************/
 	
+	public function denominationMultipleCountries()
+    {
+		$d = array();
+		$ProductsCountries = DB::Table('products_countries')
+								->where('country_id','!=',0)
+								->groupBy('product_id')
+								->get([DB::raw('count(id) as total_rows'),'product_id','country_id'])
+								->toArray();
+								
+		//echo '<pre>'; print_r($ProductsCountries); die;
+		//echo '<pre>';
+		if(!empty($ProductsCountries))
+		{
+			$i = 0;
+			foreach($ProductsCountries as $Country)
+			{
+				ini_set('max_execution_time', -1);
+				
+				$product_id 	=  $Country->product_id;
+				$country_id 	=  $Country->country_id;
+				$total_rows 	=  $Country->total_rows;
+				if(!empty($product_id) && !empty($country_id))
+				{
+					if($total_rows != 1)
+					{
+						$denomiData = DB::Table('product_denominations')
+								->where('country_id',$country_id)
+								->where('product_id',$product_id)
+								->whereNull('deleted_at')
+								->get()
+								->toArray();
+						//echo '<pre>'; print_r($denomiData); die;		
+						
+						$data = DB::Table('products_countries')
+								->where('country_id','!=',0)
+								->where('product_id',$product_id)
+								->get()
+								->toArray();
+						//echo '<pre>'; print_r($data); die;
+								
+						if(!empty($data))
+						{
+							foreach($data as $row)
+							{
+								$check = DB::Table('product_denominations')
+										->where('country_id',$row->country_id)
+										->where('product_id',$row->product_id)
+										->whereNull('deleted_at')
+										->exists();
+								if(!$check)
+								{
+									$defaultCurrency = DB::Table('point_rate_settings')->select('points')->where('country_id','=',$row->country_id)->get()->first();
+									if(empty($defaultCurrency)){
+										$getCurrencyPoints = '10';
+									}else{
+										$getCurrencyPoints = $defaultCurrency->points;
+									}
+									//echo '<pre>'; print_r($denomiData); die;
+									
+									if(!empty($denomiData))
+									{
+										foreach($denomiData as $deno)
+										{
+											$array = array();
+											$array['value'] = $deno->value;
+											$array['points'] = $deno->value * $getCurrencyPoints;
+											$array['product_id'] = $row->product_id;
+											$array['country_id'] = $row->country_id;
+											//echo '<pre>'; print_r($array); die; 
+											
+											ProductDenomination::create($array);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				$i++;
+			}
+		}
+		
+		//echo '<pre>'; print_r($d); die;
+    }
+			
+	public function denominationCountries()
+    {
+		$d = array();
+		$ProductsCountries = DB::Table('products_countries')
+								->where('country_id','!=',0)
+								->groupBy('product_id')
+								->get([DB::raw('count(id) as total_rows'),'product_id','country_id'])
+								->toArray();
+								
+		//echo '<pre>'; print_r($ProductsCountries); die;
+		if(!empty($ProductsCountries))
+		{
+			$i = 0;
+			foreach($ProductsCountries as $Country)
+			{
+				ini_set('max_execution_time', -1);
+				
+				$product_id 	=  $Country->product_id;
+				$country_id 	=  $Country->country_id;
+				$total_rows 	=  $Country->total_rows;
+				if(!empty($product_id) && !empty($country_id))
+				{
+					//if($total_rows == 1)
+						DB::Table('product_denominations')->where(array( 'product_id' => $product_id))->update(array( 'country_id' => $country_id));
+					//else
+					//	$d[] = $Country->product_id;
+				}
+
+				$i++;
+			}
+		}
+		
+		//echo '<pre>'; print_r($d); die;
+    }
+	
+	public function mappProductOrderData()
+    {
+		$productData = ProductOrder::all();
+		//echo '<pre>'; print_r($productData->toArray()); die;
+		if(!empty($productData))
+		{
+			foreach($productData as $prod)
+			{
+				$UserData = DB::Table('program_users')->select('country_id')->where('account_id','=',$prod->account_id)->get()->first();
+				$UserCountryID = (!empty($UserData) && isset($UserData->country_id) && !empty($UserData->country_id)) ? $UserData->country_id : false;
+				
+				//echo $prod->account_id ."   ======  ". $UserCountryID."<br>";
+				
+				$DenoData = DB::Table('product_denominations')->select('value')->where('id','=',$prod->denomination_id)->get()->first();
+				$DenoValue = (!empty($DenoData) && isset($DenoData->value) && !empty($DenoData->value)) ? $DenoData->value : false;
+				
+				$perUnitValue = 0;
+				if(!empty($prod->value) && !empty($prod->quantity))
+					$perUnitValue = $prod->value / $prod->quantity;
+				
+				$rate = 0;	
+				if(!empty($perUnitValue) && !empty($DenoValue))
+					$rate = round($perUnitValue / $DenoValue,2);
+					
+				$array = array();
+				$array['country_id'] = $UserCountryID;
+				$array['conversion_rate'] = $rate;
+				
+				ProductOrder::where(array('id' => $prod->id))->update($array);
+			}
+			
+			echo 'done';
+		}
+    }		
+
 }

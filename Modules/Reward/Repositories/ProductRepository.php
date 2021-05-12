@@ -39,13 +39,15 @@ class ProductRepository extends Repository
     {
 
 
-        $query = $this->modeler->select('products.*', 'products_countries.id as p_countryId')->join('products_countries', 'products_countries.product_id', '=', 'products.id');
+        $query = $this->modeler->select('products.*', 'products_countries.id as p_countryId')->leftJoin('products_countries', 'products_countries.product_id', '=', 'products.id');
 
         //$query = $this->modeler->where("name", 'like', '%'.$keyword.'%');
         $query->where("products.name", 'like', '%'.$keyword.'%');
 
         if($country_id){
-            $query->where("products_countries.country_id", $country_id);
+            $query->where(function($q) use ($country_id){
+                $q->where("products_countries.country_id", $country_id)->orWhere("products.catalog_id",16);
+            });
         }
        
         if ($categoryId > 0) {

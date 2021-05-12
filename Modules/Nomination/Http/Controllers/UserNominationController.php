@@ -2756,16 +2756,20 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         }
                     }
 
+
                 }
 
-                $totalAwardedPoints = array_sum($points_approved);
-                $conversionData = PointRateSettings::where(['currency_id'=>1])->get()->first();
-                $conversion_rate = $conversionData->points;
-                if($totalAwardedPoints != 0){
-                    $total_cost = $totalAwardedPoints/$conversion_rate;
-                }else{
-                    $total_cost = 0;
-                }
+                    $totalAwardedPoints = array_sum($points_approved);
+                    $conversionData = PointRateSettings::where(['country_id'=>228])->get()->first();
+                    $conversion_rate = $conversionData->points;
+                    if($totalAwardedPoints != 0){
+                        $total_cost = $totalAwardedPoints/$conversion_rate;
+                    }else{
+                        $total_cost = 0;
+                    }
+
+
+               
 
                 $logged_Budget_data = UserCampaignsBudget::select('user_campaigns_budget.budget')
                 ->leftJoin('program_users', 'program_users.id', '=', 'user_campaigns_budget.program_user_id')

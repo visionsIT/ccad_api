@@ -45,7 +45,13 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::withTrashed()->select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+
+        if($order->country_id != Null || $order->country_id != '' || $order->country_id != 'Null'){
+            $currency = DB::table('countries')->select('currency_code as code')->where('id',$order->country_id)->first();
+        }else{
+            $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        }
+        
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 1) {
@@ -95,7 +101,11 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::withTrashed()->select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        if($order->country_id != Null || $order->country_id != '' || $order->country_id != 'Null'){
+            $currency = DB::table('countries')->select('currency_code as code')->where('id',$order->country_id)->first();
+        }else{
+            $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        }
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 2) {
@@ -147,7 +157,11 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
         $actual_val = ProductDenomination::withTrashed()->select('value')->where('id',$order->denomination_id)->first();
 
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        if($order->country_id != Null || $order->country_id != '' || $order->country_id != 'Null'){
+            $currency = DB::table('countries')->select('currency_code as code')->where('id',$order->country_id)->first();
+        }else{
+            $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        }
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status === 3 || $order->status === -1) {
@@ -240,7 +254,11 @@ class ProductOrderService
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
         $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
-        $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        if($order->country_id != Null || $order->country_id != '' || $order->country_id != 'Null'){
+            $currency = DB::table('countries')->select('currency_code as code')->where('id',$order->country_id)->first();
+        }else{
+            $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
+        }
         $value = $currency->code.' '.$actual_val->value;
 
         if ($order->status !== 1) {

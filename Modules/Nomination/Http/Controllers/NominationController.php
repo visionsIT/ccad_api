@@ -687,6 +687,7 @@ class NominationController extends Controller
             $admin_tab = 0;
             if(!empty($account)){
                 $all_campaigns = ValueSet::where('status','1')->get();
+                $reports = null;
                 if(!empty($all_campaigns)){
                     foreach($all_campaigns as $key=>$campaign){
 
@@ -697,6 +698,9 @@ class NominationController extends Controller
                             //specific_user
                             $check_role_campaign = UserCampaignRole::where(['account_id'=>$account_id,'user_role_id'=>'2','campaign_id'=>$campaign->id])->first();
                             if(!empty($check_role_campaign)){
+                                $reports = DB::table('permissions')
+                                ->where('name', 'reports_l1_access')
+                                ->first();
                                 $admin_tab = 1;
                                 $data['id'] = $campaign->id;
                                 $data['name'] = $campaign->name;
@@ -705,6 +709,9 @@ class NominationController extends Controller
                             //vp_emp_number
                             $check_vp_emp = ProgramUsers::where('vp_emp_number',$account_id)->first();
                             if(!empty($check_vp_emp)){
+                                $reports = DB::table('permissions')
+                                ->where('name', 'reports_l1_access')
+                                ->first();
                                 $admin_tab = 1;
                                 $data['id'] = $campaign->id;
                                 $data['name'] = $campaign->name;
@@ -715,6 +722,9 @@ class NominationController extends Controller
                         //if($admin_tab == 0){
                             $check_roleL2_campaign = UserCampaignRole::where(['account_id'=>$account_id,'user_role_id'=>'3','campaign_id'=>$campaign->id])->first();
                             if(!empty($check_roleL2_campaign)){
+                                $reports = DB::table('permissions')
+                                ->where('name', 'reports_l2_access')
+                                ->first();
                                 $admin_tab = 1;
                                 $data['id'] = $campaign->id;
                                 $data['name'] = $campaign->name;
@@ -727,7 +737,11 @@ class NominationController extends Controller
                         
                     }
 
-                    return response()->json(['status'=>'success','message' => 'Get data successfully.','admin_tab'=>$admin_tab,'campaigns'=>$final_arr], 200);
+                    $reportsEmpAccess = DB::table('permissions')
+                                ->where('name', 'reports_emp_access')
+                                ->first();
+
+                    return response()->json(['status'=>'success','message' => 'Get data successfully.','admin_tab'=>$admin_tab, 'manager_access_reports' => $reports, 'emp_access_reports' => $reportsEmpAccess, 'campaigns'=>$final_arr], 200);
 
                 }else{
                     return response()->json(['status'=>'error','message' => 'No campaign Focund.', 'errors' => $validator->errors()], 422);
