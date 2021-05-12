@@ -283,7 +283,7 @@ class ProductController extends Controller
                 //'term_condition' => 'required',
                 'image' => 'required|file||mimes:jpeg,png,jpg',
                 'action' => 'required',
-                //'currency_id' => 'required|integer|exists:currencies,id',
+                'currency_id' => 'required|integer|exists:currencies,id',
                 
             ];
 
@@ -335,6 +335,13 @@ class ProductController extends Controller
                 'brand_id' => $brand->id,
             ];
 
+            $defaultCurrency = PointRateSettings::select('points')->where('currency_id','=',$request->currency_id)->first();
+            if(empty($defaultCurrency)){
+                $getCurrencyPoints = '10';
+            }else{
+                $getCurrencyPoints = $defaultCurrency->points;
+            }
+            
             // Currencies
             
 
@@ -343,15 +350,42 @@ class ProductController extends Controller
                 $id = Helper::customDecrypt($id);
                 $this->service->update($productData, $id);
 
+                DB::table('products')
+                    ->where('id', $id)
+                    ->update(['currency_id' => $request->currency_id]);
+
                 /*** Product denomination Update *****/
                 $denomi = explode(',', $request->denominations);
                 $productDenoData = ProductDenomination::where('product_id', $id)->get();
                 if($productDenoData){
                     $deletedRows = ProductDenomination::where('product_id', $id)->delete();
-                   
+                    /*$productDenoDataf = $productDenoData->toArray();
+                    foreach ($productDenoDataf as $key => $value_d) {
+                        
+                        $denom_Value = $value_d['value'];
+
+                        if (!in_array($denom_Value, $denomi)){
+                            $deletedRows = ProductDenomination::where('id', $value_d['id'])->delete();
+                        }
+                        
+
+                    }*/
+
                 }
                 
-                
+                foreach($denomi as $denoValue){
+                    /*ProductDenomination::updateOrCreate([
+                        'value' => $denoValue,
+                        'points' => (int)$denoValue*(int)$getCurrencyPoints,
+                        'product_id' => $id,
+                    ]);*/
+
+                    ProductDenomination::create([
+                            'value' => $denoValue,
+                            'points' => (((float)$denoValue)*((float)$getCurrencyPoints)),
+                            'product_id' => $id,
+                        ]);
+                }
 
                 /*** Product country Update *****/
 
@@ -371,29 +405,11 @@ class ProductController extends Controller
               
                if(!empty($country_id)){
                     foreach($country_id as $countyid){
-                       
+                        
                         ProductsCountries::create([
                             'product_id'    => $id,
                             'country_id'    => $countyid,
                         ]);
-
-                        $defaultCurrency = PointRateSettings::select('points')->where('country_id','=',$countyid)->first();
-                        if(empty($defaultCurrency)){
-                            $getCurrencyPoints = '10';
-                        }else{
-                            $getCurrencyPoints = $defaultCurrency->points;
-                        }
-
-                        foreach($denomi as $denoValue){
-
-                            ProductDenomination::create([
-                                    'value' => $denoValue,
-                                    'points' => (((float)$denoValue)*((float)$getCurrencyPoints)),
-                                    'country_id' => $countyid,
-                                    'product_id' => $id,
-                                ]);
-                        }
-
                     }
                 }
 
@@ -401,11 +417,17 @@ class ProductController extends Controller
 
             } else if($id === null && $request->action === 'create') {
                 $product = $this->repository->create($productData);
-                /*DB::table('products')
+                DB::table('products')
                     ->where('id', $product->id)
-                    ->update(['currency_id' => $request->currency_id]);*/
+                    ->update(['currency_id' => $request->currency_id]);
                 $denomi = explode(',', $request->denominations);
-                
+                foreach($denomi as $denoValue){
+                    ProductDenomination::updateOrCreate([
+                        'value' => $denoValue,
+                        'points' => (((float)$denoValue)*((float)$getCurrencyPoints)),
+                        'product_id' => $product->id,
+                    ]);
+                }
 
                 /*** Add country ID[Multiple] ****/
                 
@@ -417,22 +439,6 @@ class ProductController extends Controller
                             'product_id'    => $product->id,
                             'country_id'    => $countyid,
                         ]);
-
-                        $defaultCurrency = PointRateSettings::select('points')->where('country_id','=',$countyid)->first();
-                        if(empty($defaultCurrency)){
-                            $getCurrencyPoints = '10';
-                        }else{
-                            $getCurrencyPoints = $defaultCurrency->points;
-                        }
-
-                        foreach($denomi as $denoValue){
-                            ProductDenomination::updateOrCreate([
-                                'value' => $denoValue,
-                                'points' => (((float)$denoValue)*((float)$getCurrencyPoints)),
-                                'product_id' => $product->id,
-                                'country_id' => $countyid,
-                            ]);
-                        }
                     }
                 }
                 

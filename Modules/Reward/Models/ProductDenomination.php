@@ -15,7 +15,7 @@ class ProductDenomination extends Model
 
     protected $presenter = ProgramPresenter::class;
 
-    protected $fillable = [ 'value', 'points', 'product_id', 'country_id'];
+    protected $fillable = [ 'value', 'points', 'product_id' ];
 
 
     /**
