@@ -243,7 +243,7 @@ class UserManageController extends Controller
             $groupCount = Role::where('program_id', $program_id)->where('parent_id', 0)->count();
 
             $ordersCount = ProductOrder::where('status' , 1)->count();
-            $recentFiveOrders = ProductOrder::select('product_orders.id', 'first_name', 'last_name', 'email', 'product_orders.status', 'products.name','product_orders.created_at','product_denominations.value as price', 'product_orders.quantity','product_denominations.points','currencies.code')->where('product_orders.status' , 1)->join('products', 'products.id', '=' ,'product_orders.product_id')->join('product_denominations', 'product_denominations.id', '=' ,'product_orders.denomination_id')->join('currencies', 'currencies.id', '=' ,'products.currency_id')->orderBy('product_orders.id', 'desc')->limit(5)->get();
+            $recentFiveOrders = ProductOrder::select('product_orders.id', 'first_name', 'last_name', 'email', 'product_orders.status', 'products.name','product_orders.created_at','product_denominations.value as price', 'product_orders.quantity','product_orders.value as points','currencies.code')->where('product_orders.status' , 1)->join('products', 'products.id', '=' ,'product_orders.product_id')->join('product_denominations', 'product_denominations.id', '=' ,'product_orders.denomination_id')->join('currencies', 'currencies.id', '=' ,'products.currency_id')->orderBy('product_orders.id', 'desc')->limit(5)->get();
 
             $recentFiveOrders_Arr = array();
             foreach($recentFiveOrders as $key=>$recentOrder){

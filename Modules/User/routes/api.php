@@ -1,5 +1,6 @@
 <?php 
 Route::get('user/user_percentage', 'UserController@feedPieChart');
+Route::get('user/user_page_visits', 'UserController@userPageVisits');
 Route::get('users/{user_id}', 'UserController@show');
 Route::resource('program/{program}/users', 'UserController');
 Route::get('program/all_users/{campaign_id?}', 'UserController@getAllUsers');
@@ -83,3 +84,4 @@ Route::get('user_budget_export', 'UserManageController@UserBudgetExport');
 
 // Password reset by Admin
 Route::post('password-reset', 'UserController@passwordReset');
+

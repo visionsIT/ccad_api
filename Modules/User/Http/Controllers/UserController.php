@@ -989,6 +989,27 @@ class UserController extends Controller
        
     }
 
-    
+    public function userPageVisits(Request $request) {
+		
+		$array = array();
+		$days = 7;
+		$max = 0;
+		for($i=0;$i<$days;$i++)
+		{
+			$date = date("Y-m-d", strtotime($i." days ago"));
+			$from = $date." 00:00:00";
+			$to = $date." 23:59:59";
+			$totalVisit = DB::table('page_visits')->whereBetween('created_at', [$from, $to])->sum('visits_count');
+			$array[$i]['date'] 			= $date;
+			$array[$i]['formated_date'] = date("M d", strtotime($date));
+			$array[$i]['visits'] 		= $totalVisit;
+			
+			if($max < $totalVisit)
+				$max = $totalVisit;
+		}
 
+        return response()->json([ 'status' => true, 'max_visit' => $max, 'data' => $array ], 200);
+		
+    }
+	
 }

@@ -3,6 +3,7 @@
 use League\Fractal\TransformerAbstract;
 use Modules\User\Models\UsersGoalItem;
 use Helper;
+use DB;
 
 class GoalItemTransformer extends TransformerAbstract
 {
@@ -22,7 +23,24 @@ class GoalItemTransformer extends TransformerAbstract
         unset($product_info['id']);
         $product_info['id'] = Helper::customCrypt($product['id']);
 
-        $denomination = $model->product->denominations()->select('id', 'value', 'points')->orderBy('value','ASC')->get()->toArray();
+        $denomination = $model->product->denominations()->select('id', 'value')->orderBy('value','ASC')->get()->toArray();
+
+        $user_country = DB::table('program_users')->select('country_id')->where('id',$model->user_id)->first();
+
+        if(!empty($user_country)){
+            $product_country = DB::table('point_rate_settings')->where('country_id',$user_country->country_id)->first();
+        }
+
+        if(isset($product_country) && !empty($product_country)){
+            $points = $product_country->points;
+        }
+        else{
+            $points = '10';
+        }
+
+        $points = trim($points);
+
+        
 
         $denomination_all = $denomination;
         foreach ($denomination_all as $key1 => $answer) {
@@ -30,7 +48,12 @@ class GoalItemTransformer extends TransformerAbstract
         }
         
         foreach ($denomination as $key => $value) {
-            $denomination_all[$key]['id'] = Helper::customCrypt($value['id']);
+
+            if(is_numeric($value['value']) && is_numeric($points)){
+                $denomination_all[$key]['points']  = round(trim($value['value'])*$points,2);
+                $denomination_all[$key]['id'] = Helper::customCrypt($value['id']);
+            }
+
         }
 
         $data =  [

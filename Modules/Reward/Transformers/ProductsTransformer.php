@@ -53,13 +53,21 @@ class ProductsTransformer extends TransformerAbstract
 
         $productID = Helper::customCrypt($product->id);
 
+        $user = \Auth::user();
+        $user_data = $user_country = DB::table('program_users')->select('country_id')->where('account_id',$user->id)->first();
+
+        $user_country_id = $user_data->country_id;
+
 		if(!empty($user_country_id))
 		{
 			//$denomination = $product->denominations()->select('id', 'value', 'points')->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy(DB::raw("points+0"), 'ASC')->get()->toArray();
             $product_country = DB::table('point_rate_settings')->where('country_id',$user_country_id)->first();
             
+            
 
 		}
+
+        $login_currency = DB::table('countries')->select('id','currency_name as name','currency_code as code')->where('id',$user_country_id)->first();
 		
         $denomination = $product->denominations()->select('id', 'value')->whereRaw('value >= ' . $minValue)->whereRaw('value <= ' . $maxValue)->orderBy(DB::raw("value+0"), 'ASC')->groupby('value')->get()->toArray();
 
@@ -115,7 +123,7 @@ class ProductsTransformer extends TransformerAbstract
             //'country_id' => ProductsCountries::where('product_id',$product->id)->get(),
             'country_id' => $country_data,
             'currency_id' => $product->currency_id,
-            'currency' => $product->currency,
+            'currency' => $login_currency,
             'conversion_rate' => Helper::customCrypt($points),
         ];
 

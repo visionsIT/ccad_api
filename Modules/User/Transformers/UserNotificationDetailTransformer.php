@@ -126,10 +126,12 @@ class UserNotificationDetailTransformer extends TransformerAbstract
                 $datetime = date('M d, Y h:i A', strtotime($model->created_at));
             }
 
+            $country_data = DB::table('countries')->select('currency_code')->where('id',$model->user_order->country_id)->first();
+
             return [
                 'id'                 => Helper::customCrypt($model->id),
                 'order_number'       => 'mrw-00'.$model->user_order->id,
-                'value'              => $model->user_order->product->currency->code.' '.$model->user_order->denomination->value,
+                'value'              => $country_data->currency_code.' '.$model->user_order->denomination->value,
                 'denomination_value' => $model->user_order->denomination->value,
                 'order_value'        => $model->user_order->value,
                 'quantity'           => $model->user_order->quantity,
