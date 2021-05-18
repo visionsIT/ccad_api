@@ -36,6 +36,8 @@ class UserTransformer extends TransformerAbstract
 
         return [
             'id' => Helper::customCrypt($User->id),
+            'decr_account_id' => $User->account_id,
+            'decr_user_id'    => $User->id,
             'name' => $username,
             'email' => filter_var($User->email, FILTER_SANITIZE_EMAIL),
             'username' => $User->username,

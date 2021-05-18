@@ -47,6 +47,8 @@ class AccountTransformer extends TransformerAbstract
 
         return [
             'id'              => $accountID,
+            'decr_account_id' => $account->id,
+            'decr_user_id'    => optional($account->user)->id,
             'name'            => ucfirst($account->user->first_name).' '.ucfirst($account->user->last_name),
             'email'           => $account->email,
             'type'            => $account->type,
