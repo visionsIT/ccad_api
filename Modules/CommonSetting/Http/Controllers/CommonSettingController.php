@@ -79,7 +79,7 @@ class CommonSettingController extends Controller
 
     public function getCurrencies(){
         try{
-            $currency_list = DB::table('countries')->select('id','currency_name as name','currency_code as code')->get();
+            $currency_list = DB::table('countries')->select('id',DB::raw('CONCAT(name, " - ", currency_name) AS name'),'currency_code as code')->get();
             if($currency_list){
                 return response()->json(['data'=>$currency_list, 'message'=>'Get List Successfully.', 'status'=>'success']);exit;
             }else{
@@ -103,7 +103,7 @@ class CommonSettingController extends Controller
 
                 $rules = [
                     'country_id' => 'required|integer|exists:countries,id',
-                    'points' => 'required|numeric||min:1',
+                    'points' => 'required|numeric|gt:0',
                 ];
 
                 $validator = \Validator::make($request->all(), $rules);
@@ -151,7 +151,7 @@ class CommonSettingController extends Controller
 
                 $rules = [
                     'country_id' => 'required|unique:point_rate_settings,country_id|integer|exists:countries,id',
-                    'points' => 'required|numeric||min:1',
+                    'points' => 'required|numeric|gt:0',
                 ];
 
                 $validator = \Validator::make($request->all(), $rules);

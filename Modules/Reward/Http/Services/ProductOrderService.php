@@ -82,7 +82,7 @@ class ProductOrderService
         $message .= "<p>Your order has been confirmed.</p>";
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
-        $message .= "<p><b>City: </b>".$data['city']."</p>";
+        $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";
 
         $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '4', $message);
@@ -137,7 +137,7 @@ class ProductOrderService
         $message .= "<p>Your order has been shipped.</p>";
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
-        $message .= "<p><b>City: </b>".$data['city']."</p>";
+        $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";
 
 
@@ -288,7 +288,7 @@ class ProductOrderService
         $message .= "<p>Your order has been placed.</p>";
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
-        $message .= "<p><b>City: </b>".$data['city']."</p>";
+        $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";
 
         $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null,$order->id, '1', $message);
