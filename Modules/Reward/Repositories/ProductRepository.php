@@ -39,8 +39,11 @@ class ProductRepository extends Repository
     {
 
 
-        $query = $this->modeler->select('products.*', 'products_countries.id as p_countryId')->leftJoin('products_countries', 'products_countries.product_id', '=', 'products.id');
-
+        $query = $this->modeler->select('products.*', 'products_countries.id as p_countryId')
+		->leftJoin('products_countries', 'products_countries.product_id', '=', 'products.id')
+		->leftJoin('product_catalogs', 'product_catalogs.id', '=', 'products.catalog_id');
+		
+		$query->where("product_catalogs.status",'1'); 
         //$query = $this->modeler->where("name", 'like', '%'.$keyword.'%');
         $query->where("products.name", 'like', '%'.$keyword.'%');
 

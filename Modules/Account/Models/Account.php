@@ -135,7 +135,7 @@ class Account extends Authenticatable
                 }
             }
 
-            $campaign_type = ValueSet::select('id','name')->where('status', '1')->get();
+            $campaign_type = ValueSet::select('id','campaign_slug')->where('status', '1')->get();
             $finalArray = [];
             foreach($campaign_type as $campaign){
 
@@ -144,33 +144,33 @@ class Account extends Authenticatable
                 if(!empty($camSett)){
                     if($camSett->s_eligible_user_option == '0'){
                         #all_users
-                        $finalArray[$campaign->name] = '1';
+                        $finalArray[$campaign->campaign_slug] = '1';
                     }else if($camSett->s_eligible_user_option == '1'){
                         #levelwise
                         if($max_role_id == 3){
                             if($camSett->s_level_option_selected == '1' || $camSett->s_level_option_selected == '2'){
-                                $finalArray[$campaign->name] = '1';
+                                $finalArray[$campaign->campaign_slug] = '1';
                             }else{
-                                $finalArray[$campaign->name] = '0';
+                                $finalArray[$campaign->campaign_slug] = '0';
                             }
                         }else if($max_role_id == 2){//L1
                             if($camSett->s_level_option_selected == '0' || $camSett->s_level_option_selected == '2'){
-                                $finalArray[$campaign->name] = '1';
+                                $finalArray[$campaign->campaign_slug] = '1';
                             }else{
-                                $finalArray[$campaign->name] = '0';
+                                $finalArray[$campaign->campaign_slug] = '0';
                             }
                         }else{
-                            $finalArray[$campaign->name] = '0';
+                            $finalArray[$campaign->campaign_slug] = '0';
                         }
 
                     }else if($camSett->s_eligible_user_option == '2'){
                         #multiplt_user_groups
-                        $usereligibility = 0;
+                        $usereligibility = '0';
                         if($camSett->s_user_ids != null){
 
                             $get_user_ids = $camSett->s_user_ids;
                             $userIds = explode(',',$get_user_ids);
-                            if (in_array($id, $userIds)) {
+                            if (in_array($check_user->id, $userIds)) {
                                 $usereligibility = '1';
                             }
 
@@ -189,17 +189,17 @@ class Account extends Authenticatable
                             }
 
                         }
-                        $finalArray[$campaign->name] = $usereligibility;
+                        $finalArray[$campaign->campaign_slug] = $usereligibility;
 
                     }else{
-                        $finalArray[$campaign->name] = '0';
+                        $finalArray[$campaign->campaign_slug] = '0';
                     }
 
                 }#endif_camsett
 
 
             }#foreach_ends
-            $all_campaign[] = $finalArray;
+            $all_campaign = $finalArray;
 
         }
 
