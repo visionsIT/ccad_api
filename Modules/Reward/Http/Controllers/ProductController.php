@@ -346,7 +346,8 @@ class ProductController extends Controller
                 $this->service->update($productData, $id);
 
                 /*** Product denomination Update *****/
-                $denomi = explode(',', $request->denominations);
+                //$denomi = explode(',', $request->denominations);
+                $denominations = $request->denominations;
                 $productDenoData = ProductDenomination::where('product_id', $id)->get();
                 if($productDenoData){
                     $deletedRows = ProductDenomination::where('product_id', $id)->delete();
@@ -399,6 +400,7 @@ class ProductController extends Controller
                     }
                 }
 				
+				/*
 				if(!empty($denomi))
 				{
 					foreach($denomi as $denoValue){
@@ -408,7 +410,20 @@ class ProductController extends Controller
 						]);
                     }
 				}	
-
+				*/
+				
+				if(!empty($denominations))
+				{
+					$denominationArray = json_decode($denominations);
+					foreach($denominationArray as $denoValue){
+						ProductDenomination::updateOrCreate([
+							'value' => $denoValue->denomination,
+							'price' => round($denoValue->price,2),
+							'product_id' => $id,
+						]);
+					}
+				}
+				
                 $str = "Product has been updated successfully.";
 
             } else if($id === null && $request->action === 'create') {
@@ -416,7 +431,8 @@ class ProductController extends Controller
                 /*DB::table('products')
                     ->where('id', $product->id)
                     ->update(['currency_id' => $request->currency_id]);*/
-                $denomi = explode(',', $request->denominations);
+                //$denomi = explode(',', $request->denominations);
+                $denominations = $request->denominations;
                 
                 /*** Add country ID[Multiple] ****/
                 
@@ -448,7 +464,7 @@ class ProductController extends Controller
 						*/
                     }
                 }
-                
+                /*
 				if(!empty($denomi))
 				{
 					foreach($denomi as $denoValue){
@@ -458,7 +474,20 @@ class ProductController extends Controller
 						]);
 					}
 				}
-						
+				*/	
+				
+				if(!empty($denominations))
+				{
+					$denominationArray = json_decode($denominations);
+					foreach($denominationArray as $denoValue){
+						ProductDenomination::updateOrCreate([
+							'value' => $denoValue->denomination,
+							'price' => round($denoValue->price,2),
+							'product_id' => $product->id,
+						]);
+					}
+				}
+				
                 $str = "Product has been added successfully.";
             }
             return response()->json([ 'message' => $str ]);
@@ -565,4 +594,23 @@ class ProductController extends Controller
             return response()->json(['message' => 'Something get wrong! Please try again.', 'errors' => $th->getMessage()], 402);
         }
     }
+	
+	public function mappProductPrice()
+    {
+		$productData = ProductDenomination::whereNull('price')->get();
+		//echo '<pre>'; print_r($productData->toArray()); die;
+		if(!empty($productData))
+		{
+			foreach($productData as $prod)
+			{
+				set_time_limit(600);
+				$array = array();
+				$array['price'] = trim(round($prod->value,2));				
+				ProductDenomination::where(array('id' => $prod->id))->update($array);
+			}
+			
+			echo 'done';
+		}
+    }
+	
 }

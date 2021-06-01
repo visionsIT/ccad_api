@@ -69,7 +69,7 @@ class ProductsTransformer extends TransformerAbstract
 
         //$login_currency = DB::table('countries')->select('id','currency_name as name','currency_code as code')->where('id',$user_country_id)->first();
 		
-        $denomination = $product->denominations()->select('id', 'value')->whereRaw('value >= ' . $minValue)->whereRaw('value <= ' . $maxValue)->orderBy(DB::raw("value+0"), 'ASC')->groupby('value')->get()->toArray();
+        $denomination = $product->denominations()->select('id', 'value','price')->whereRaw('value >= ' . $minValue)->whereRaw('value <= ' . $maxValue)->orderBy(DB::raw("value+0"), 'ASC')->groupby('value')->get()->toArray();
 
 
         if(isset($product_country) && !empty($product_country)){
@@ -87,7 +87,7 @@ class ProductsTransformer extends TransformerAbstract
         $denomination_final= array();
         foreach ($denomination as $key => $value) {
             if(is_numeric(trim($value['value'])) && is_numeric($points)){
-                $denomination_all[$key]['points']  = round(trim($value['value'])*$points,2);
+                $denomination_all[$key]['points']  = round(trim($value['price'])*$points,2);
                 $denomination_all[$key]['id'] = Helper::customCrypt($value['id']);
             }
         }

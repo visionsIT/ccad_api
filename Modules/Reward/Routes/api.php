@@ -68,3 +68,4 @@ Route::get('denominationCountries', 'ProductOrderController@denominationCountrie
 Route::get('denominationMultipleCountries', 'ProductOrderController@denominationMultipleCountries');
 
 Route::get('mappProductOrderData', 'ProductOrderController@mappProductOrderData');
+Route::get('mappProductPrice', 'ProductController@mappProductPrice');
