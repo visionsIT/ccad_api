@@ -68,8 +68,9 @@ class RewardsExports implements FromCollection, WithHeadings
                         #get_one_country_because_for_all_countries_same_denominations_Added
                         $getCountriesFirst = DB::table('products_countries')->select('country_id')->where('product_id', $value->id)->first();
                         //$getDenominations = DB::table('product_denominations')->select('value')->where(['product_id'=>$value->id,'country_id'=>$getCountriesFirst->country_id])->get();
-                        $getDenominations = DB::table('product_denominations')->select('value')->where(['product_id'=>$value->id])->orderBy(DB::raw("value+0"), 'ASC')->groupby('value')->get();
+                        $getDenominations = DB::table('product_denominations')->select('value','price')->where(['product_id'=>$value->id])->orderBy(DB::raw("value+0"), 'ASC')->groupby('value')->get();
                         $denominationList = '';
+                        $priceList = '';
                         if(count($getDenominations)>0){
                             foreach ($getDenominations as $keyd => $valued) {
                                 if($denominationList == ''){
@@ -77,9 +78,16 @@ class RewardsExports implements FromCollection, WithHeadings
                                 } else {
                                     $denominationList = $denominationList.', '.$valued->value;
                                 }
+								
+								if($priceList == ''){
+                                    $priceList = $valued->value;
+                                } else {
+                                    $priceList = $priceList.', '.$valued->price;
+                                }
                             }
                         }
                         $getRewardsList[$key]->denominations = $denominationList;                    
+                        $getRewardsList[$key]->price = $priceList;                    
                     }
                 }
             return $getRewardsList;
@@ -91,6 +99,6 @@ class RewardsExports implements FromCollection, WithHeadings
      */
     public function headings(): array
     {
-        return ['#', 'Name', 'Image', 'SKU', 'Type', 'Validity', 'Description', 'Terms & Condition',  'Brand',  'Category',  'Sub Category', 'Status', 'Country', 'Denominations',];
+        return ['#', 'Name', 'Image', 'SKU', 'Type', 'Validity', 'Description', 'Terms & Condition',  'Brand',  'Category',  'Sub Category', 'Status', 'Country', 'Denominations','Price'];
     }
 }

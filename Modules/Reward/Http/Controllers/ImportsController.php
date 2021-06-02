@@ -111,11 +111,11 @@ class ImportsController extends Controller
                 $addedProduct = Product::create([
                     'sku' => ($product[0]!="")?$product[0]:'',
                     'name' => ($product[4]!="")?$product[4]:'',
-                    'image' => ($product[10]!="")?strtolower($product[10]):'no-image',
-                    'type' => $product[6],
-                    'validity' => $product[7] ?? '',
-                    'description' => ($product[8] != '')?$product[8]:'',
-                    'terms_conditions' => ($product[9] != '')?$product[9]:'',
+                    'image' => ($product[11]!="")?strtolower($product[11]):'no-image',
+                    'type' => $product[7],
+                    'validity' => $product[8] ?? '',
+                    'description' => ($product[9] != '')?$product[9]:'',
+                    'terms_conditions' => ($product[10] != '')?$product[10]:'',
                     'quantity' => 'available',
                     'value' => 0,
                     'base_price' => 0,
@@ -125,14 +125,14 @@ class ImportsController extends Controller
                     'catalog_id' => $catalog->id,
                     'category_id' => $subCategory->id,
                     'brand_id' => $brand->id,
-                    'currency_id' => $product[14],
+                    'currency_id' => $product[15],
                 ]);
 				
 				// for single country
 				/*
                 ProductsCountries::create([
                     'product_id' => $addedProduct->id,
-                    'country_id' => $product[13],
+                    'country_id' => $product[14],
                 ]);
 				
                 $defaultCurrency = PointRateSettings::select('points')->where('currency_id','=',$product[14])->first();
@@ -155,8 +155,8 @@ class ImportsController extends Controller
 				*/
 				
 				// for multiple country
-				if($product[13]!=""){
-                    $countriesArray = explode(',', $product[13]);
+				if($product[14]!=""){
+                    $countriesArray = explode(',', $product[14]);
                     foreach($countriesArray as $countryValue){
                         ProductsCountries::create([
 							'product_id' => $addedProduct->id,
@@ -187,11 +187,15 @@ class ImportsController extends Controller
 				
 				if($product[5]!=""){
 					$denomi = explode(',', $product[5]);
+					$priceArray = explode(',', $product[6]);
+					$k = 0;
 					foreach($denomi as $denoValue){
 						ProductDenomination::create([
-							'value' => $denoValue,
+							'value' => trim($denoValue),
+							'price' => (isset($priceArray[$k])) ? trim($priceArray[$k]) : false,
 							'product_id' => $addedProduct->id,
 						]);
+						$k++;
 					}
 				}
 				

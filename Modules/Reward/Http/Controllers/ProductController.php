@@ -170,7 +170,7 @@ class ProductController extends Controller
         }
 
         $products =  $this->repository->searchAdvance($keyword, $categoryId, $minValue, $maxvalue, $subcategoryId, $productIds, $brandIds, 'searchAd', $adminCall, $order, $col, $country_id);
-        if($pid != '' && $pid == 1){
+        if($pid != '' && $pid == 1){			
             $param = [
                 'search' => $keyword,
                 'column' => ($col)?$col:'id',
@@ -188,7 +188,6 @@ class ProductController extends Controller
                 'file_path' => url($responsePath),
             ]);
         } else {
-
             return fractal($products, new ProductsTransformer);
         }
     }

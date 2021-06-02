@@ -44,7 +44,7 @@ class ProductOrderService
         //$order = $this->repository->find($id);
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
-        $actual_val = ProductDenomination::withTrashed()->select('value')->where('id',$order->denomination_id)->first();
+        $actual_val = ProductDenomination::withTrashed()->select('value','price')->where('id',$order->denomination_id)->first();
 
         if($order->country_id != Null || $order->country_id != '' || $order->country_id != 'Null'){
             $currency = DB::table('countries')->select('currency_code as code')->where('id',$order->country_id)->first();
@@ -53,6 +53,7 @@ class ProductOrderService
         }
         
         $value = $currency->code.' '.$actual_val->value;
+        $price = $currency->code.' '.$actual_val->price;
 
         if ($order->status !== 1) {
             return FALSE;
@@ -69,12 +70,14 @@ class ProductOrderService
             'country'    => $order->country,
             'product_name'     => $order->product->name,
             'value'    => $value,
+            'price'    => $price,
+            'point'    => $order->value,
             'quantity' => $order->quantity,
             'order_number' => 'ccad-00'.$order->id,
         ];
         
         $emailcontent["template_type_id"] =  '4';
-        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country']);
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country'],$data['price'],$data['point']);
         $emailcontent["email_to"] = $data["email"];
         $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -82,6 +85,8 @@ class ProductOrderService
         $message .= "<p>Your order has been confirmed.</p>";
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
+        $message .= "<p><b>Price: </b>".$data['price']."</p>";
+        $message .= "<p><b>Points: </b>".$data['point']."</p>";
         $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";
 
@@ -100,13 +105,14 @@ class ProductOrderService
         //$order = $this->repository->find($id);
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
-        $actual_val = ProductDenomination::withTrashed()->select('value')->where('id',$order->denomination_id)->first();
+        $actual_val = ProductDenomination::withTrashed()->select('value','price')->where('id',$order->denomination_id)->first();
         if($order->country_id != Null || $order->country_id != '' || $order->country_id != 'Null'){
             $currency = DB::table('countries')->select('currency_code as code')->where('id',$order->country_id)->first();
         }else{
             $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         }
         $value = $currency->code.' '.$actual_val->value;
+        $price = $currency->code.' '.$actual_val->price;
 
         if ($order->status !== 2) {
             return FALSE;
@@ -122,14 +128,16 @@ class ProductOrderService
             'country'    => $order->country,
             'product_name'     => $order->product->name,
             'value'    => $value,
+            'price'    => $price,
+			'point'    => $order->value,
             'quantity' => $order->quantity,
             'order_number' => 'ccad-00'.$order->id,
         ];
         
         $emailcontent["template_type_id"] =  '5';
-        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country']);
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country'],$data['price'],$data['point']);
         $emailcontent["email_to"] = $data["email"];
-        $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+        //$emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
         //Mail::send(new OrderShipping($order, $order->account, $order->product));
 
@@ -137,10 +145,12 @@ class ProductOrderService
         $message .= "<p>Your order has been shipped.</p>";
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
+        $message .= "<p><b>Price: </b>".$data['price']."</p>";
+		$message .= "<p><b>Points: </b>".$data['point']."</p>";
         $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";
 
-
+echo $message; die;
         $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '3', $message);
 
         return TRUE;
@@ -155,7 +165,7 @@ class ProductOrderService
     {
         //$order = $this->repository->find($id);
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
-        $actual_val = ProductDenomination::withTrashed()->select('value')->where('id',$order->denomination_id)->first();
+        $actual_val = ProductDenomination::withTrashed()->select('value','price')->where('id',$order->denomination_id)->first();
 
         if($order->country_id != Null || $order->country_id != '' || $order->country_id != 'Null'){
             $currency = DB::table('countries')->select('currency_code as code')->where('id',$order->country_id)->first();
@@ -163,6 +173,7 @@ class ProductOrderService
             $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         }
         $value = $currency->code.' '.$actual_val->value;
+        $price = $currency->code.' '.$actual_val->price;
 
         if ($order->status === 3 || $order->status === -1) {
             return FALSE;
@@ -190,12 +201,14 @@ class ProductOrderService
             'username' => $order->first_name.' '. $order->last_name,
             'product_name'     => $order->product->name,
             'value'    => $value,
+            'price'    => $price,
+			'point'    => $order->value,
             'quantity' => $order->quantity,
             'order_number' => 'ccad-00'.$order->id,
         ];
 
         $emailcontent["template_type_id"] =  '6';
-        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value']);
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['price'],$data['point']);
         $emailcontent["email_to"] = $data["email"];
         $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -205,7 +218,9 @@ class ProductOrderService
         $message .= "<p>We have to cancel your order because the product is out of stock.</p>";
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
-
+        $message .= "<p><b>Price: </b>".$data['price']."</p>";
+		$message .= "<p><b>Points: </b>".$data['point']."</p>";
+		
         $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '2', $message);
 
         return TRUE;
@@ -253,13 +268,14 @@ class ProductOrderService
         //$order = $this->repository->find($id);
         $order = ProductOrder::with(['product','product.currency'])->where('id',$id)->first();
 
-        $actual_val = ProductDenomination::select('value')->where('id',$order->denomination_id)->first();
+        $actual_val = ProductDenomination::select('value','price')->where('id',$order->denomination_id)->first();
         if($order->country_id != Null || $order->country_id != '' || $order->country_id != 'Null'){
             $currency = DB::table('countries')->select('currency_code as code')->where('id',$order->country_id)->first();
         }else{
             $currency = DB::table('currencies')->select('code')->where('id',$order->product->currency_id)->first();
         }
         $value = $currency->code.' '.$actual_val->value;
+        $price = $currency->code.' '.$actual_val->price;
 
         if ($order->status !== 1) {
             return FALSE;
@@ -276,11 +292,13 @@ class ProductOrderService
             'country'    => $order->country,
             'product_name'     => $order->product->name,
             'value'    => $value,
+            'price'    => $price,
+            'point'    => $order->value,
             'quantity' => $order->quantity,
             'order_number' => 'ccad-00'.$order->id,
         ];
         $emailcontent["template_type_id"] =  '3';
-        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country']);
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country'],$data['price'],$data['point']);
         $emailcontent["email_to"] = $data["email"];
         $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -288,6 +306,8 @@ class ProductOrderService
         $message .= "<p>Your order has been placed.</p>";
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
+        $message .= "<p><b>Price: </b>".$data['price']."</p>";
+        $message .= "<p><b>Points: </b>".$data['point']."</p>";
         $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";
 

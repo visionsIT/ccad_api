@@ -123,8 +123,8 @@ class ProductOrderController extends Controller
             $denominationID = $request->value;
             $conversion_rate = $request->conversion_rate;*/
             $country_id = $request->country_id;
-            $get_points = ProductDenomination::select('value')->where('id',$denominationID)->first();
-            $conversion_rate_final = $conversion_rate * $get_points->value;
+            $get_points = ProductDenomination::select('value','price')->where('id',$denominationID)->first();
+            $conversion_rate_final = $conversion_rate * $get_points->price;
             $request['account_id'] = $accountID;
             $request['product_id'] = $productID;
             $request['value'] = $conversion_rate_final;
