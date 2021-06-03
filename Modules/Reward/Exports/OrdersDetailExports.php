@@ -46,6 +46,7 @@ class OrdersDetailExports implements WithHeadings, WithMapping ,FromCollection
             return [
                 'Product Name' => (isset($records->name)) ? $records->name : false,
                 'Order Number' => (isset($records->id)) ? 'ccad-00'.$records->id : false,
+				'Price' => (isset($records->price)) ? $records->code. " " .$records->price : false,
 				'Value' => (isset($records->value)) ? $records->code. " " .$records->value: false,
 				'Points' => (isset($points)) ? $points: false,
 				'Quantity' => (isset($records->quantity)) ? $records->quantity: false,
@@ -67,7 +68,7 @@ class OrdersDetailExports implements WithHeadings, WithMapping ,FromCollection
 	
     public function headings(): array
     {
-        return ['Product Name','Order Number','Value','Points','Quantity','Buyer Name','Buyer Email','Buyer Phone','Is Gift','Address','City','Country','Order Date','Order Status'];
+        return ['Product Name','Order Number','Price','Value','Points','Quantity','Buyer Name','Buyer Email','Buyer Phone','Is Gift','Address','City','Country','Order Date','Order Status'];
     }
 
 	public function collection()
@@ -78,9 +79,10 @@ class OrdersDetailExports implements WithHeadings, WithMapping ,FromCollection
 		$data = ProductOrder::select(
 										'product_orders.first_name','product_orders.last_name','product_orders.email','product_orders.value','product_orders.status','currencies.code',
 										'product_orders.phone','product_orders.is_gift','product_orders.address','product_orders.city','product_orders.country','t1.name',
-										'product_orders.quantity','product_orders.created_at','product_orders.id'
+										'product_orders.quantity','product_orders.created_at','product_orders.id','t2.price'
 									)
 							->leftJoin('products as t1', "t1.id","=","product_orders.product_id")
+							->leftJoin('product_denominations as t2', "t2.id","=","product_orders.denomination_id")
 							->leftJoin('currencies', "currencies.id","=","t1.currency_id");
 							
 		if(isset($id) && !empty($id))

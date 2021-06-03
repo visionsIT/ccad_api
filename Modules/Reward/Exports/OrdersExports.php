@@ -49,6 +49,7 @@ class OrdersExports implements WithHeadings, WithMapping ,FromCollection
                 'Value' => (isset($records->value)) ? $records->code. " " .$records->value: false,
                 'Quantity' => (isset($records->quantity)) ? $records->quantity: false,
                 'Points' => (isset($points)) ? (string)$points: false,
+				'Price' => (isset($records->price)) ? $records->code. " " .$records->price: false,
             ];
         }catch (\Exception $exception){
             throw $exception;
@@ -57,15 +58,16 @@ class OrdersExports implements WithHeadings, WithMapping ,FromCollection
 	
     public function headings(): array
     {
-        return ['Order Number','Order Date','Order Status', 'Employee Name', 'Email','Product Name','Value','Quantity','Points'];
+        return ['Order Number','Order Date','Order Status', 'Employee Name', 'Email','Product Name','Value','Quantity','Points','Price'];
     }
 
 	public function collection()
     {
 		$search = (!empty($this->param) && isset($this->param['q']) && !empty($this->param['q'])) ? $this->param['q'] : false;
 		
-		$data = ProductOrder::select('product_orders.id','product_orders.status','product_orders.first_name','product_orders.last_name','product_orders.email','product_orders.quantity','product_orders.value','product_orders.created_at','t1.name','currencies.code')
+		$data = ProductOrder::select('product_orders.id','product_orders.status','product_orders.first_name','product_orders.last_name','product_orders.email','product_orders.quantity','product_orders.value','product_orders.created_at','t1.name','t2.price','currencies.code')
 							->leftJoin('products as t1', "t1.id","=","product_orders.product_id")
+							->leftJoin('product_denominations as t2', "t2.id","=","product_orders.denomination_id")
 							->leftJoin('currencies', "currencies.id","=","t1.currency_id");
 							
 		if(isset($search) && !empty($search))

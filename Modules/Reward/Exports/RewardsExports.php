@@ -80,7 +80,7 @@ class RewardsExports implements FromCollection, WithHeadings
                                 }
 								
 								if($priceList == ''){
-                                    $priceList = $valued->value;
+                                    $priceList = $valued->price;
                                 } else {
                                     $priceList = $priceList.', '.$valued->price;
                                 }

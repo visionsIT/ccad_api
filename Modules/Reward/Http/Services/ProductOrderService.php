@@ -150,7 +150,6 @@ class ProductOrderService
         $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";
 
-echo $message; die;
         $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '3', $message);
 
         return TRUE;
