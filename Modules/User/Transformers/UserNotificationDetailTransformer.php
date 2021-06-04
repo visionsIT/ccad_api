@@ -133,6 +133,7 @@ class UserNotificationDetailTransformer extends TransformerAbstract
                 'order_number'       => 'mrw-00'.$model->user_order->id,
                 'value'              => $country_data->currency_code.' '.$model->user_order->denomination->value,
                 'denomination_value' => $model->user_order->denomination->value,
+                'denomination_price' => $country_data->currency_code.' '.$model->user_order->denomination->price,
                 'order_value'        => $model->user_order->value,
                 'quantity'           => $model->user_order->quantity,
                 'points'             => (string)$pointss,

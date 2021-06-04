@@ -25,11 +25,16 @@ class GoalItemTransformer extends TransformerAbstract
 
         $denomination = $model->product->denominations()->select('id', 'value')->orderBy('value','ASC')->get()->toArray();
 
-        $user_country = DB::table('program_users')->select('country_id')->where('id',$model->user_id)->first();
+        $product_country = DB::table('point_rate_settings')->where('default_currency','1')->first();
+        if(empty($product_country)){
+            $user_country = DB::table('program_users')->select('country_id')->where('id',$model->user_id)->first();
 
-        if(!empty($user_country)){
-            $product_country = DB::table('point_rate_settings')->where('country_id',$user_country->country_id)->first();
+            if(!empty($user_country)){
+                $product_country = DB::table('point_rate_settings')->where('country_id',$user_country->country_id)->first();
+            }
         }
+
+        
 
         if(isset($product_country) && !empty($product_country)){
             $points = $product_country->points;

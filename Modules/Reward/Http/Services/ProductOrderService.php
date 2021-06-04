@@ -77,7 +77,7 @@ class ProductOrderService
         ];
         
         $emailcontent["template_type_id"] =  '4';
-        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country'],$data['price'],$data['point']);
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country'],$data['price'],$data['quantity'],$data['point']);
         $emailcontent["email_to"] = $data["email"];
         $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -86,6 +86,7 @@ class ProductOrderService
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
         $message .= "<p><b>Price: </b>".$data['price']."</p>";
+        $message .= "<p><b>Quantity: </b>".$data['quantity']."</p>";
         $message .= "<p><b>Points: </b>".$data['point']."</p>";
         $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";
@@ -135,7 +136,7 @@ class ProductOrderService
         ];
         
         $emailcontent["template_type_id"] =  '5';
-        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country'],$data['price'],$data['point']);
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country'],$data['price'],$data['quantity'],$data['point']);
         $emailcontent["email_to"] = $data["email"];
         //$emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -146,6 +147,7 @@ class ProductOrderService
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
         $message .= "<p><b>Price: </b>".$data['price']."</p>";
+        $message .= "<p><b>Quantity: </b>".$data['quantity']."</p>";
 		$message .= "<p><b>Points: </b>".$data['point']."</p>";
         $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";
@@ -207,7 +209,7 @@ class ProductOrderService
         ];
 
         $emailcontent["template_type_id"] =  '6';
-        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['price'],$data['point']);
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['price'],$data['quantity'],$data['point']);
         $emailcontent["email_to"] = $data["email"];
         $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -218,6 +220,7 @@ class ProductOrderService
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
         $message .= "<p><b>Price: </b>".$data['price']."</p>";
+        $message .= "<p><b>Quantity: </b>".$data['quantity']."</p>";
 		$message .= "<p><b>Points: </b>".$data['point']."</p>";
 		
         $saveNotification = $this->notification_service->creat_notification($order->account_id,Null,Null, $order->id, '2', $message);
@@ -297,7 +300,7 @@ class ProductOrderService
             'order_number' => 'ccad-00'.$order->id,
         ];
         $emailcontent["template_type_id"] =  '3';
-        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country'],$data['price'],$data['point']);
+        $emailcontent["dynamic_code_value"] = array($data['username'],$data['product_name'],$data['value'],$data['city'],$data['country'],$data['price'],$data['quantity'],$data['point']);
         $emailcontent["email_to"] = $data["email"];
         $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
@@ -306,6 +309,7 @@ class ProductOrderService
         $message .= "<p><b>Product Name: </b>".$data['product_name']."</p>";
         $message .= "<p><b>Value: </b>".$data['value']."</p>";
         $message .= "<p><b>Price: </b>".$data['price']."</p>";
+        $message .= "<p><b>Quantity: </b>".$data['quantity']."</p>";
         $message .= "<p><b>Points: </b>".$data['point']."</p>";
         $message .= "<p><b>State: </b>".$data['city']."</p>";
         $message .= "<p><b>Country: </b>".$data['country']."</p>";

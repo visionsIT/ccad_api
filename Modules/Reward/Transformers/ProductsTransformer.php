@@ -16,8 +16,6 @@ class ProductsTransformer extends TransformerAbstract
      */
     public function transform(Product $product): array
     {  
-		$user_country_id = (isset($_GET['country_id']) && !empty($_GET['country_id'])) ? $_GET['country_id'] : false;
-       
 	   /* if ($handle = opendir( public_path().'/storage/products_img/')) {
             while (false !== ($fileName = readdir($handle))) {
                 $newName = strtolower($fileName);
@@ -53,20 +51,27 @@ class ProductsTransformer extends TransformerAbstract
 
         $productID = Helper::customCrypt($product->id);
 
-        $user = \Auth::user();
-        $user_data = $user_country = DB::table('program_users')->select('country_id')->where('account_id',$user->id)->first();
+        $product_country = DB::table('point_rate_settings')->where('default_currency','1')->first();
 
-        $user_country_id = $user_data->country_id;
+        if(empty($product_country)){
+            $user = \Auth::user();
+            $user_data = $user_country = DB::table('program_users')->select('country_id')->where('account_id',$user->id)->first();
 
-		if(!empty($user_country_id))
-		{
-			//$denomination = $product->denominations()->select('id', 'value', 'points')->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy(DB::raw("points+0"), 'ASC')->get()->toArray();
-            $product_country = DB::table('point_rate_settings')->where('country_id',$user_country_id)->first();
-            
-            
+            $user_country_id = $user_data->country_id;
+            if(!empty($user_country_id))
+            {
+                //$denomination = $product->denominations()->select('id', 'value', 'points')->whereRaw('points >= ' . $minValue)->whereRaw('points <= ' . $maxValue)->orderBy(DB::raw("points+0"), 'ASC')->get()->toArray();
+                $product_country = DB::table('point_rate_settings')->where('country_id',$user_country_id)->first();
+                
+                
 
-		}
+            }
+        }else{
+            $user_country_id = $product_country->country_id;
+        }
 
+
+        
         //$login_currency = DB::table('countries')->select('id','currency_name as name','currency_code as code')->where('id',$user_country_id)->first();
 		
         $denomination = $product->denominations()->select('id', 'value','price')->whereRaw('value >= ' . $minValue)->whereRaw('value <= ' . $maxValue)->orderBy(DB::raw("value+0"), 'ASC')->groupby('value')->get()->toArray();

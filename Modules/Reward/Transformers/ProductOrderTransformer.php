@@ -2,6 +2,7 @@
 
 use League\Fractal\TransformerAbstract;
 use Modules\Reward\Models\ProductOrder;
+use Modules\Reward\Models\ProductDenomination;
 use Modules\User\Models\ProgramUsers;
 use Modules\Program\Models\Countries;
 use DB;
@@ -35,12 +36,14 @@ class ProductOrderTransformer extends TransformerAbstract
         $pointss = $ProductOrder->value / $ProductOrder->quantity;
 
         $Country = Countries::where('id',$ProductOrder->country_id)->first('currency_code')->toArray();
+
 		
         return [
             'id'         => $ProductOrderID,
             'order_number'=> 'ccad-00'.$ProductOrder->id,
             //'value'      => $ProductOrder->product->currency->code.' '.$ProductOrder->order_denomination->value,
             'value'      => $Country['currency_code'].' '.$ProductOrder->order_denomination->value,
+            'price'      => $Country['currency_code'].' '.$ProductOrder->order_denomination->price,
             'denomination_value' =>$ProductOrder->order_denomination->value,
             'order_value'=> $ProductOrder->value,
             'quantity'   => $ProductOrder->quantity,

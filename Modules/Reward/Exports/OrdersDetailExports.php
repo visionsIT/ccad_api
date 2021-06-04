@@ -46,10 +46,10 @@ class OrdersDetailExports implements WithHeadings, WithMapping ,FromCollection
             return [
                 'Product Name' => (isset($records->name)) ? $records->name : false,
                 'Order Number' => (isset($records->id)) ? 'ccad-00'.$records->id : false,
-				'Price' => (isset($records->price)) ? $records->code. " " .$records->price : false,
 				'Value' => (isset($records->value)) ? $records->code. " " .$records->value: false,
-				'Points' => (isset($points)) ? $points: false,
+				'Price' => (isset($records->price)) ? $records->code. " " .$records->price : false,
 				'Quantity' => (isset($records->quantity)) ? $records->quantity: false,
+				'Points' => (isset($points)) ? $points: false,
 				'Buyer Name' => $first_name ." " .$last_name,
                 'Buyer Email' => (isset($records->email)) ? $records->email: false,
                 'Buyer Phone' => (isset($records->phone)) ? $records->phone: false,
@@ -68,7 +68,7 @@ class OrdersDetailExports implements WithHeadings, WithMapping ,FromCollection
 	
     public function headings(): array
     {
-        return ['Product Name','Order Number','Price','Value','Points','Quantity','Buyer Name','Buyer Email','Buyer Phone','Is Gift','Address','City','Country','Order Date','Order Status'];
+        return ['Product Name','Order Number','Value','Price','Quantity','Points','Buyer Name','Buyer Email','Buyer Phone','Is Gift','Address','City','Country','Order Date','Order Status'];
     }
 
 	public function collection()
