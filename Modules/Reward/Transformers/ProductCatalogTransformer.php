@@ -26,7 +26,7 @@ class ProductCatalogTransformer extends TransformerAbstract
         }
         
         $subCateList = [];
-        $subCat = $ProductCatalog->subCategories()->select('id', 'name', 'status')->get()->toArray();
+        $subCat = $ProductCatalog->subCategories()->select('id', 'name', 'status')->where('status','1')->get()->toArray();
         if(count($subCat) > 0){
             foreach ($subCat as $key => $value) {
 
