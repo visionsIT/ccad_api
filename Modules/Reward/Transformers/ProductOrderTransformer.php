@@ -48,6 +48,8 @@ class ProductOrderTransformer extends TransformerAbstract
             'order_value'=> $ProductOrder->value,
             'quantity'   => $ProductOrder->quantity,
             'points'     => (string)$pointss,
+			'delivery_charges'   => $ProductOrder->delivery_charges,
+			'total_price'   => $ProductOrder->total_price,
             'product'    => optional($ProductOrder->product)->name,
             'image'      => optional($ProductOrder->product)->image,
             'name'       => optional($ProductOrder->account)->name,

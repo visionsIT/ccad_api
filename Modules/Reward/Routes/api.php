@@ -69,3 +69,17 @@ Route::get('denominationMultipleCountries', 'ProductOrderController@denomination
 
 Route::get('mappProductOrderData', 'ProductOrderController@mappProductOrderData');
 Route::get('mappProductPrice', 'ProductController@mappProductPrice');
+
+// Qty Slots
+Route::get('qty_slots_list', 'RewardController@QtySlotsList');
+Route::post('add_qty_slots', 'RewardController@AddQtySlot');
+Route::get('get_qty_slots', 'RewardController@GetQtySlotByID');
+Route::post('update_qty_slots', 'RewardController@UpdateQtySlotByID');
+Route::post('delete_qty_slots', 'RewardController@DeleteQtySlotByID');
+
+// Delivery Charges
+Route::get('delivery_charges_list', 'RewardController@DeliveryChargesList');
+Route::post('add_delivery_charges', 'RewardController@AddDeliveryCharges');
+//Route::get('get_delivery_charges', 'RewardController@GetDeliveryChargesByID');
+Route::post('update_delivery_charges', 'RewardController@UpdateDeliveryChargesByID');
+//Route::post('delete_delivery_charges', 'RewardController@DeleteDeliveryChargesByID');

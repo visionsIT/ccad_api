@@ -23,6 +23,8 @@ use Throwable;
 use Modules\User\Models\UsersPoint;
 use Helper;
 use DB;
+use Modules\Reward\Models\QuantitySlot;
+use Modules\Reward\Models\RewardDeliveryCharge;
 
 class ProductOrderController extends Controller
 {
@@ -154,13 +156,48 @@ class ProductOrderController extends Controller
             if ($validator->fails())
                 return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
 
-            $user = ProgramUsers::where('account_id', $request->account_id)->first();
+			$delivery_charges = 0;
+			/*
+			if(!empty($productID))
+			{
+				$slots = DB::table('quantity_slots')
+						->join('reward_delivery_charges', 'quantity_slots.id', '=', 'reward_delivery_charges.slot_id','inner')
+						->join('products', 'products.catalog_id', '=', 'reward_delivery_charges.catalog_id','inner')
+						->select('quantity_slots.id','quantity_slots.name','quantity_slots.min_value','quantity_slots.max_value','quantity_slots.delivery_charges')
+						->where('products.id',$productID)
+						->where('quantity_slots.min_value',"<=",$request->quantity)
+						->where('quantity_slots.max_value',">=",$request->quantity)
+						->first();
+						
+				$delivery_charges = (!empty($slots) && isset($slots->delivery_charges) && !empty($slots->delivery_charges)) ? $slots->delivery_charges * $conversion_rate : 0;
+			}
+			*/
+			
+			if(!empty($productID))
+			{
+				$check = RewardDeliveryCharge::join('products', 'products.catalog_id', '=', 'reward_delivery_charges.catalog_id','inner')
+												->where('products.id',$productID)->exists();
+				if(!empty($check))
+				{
+					$slots = QuantitySlot::where('quantity_slots.min_value',"<=",$request->quantity)
+										 ->where('quantity_slots.max_value',">=",$request->quantity)
+										 ->first();
+										 
+					$delivery_charges = (!empty($slots) && isset($slots->delivery_charges) && !empty($slots->delivery_charges)) ? $slots->delivery_charges * $conversion_rate : 0;
 
+				}						
+			}
+			
+            $user = ProgramUsers::where('account_id', $request->account_id)->first();
             
             $request['value'] = $conversion_rate_final * $request->quantity;
             
+			$request['delivery_charges'] 	= $delivery_charges;
+			$request['total_price'] 		= $request['value'] + $delivery_charges;
+			
             $current_budget_bal = UsersPoint::select('balance')->where('user_id',$user->id)->latest()->first();
-            if($current_budget_bal->balance < $request->value) {
+            //if($current_budget_bal->balance < $request->value)
+			if($current_budget_bal->balance < $request->total_price) {
                 return response()->json(['message' => "You don't have sufficient balance to place this order.", 'errors' => 'Insufficient Balance'], 402);
             }
 
@@ -171,9 +208,10 @@ class ProductOrderController extends Controller
             //
             //        $user_points->update([ 'value' => $new ]);
 
-            $data['value']       = $request->value;
+            //$data['value']       = $request->value;
+            $data['value']       = $request->total_price;
             $data['description'] = '';
-            $data['product_order_id'] = $Category->id;
+            $data['product_order_id'] = $Category->id;			
             $Category->status = true;
             $this->point_service->store($user, $data, '-');
             $this->service->placeOrder($Category->id);

@@ -15,7 +15,7 @@ class AddMoreColumnsToProductOrders extends Migration
     {
         Schema::table('product_orders', function (Blueprint $table) {
             $table->string('delivery_charges')->nullable()->after('value');
-            $table->string('total_value')->nullable()->after('delivery_charges');
+            $table->string('total_price')->nullable()->after('delivery_charges');
         });
     }
 

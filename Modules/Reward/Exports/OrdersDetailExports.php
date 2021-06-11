@@ -50,6 +50,8 @@ class OrdersDetailExports implements WithHeadings, WithMapping ,FromCollection
 				'Price' => (isset($records->price)) ? $records->code. " " .$records->price : false,
 				'Quantity' => (isset($records->quantity)) ? $records->quantity: false,
 				'Points' => (isset($points)) ? $points: false,
+				'Delivery Charges' => (isset($records->delivery_charges)) ? $records->delivery_charges: false,
+				'Total Points' => (isset($records->total_price)) ? $records->total_price: false,
 				'Buyer Name' => $first_name ." " .$last_name,
                 'Buyer Email' => (isset($records->email)) ? $records->email: false,
                 'Buyer Phone' => (isset($records->phone)) ? $records->phone: false,
@@ -68,7 +70,7 @@ class OrdersDetailExports implements WithHeadings, WithMapping ,FromCollection
 	
     public function headings(): array
     {
-        return ['Product Name','Order Number','Value','Price','Quantity','Points','Buyer Name','Buyer Email','Buyer Phone','Is Gift','Address','City','Country','Order Date','Order Status'];
+        return ['Product Name','Order Number','Value','Price','Quantity','Points','Delivery Charges','Total Points','Buyer Name','Buyer Email','Buyer Phone','Is Gift','Address','City','Country','Order Date','Order Status'];
     }
 
 	public function collection()
@@ -78,8 +80,8 @@ class OrdersDetailExports implements WithHeadings, WithMapping ,FromCollection
 		
 		$data = ProductOrder::select(
 										'product_orders.first_name','product_orders.last_name','product_orders.email','product_orders.value','product_orders.status','currencies.code',
-										'product_orders.phone','product_orders.is_gift','product_orders.address','product_orders.city','product_orders.country','t1.name',
-										'product_orders.quantity','product_orders.created_at','product_orders.id','t2.price'
+										'product_orders.phone','product_orders.is_gift','product_orders.address','product_orders.city','product_orders.country','t1.name','t2.price',
+										'product_orders.quantity','product_orders.created_at','product_orders.id','product_orders.delivery_charges','product_orders.total_price'
 									)
 							->leftJoin('products as t1', "t1.id","=","product_orders.product_id")
 							->leftJoin('product_denominations as t2', "t2.id","=","product_orders.denomination_id")

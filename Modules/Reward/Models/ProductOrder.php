@@ -10,7 +10,7 @@ use Modules\Reward\Models\ProductDenomination;
 
 class ProductOrder extends Model
 {
-    protected $fillable = ['value','status','product_id','account_id' , 'first_name' , 'last_name' , 'email' , 'phone' , 'address' , 'city' , 'country' , 'is_gift' , 'comment','quantity','denomination_id', 'country_id','conversion_rate'];
+    protected $fillable = ['value','status','product_id','account_id' , 'first_name' , 'last_name' , 'email' , 'phone' , 'address' , 'city' , 'country' , 'is_gift' , 'comment','quantity','denomination_id', 'country_id','conversion_rate','delivery_charges','total_price'];
 
 
     /**

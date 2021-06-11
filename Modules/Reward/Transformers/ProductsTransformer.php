@@ -5,6 +5,9 @@ use Modules\Reward\Models\Product;
 use Modules\Reward\Models\ProductsCountries;
 use DB;
 use Helper;
+use Modules\Reward\Models\QuantitySlot;
+use Modules\Reward\Models\RewardDeliveryCharge;
+
 class ProductsTransformer extends TransformerAbstract
 {
 
@@ -107,6 +110,44 @@ class ProductsTransformer extends TransformerAbstract
 			$login_currency = DB::table('countries')->select('id','currency_name as name','currency_code as code')->where('id',$user_country_id)->first();
 		}
 
+		/*
+		$slots = array();
+		if(!empty($product->catalog_id))
+		{
+			$slots = DB::table('reward_delivery_charges')
+						->join('quantity_slots', 'quantity_slots.id', '=', 'reward_delivery_charges.slot_id','inner')
+						->select('quantity_slots.id','quantity_slots.name','quantity_slots.min_value','quantity_slots.max_value','quantity_slots.delivery_charges')
+						->where('reward_delivery_charges.catalog_id',$product->catalog_id)
+						->get();
+			if(!empty($slots))
+			{
+				foreach($slots as $key => $slot)
+				{
+					$slots[$key]->id = Helper::customCrypt($slot->id);
+					$slots[$key]->delivery_charges_points = round(trim($slot->delivery_charges)*$points,2);
+				}
+			}
+		}
+		*/
+		
+		$slots = array();
+		if(!empty($product->catalog_id))
+		{
+			$check = RewardDeliveryCharge::where('catalog_id',$product->catalog_id)->exists();
+			if(!empty($check))
+			{
+				$slots = QuantitySlot::get(['quantity_slots.id','quantity_slots.name','quantity_slots.min_value','quantity_slots.max_value','quantity_slots.delivery_charges'])->toArray();
+				if(!empty($slots))
+				{
+					foreach($slots as $key => $slot)
+					{
+						$slots[$key]['id'] = Helper::customCrypt($slot['id']);
+						$slots[$key]['delivery_charges_points'] = round(trim($slot['delivery_charges'])*$points,2);
+					}
+				}
+			}
+		}
+		
         return [
             'id'           => $productID,
             'name'         => $product->name,
@@ -137,6 +178,7 @@ class ProductsTransformer extends TransformerAbstract
             'currency_id' => $product->currency_id,
             'currency' => $login_currency,
             'conversion_rate' => Helper::customCrypt($points),
+			'slots' => $slots
         ];
 
 
