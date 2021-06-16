@@ -25,12 +25,59 @@ use Modules\User\Imports\UserImport;
 use Modules\Reward\Imports\OrderImport;
 use Modules\CommonSetting\Models\PointRateSettings;
 use Helper;
+use Modules\User\Models\UserCampaignsBudget;
+use Modules\User\Models\UserCampaignsBudgetLogs;
 
 class ImportsController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth:api');
+    }
+
+    public function removeBudgets(Request $request){
+        try {
+            $file = $request->file('budget_file');
+            $request->validate([
+                'budget_file' => 'required|file',
+                'campaign_id' => 'required|exists:value_sets,id'
+            ]);
+            $uploaded = $file->move(public_path('uploaded/product_import_file/'), $file->getClientOriginalName());
+            $budget = Excel::toCollection(new CategoryImport(), $uploaded->getRealPath());
+            $budget = $budget[0]->toArray();
+            $count = 0;
+            foreach ($budget as $key => $budget){
+                if($key === 0) continue;
+                
+                $user_id = ProgramUsers::select('id')->where('email',$budget[1])->first();
+
+                if(!empty($user_id)){
+
+                    UserCampaignsBudget::where(['program_user_id'=>$user_id->id,'campaign_id'=>$request->campaign_id])->delete();
+
+                    $createRippleLog = UserCampaignsBudgetLogs::create([
+                                'program_user_id' => $user_id->id,
+                                'campaign_id' => $request->campaign_id,
+                                'budget' => 0,
+                                'current_balance' => 0,
+                                'description' => "Budget removed by admin",
+                                'created_by_id' =>  1446,
+                            ]);
+                }
+                $count++;
+            }
+            return response()->json([
+                'uploaded_file' => url('uploaded/product_import_file/'.$uploaded->getFilename()),
+                'message' => 'Data Imported Successfully',
+                'count'=>$count
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error_message' => $th->getMessage(),
+                'error_line' => $th->getLine(),
+                'error_file' => $th->getFile()
+            ]);
+        }
     }
     public function import(Request $request, $program_id)
     {

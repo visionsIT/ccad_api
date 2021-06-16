@@ -146,7 +146,7 @@ class RewardController extends Controller
 	public function QtySlotsList(Request $request){
         
 		$finalArray = array();
-		$GetQtySlotsList = QuantitySlot::get(['id','name','min_value','max_value','delivery_charges']);
+		$GetQtySlotsList = QuantitySlot::orderBy('id','desc')->get(['id','name','min_value','max_value','delivery_charges']);
 		if(!empty($GetQtySlotsList))
 		{
 			foreach ($GetQtySlotsList as $key => $value) { 

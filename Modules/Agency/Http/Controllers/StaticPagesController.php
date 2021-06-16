@@ -337,20 +337,20 @@ class StaticPagesController extends Controller
             $file_name = $file->getClientOriginalName();
             $file_ext = $file->getClientOriginalExtension();
             if($file_ext == 'jpg' || $file_ext == 'png' || $file_ext == 'jpeg') {
-                $rules = [
-                    'upload'    => 'image|max:5120',
-                ];
+                // $rules = [
+                //     'upload'    => 'image|max:5120',
+                // ];
         
-                $validator = \Validator::make($request->all(), $rules);
+                // $validator = \Validator::make($request->upload, $rules);
         
-                if ($validator->fails()) {
-                    return response()->json([
-                        'error'=>[
-                            "message"=>"Invalid file. The file size is too big.",
-                            "number"=>203
-                        ]
-                    ]);
-                } else {
+                // if ($validator->fails()) {
+                //     return response()->json([
+                //         'error'=>[
+                //             "message"=>"Invalid file. The file size is too big.",
+                //             "number"=>203
+                //         ]
+                //     ]);
+                // } else {
                     $fileInfo = pathinfo($file_name);
                     $filename = $fileInfo['filename'];
                     $imgName = $filename.time().'.'.$file_ext;
@@ -361,7 +361,7 @@ class StaticPagesController extends Controller
                         "uploaded"=>1,
                         "url"=>url('/uploaded/ck_editor_images/'.$imgName)
                     ]);
-                }
+                // }
             } else {
                 return response()->json([
                     'error'=>[

@@ -83,3 +83,5 @@ Route::post('add_delivery_charges', 'RewardController@AddDeliveryCharges');
 //Route::get('get_delivery_charges', 'RewardController@GetDeliveryChargesByID');
 Route::post('update_delivery_charges', 'RewardController@UpdateDeliveryChargesByID');
 //Route::post('delete_delivery_charges', 'RewardController@DeleteDeliveryChargesByID');
+
+Route::post('remove_campaign_budget', 'ImportsController@removeBudgets');

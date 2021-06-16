@@ -1580,7 +1580,7 @@ class CommonSettingController extends Controller
                 $order_data_pdf_filter = ProductOrder::select("*",DB::raw("date(created_at) as date"))->with(["product","denomination"])->whereIn('account_id',$account_id)->whereBetween('created_at', [$from, $to])->orderBy('created_at','asc')->get()->groupBy("date")->toArray();
             }
 
-            $columns = array(ucfirst($pdf_filter),'Product Name','Product Qty','Product Type','Order Status','Points','Name','Phone','Address','City','Country','Created Date');
+            $columns = array(ucfirst($pdf_filter),'Product Name','Product Qty','Product Type','Order Status','Points','Delivery charges','Final points','Name','Phone','Address','City','Country','Created Date');
             $new_csv = fopen(public_path($file_name) , 'w');
             fputcsv($new_csv, $columns);
             foreach($order_data_pdf_filter as $key => $value) {
@@ -1614,7 +1614,7 @@ class CommonSettingController extends Controller
                     else if($value1["status"] == -1){
                         $status = "Cancel";
                     }
-                    fputcsv($new_csv,array("",$value1["product"]["name"],$value1["quantity"],$value1["product"]["type"],$status,$value1["value"],$value1["first_name"]." ".$value1["last_name"],$value1["phone"],$value1["address"],$value1["city"],$value1["country"],$value1["created_at"]));
+                    fputcsv($new_csv,array("",$value1["product"]["name"],$value1["quantity"],$value1["product"]["type"],$status,$value1["value"],$value1["delivery_charges"],$value1["total_price"],$value1["first_name"]." ".$value1["last_name"],$value1["phone"],$value1["address"],$value1["city"],$value1["country"],$value1["created_at"]));
                 }
             }
 
@@ -1623,7 +1623,7 @@ class CommonSettingController extends Controller
         }
         catch(\Throwable $th){
             // return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
-            $columns = array(ucfirst($pdf_filter),'Product Name','Product Qty','Product Type','Order Status','Points','Name','Phone','Address','City','Country','Created Date');
+            $columns = array(ucfirst($pdf_filter),'Product Name','Product Qty','Product Type','Order Status','Points','Delivery charges','Final points','Name','Phone','Address','City','Country','Created Date');
             $file_name = "/reports/product-orders.csv";
             $file_link = env('APP_URL').$file_name;
             $new_csv = fopen(public_path($file_name) , 'w');

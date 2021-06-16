@@ -134,6 +134,8 @@ class UserNotificationDetailTransformer extends TransformerAbstract
                 'value'              => $country_data->currency_code.' '.$model->user_order->denomination->value,
                 'denomination_value' => $model->user_order->denomination->value,
                 'denomination_price' => $country_data->currency_code.' '.$model->user_order->denomination->price,
+                'delivery_charges'   => $model->user_order->delivery_charges,
+                'total_price'       => $model->user_order->total_price,
                 'order_value'        => $model->user_order->value,
                 'quantity'           => $model->user_order->quantity,
                 'points'             => (string)$pointss,
