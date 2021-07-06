@@ -595,9 +595,9 @@ class ProgramController extends Controller
     }
 
 
-    public function getUserList(){
+    public function getUserList(): JsonResponse {
 
-      $user_data =   DB::table('accounts')->select('id','name','email')->get()->toArray();
+      $user_data =   DB::table('accounts')->select('id','name','email')->get();
       
       return response()->json(['status' => 'success', 'message' => 'User list get successfully', 'data' => $user_data],200);
     }

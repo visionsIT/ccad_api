@@ -63,7 +63,7 @@ class StaticPagesController extends Controller
         $requestDescription = json_decode($request->description);
         $welcomeImageData = $requestDescription->welcome_image_data;
         $redeemSectionData = $requestDescription->redeem_section_data;
-        $pageBlocksData = $requestDescription->page_blocks_data;
+        
 
         if($request->hasFile('welcome_image')) {
             $file = $request->file('welcome_image');
@@ -76,22 +76,10 @@ class StaticPagesController extends Controller
             $file->move($destinationPath, $imgName);
             $welcomeImageData->url = url('/uploaded/ck_editor_images/'.$imgName);
         }
+        foreach($redeemSectionData as $key => $value){
 
-        if($request->hasFile('redeem_image')) {
-            $file = $request->file('redeem_image');
-            $file_name = $file->getClientOriginalName();
-            $file_ext = $file->getClientOriginalExtension();
-            $fileInfo = pathinfo($file_name);
-            $filename = $fileInfo['filename'];
-            $imgName = $filename.time().'.'.$file_ext;
-            $destinationPath = public_path('uploaded/ck_editor_images/');
-            $file->move($destinationPath, $imgName);
-            $redeemSectionData->image_url = url('/uploaded/ck_editor_images/'.$imgName);
-        }
-
-        if($request->hasFile('block_images')) {
-            $files = $request->file('block_images');
-            foreach ($files as $file) {
+            if($request->hasFile('redeem_image')) {
+                $file = $request->file('redeem_image');
                 $file_name = $file->getClientOriginalName();
                 $file_ext = $file->getClientOriginalExtension();
                 $fileInfo = pathinfo($file_name);
@@ -99,28 +87,44 @@ class StaticPagesController extends Controller
                 $imgName = $filename.time().'.'.$file_ext;
                 $destinationPath = public_path('uploaded/ck_editor_images/');
                 $file->move($destinationPath, $imgName);
-                $exit = false;
-                foreach($pageBlocksData as $key => $data) {
-                    foreach($data->slides as $key2 => $slide) {
-                        if(!$slide->block_image_url) {
-                            $pageBlocksData[$key]->slides[$key2]->block_image_url = url('/uploaded/ck_editor_images/'.$imgName);
-                            $pageBlocksData[$key]->slides[$key2]->blockfileName = '';
-                            $pageBlocksData[$key]->slides[$key2]->blockImgDisplay = '';
-                            $pageBlocksData[$key]->slides[$key2]->block_image = '';
-                            $exit = true;
+                $redeemSectionData->image_url[] = url('/uploaded/ck_editor_images/'.$imgName);
+            }
+            $pageBlocksData = $value->page_blocks;
+            if($request->hasFile('block_images')) {
+                $files = $request->file('block_images');
+                foreach ($files as $file) {
+                    $file_name = $file->getClientOriginalName();
+                    $file_ext = $file->getClientOriginalExtension();
+                    $fileInfo = pathinfo($file_name);
+                    $filename = $fileInfo['filename'];
+                    $imgName = $filename.time().'.'.$file_ext;
+                    $destinationPath = public_path('uploaded/ck_editor_images/');
+                    $file->move($destinationPath, $imgName);
+                    $exit = false;
+                    
+                    foreach($pageBlocksData as $key => $data) {
+                        foreach($data->slides as $key2 => $slide) {
+                            if(!$slide->block_image_url) {
+                                $pageBlocksData[$key]->slides[$key2]->block_image_url = url('/uploaded/ck_editor_images/'.$imgName);
+                                $pageBlocksData[$key]->slides[$key2]->blockfileName = '';
+                                $pageBlocksData[$key]->slides[$key2]->blockImgDisplay = '';
+                                $pageBlocksData[$key]->slides[$key2]->block_image = '';
+                                $exit = true;
+                                break;
+                            }
+                        }
+                        if($exit) {
                             break;
                         }
-                    }
-                    if($exit) {
-                        break;
                     }
                 }
             }
         }
+
+        
         $description = [
             'welcome_image_data' => $welcomeImageData,
             'redeem_section_data' => $redeemSectionData,
-            'page_blocks_data' => $pageBlocksData,
             'page_html' => $requestDescription->page_html
         ];
 
@@ -206,7 +210,7 @@ class StaticPagesController extends Controller
             $requestDescription = json_decode($request->description);
             $welcomeImageData = $requestDescription->welcome_image_data;
             $redeemSectionData = $requestDescription->redeem_section_data;
-            $pageBlocksData = $requestDescription->page_blocks_data;
+            //$pageBlocksData = $requestDescription->page_blocks_data;
 
             if($request->hasFile('welcome_image')) {
                 $file = $request->file('welcome_image');
@@ -220,21 +224,10 @@ class StaticPagesController extends Controller
                 $welcomeImageData->url = url('/uploaded/ck_editor_images/'.$imgName);
             }
 
-            if($request->hasFile('redeem_image')) {
-                $file = $request->file('redeem_image');
-                $file_name = $file->getClientOriginalName();
-                $file_ext = $file->getClientOriginalExtension();
-                $fileInfo = pathinfo($file_name);
-                $filename = $fileInfo['filename'];
-                $imgName = $filename.time().'.'.$file_ext;
-                $destinationPath = public_path('uploaded/ck_editor_images/');
-                $file->move($destinationPath, $imgName);
-                $redeemSectionData->image_url = url('/uploaded/ck_editor_images/'.$imgName);
-            }
-
-            if($request->hasFile('block_images')) {
-                $files = $request->file('block_images');
-                foreach ($files as $file) {
+            foreach($redeemSectionData as $key => $value){
+            
+                if($request->hasFile('redeem_image')) {
+                    $file = $request->file('redeem_image');
                     $file_name = $file->getClientOriginalName();
                     $file_ext = $file->getClientOriginalExtension();
                     $fileInfo = pathinfo($file_name);
@@ -242,28 +235,44 @@ class StaticPagesController extends Controller
                     $imgName = $filename.time().'.'.$file_ext;
                     $destinationPath = public_path('uploaded/ck_editor_images/');
                     $file->move($destinationPath, $imgName);
-                    $exit = false;
-                    foreach($pageBlocksData as $key => $data) {
-                        foreach($data->slides as $key2 => $slide) {
-                            if(!$slide->block_image_url) {
-                                $pageBlocksData[$key]->slides[$key2]->block_image_url = url('/uploaded/ck_editor_images/'.$imgName);
-                                $pageBlocksData[$key]->slides[$key2]->blockfileName = '';
-                                $pageBlocksData[$key]->slides[$key2]->blockImgDisplay = '';
-                                $pageBlocksData[$key]->slides[$key2]->block_image = '';
-                                $exit = true;
+                    $redeemSectionData->image_url = url('/uploaded/ck_editor_images/'.$imgName);
+                }
+                $pageBlocksData = $value->page_blocks;
+                if($request->hasFile('block_images')) {
+                    $files = $request->file('block_images');
+                    foreach ($files as $file) {
+                        $file_name = $file->getClientOriginalName();
+                        $file_ext = $file->getClientOriginalExtension();
+                        $fileInfo = pathinfo($file_name);
+                        $filename = $fileInfo['filename'];
+                        $imgName = $filename.time().'.'.$file_ext;
+                        $destinationPath = public_path('uploaded/ck_editor_images/');
+                        $file->move($destinationPath, $imgName);
+                        $exit = false;
+                        foreach($pageBlocksData as $key => $data) {
+                            foreach($data->slides as $key2 => $slide) {
+                                if(!$slide->block_image_url) {
+                                    $pageBlocksData[$key]->slides[$key2]->block_image_url = url('/uploaded/ck_editor_images/'.$imgName);
+                                    $pageBlocksData[$key]->slides[$key2]->blockfileName = '';
+                                    $pageBlocksData[$key]->slides[$key2]->blockImgDisplay = '';
+                                    $pageBlocksData[$key]->slides[$key2]->block_image = '';
+                                    $exit = true;
+                                    break;
+                                }
+                            }
+                            if($exit) {
                                 break;
                             }
-                        }
-                        if($exit) {
-                            break;
                         }
                     }
                 }
             }
+
+
             $description = [
                 'welcome_image_data' => $welcomeImageData,
                 'redeem_section_data' => $redeemSectionData,
-                'page_blocks_data' => $pageBlocksData,
+                //'page_blocks_data' => $pageBlocksData,
                 'page_html' => $requestDescription->page_html
             ];
             $update_array =  array('title'=>$request->title,'allies_name'=>$request->allies_name,'page_type'=>$request->page_type,'description'=> json_encode($description),'status'=>$request->status);
