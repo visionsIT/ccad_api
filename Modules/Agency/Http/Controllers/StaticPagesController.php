@@ -5,12 +5,13 @@ namespace Modules\Agency\Http\Controllers;
 use Modules\Agency\Models\StaticPages;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Modules\Agency\Transformers\StaticPagesTransformer;
 
 class StaticPagesController extends Controller
 {
 	public function __construct()
     {
-        $this->middleware('auth:api', ['except' =>['uploadImage','getImages']]);
+        //$this->middleware('auth:api', ['except' =>['uploadImage','getImages']]);
     }
 	
     /**
@@ -153,6 +154,9 @@ class StaticPagesController extends Controller
     {
         $page = StaticPages::where('id', $id)->orWhere('allies_name', $id)->first();
         if($page) {
+
+            //return fractal($page, new StaticPagesTransformer);
+
             return response()->json(['data'=>$page, 'message'=>'Page listed successfully.', 'status'=>'success']);
         } else {
             return response()->json(['message'=>"Something went wrong! Please try after some time.", 'status'=>'error']);
