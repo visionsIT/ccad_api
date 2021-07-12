@@ -23,6 +23,8 @@ use File;
 use Modules\Reward\Models\ProductOrder;
 use Modules\User\Models\ProgramUsers;
 use Carbon\Carbon;
+use Modules\Nomination\Models\UserCampaignRole;
+
 class CommonSettingController extends Controller
 {
     public function __construct(CommonSettingsRepository $common_repository,CommonService $common_service)
@@ -1132,17 +1134,39 @@ class CommonSettingController extends Controller
 
                 if($value["group_id"] != '' && strpos($value["campaignid"]["name"], "Excellence Award") !== false){
 
-                    $l2_admin = DB::table("program_users")
-                                ->select("program_users.first_name","program_users.last_name","program_users.email","users_group_list.id")
-                                ->leftJoin("users_group_list","program_users.account_id","=","users_group_list.account_id")
-                                ->where(["user_group_id" => $value["group_id"],"user_role_id" => '3'])
-                                ->first();
+                    // $l2_admin = DB::table("program_users")
+                    //             ->select("program_users.first_name","program_users.last_name","program_users.email","users_group_list.id")
+                    //             ->leftJoin("users_group_list","program_users.account_id","=","users_group_list.account_id")
+                    //             ->where(["user_group_id" => $value["group_id"],"user_role_id" => '3'])
+                    //             ->first();
 
-                        if(!empty($l2_admin)){
+                    if($value["level_2_approval"] == 1){
+                        $l2_admin = ProgramUsers::where('account_id',$value["l2_approver_account_id"])->first();
+                        if(isset($l2_admin) && !empty($l2_admin)){
                             $l2admin_first_name = $l2_admin->first_name;
                             $l2admin_last_name = $l2_admin->last_name;
                             $l2admin_email = $l2_admin->email;
                         }
+                    }
+                    else if($value["level_2_approval"] == -1){
+                        $l2_admin = ProgramUsers::where('account_id',$value["rajecter_account_id"])->first();
+                        if(isset($l2_admin) && !empty($l2_admin)){
+                            $l2admin_first_name = $l2_admin->first_name;
+                            $l2admin_last_name = $l2_admin->last_name;
+                            $l2admin_email = $l2_admin->email;
+                        }
+                    }
+                    else if($value["level_2_approval"] == 0){
+                        $l2_admin = UserCampaignRole::where(['user_campaign_roles.campaign_id'=>$value['campaign_id'],'user_role_id'=>'3'])->with('programUserData')->first();
+
+                        if(isset($l2_admin) && !empty($l2_admin)){
+                            $l2admin_first_name = $l2_admin->programUserData->first_name;
+                            $l2admin_last_name = $l2_admin->programUserData->last_name;
+                            $l2admin_email = $l2_admin->programUserData->email;
+                        }
+                    }
+
+                        
 
                 }
 
