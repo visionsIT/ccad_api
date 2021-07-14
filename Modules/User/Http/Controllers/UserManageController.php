@@ -171,15 +171,68 @@ class UserManageController extends Controller
      */
     public function export($program_id)
     {
-        $file = Carbon::now()->timestamp.'-AllUserData.csv';
-        // $path = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
-        $path = public_path('uploaded/'.$program_id.'/users/csv/exported/'.$file);
-        // $responsePath = "/export-file/{$program_id}/{$file}";
-        $responsePath = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
-        // Excel::store(new UserExport(), $path);
-        Excel::store(new UserExport(), 'uploaded/'.$program_id.'/users/csv/exported/'.$file, 'real_public');
+        // $file = Carbon::now()->timestamp.'-AllUserData.csv';
+        // // $path = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
+        // $path = public_path('uploaded/'.$program_id.'/users/csv/exported/'.$file);
+        // // $responsePath = "/export-file/{$program_id}/{$file}";
+        // $responsePath = 'uploaded/'.$program_id.'/users/csv/exported/'.$file;
+        // // Excel::store(new UserExport(), $path);
+        // Excel::store(new UserExport(), 'uploaded/'.$program_id.'/users/csv/exported/'.$file, 'real_public');
+        // return response()->json([
+        //     'file_path' => url($responsePath),
+        // ]);
+        
+
+        $file_name = "/reports/AllUserPoints.csv";
+        $file_link = env('APP_URL').$file_name;
+        $columns = ['#','first_name', 'email', 'company', 'job_title', 'country','initial points','added points','spent points', 'point_balance', 'date_of_birth','last_login'];
+        $new_csv = fopen(public_path($file_name) , 'w');
+        fputcsv($new_csv, $columns);
+
+        $data = ProgramUsers::where('is_active', 1)
+                ->select([
+                'program_users.id as id',
+                'program_users.first_name',
+                'program_users.email',
+                'program_users.company',
+                'program_users.job_title',
+                'program_users.country',
+                'program_users.point_balance',
+                'program_users.date_of_birth',
+                DB::raw("DATE_FORMAT(accounts.last_login, '%M %d, %Y %H:%i:%s') as last_login")
+            ])
+            ->join('accounts','program_users.account_id','accounts.id')
+            ->get();
+
+        foreach($data as $key => $value ){
+            // $value->id = '5443';
+            $initial_points = UsersPoint::select('balance')->where('user_id',$value->id)->first();
+            $added_points = UsersPoint::where('user_id',$value->id)->where('value','>','0')->sum('value');
+            $spent_points = UsersPoint::where('user_id',$value->id)->where('value','<','0')->sum('value');
+            $available_points = UsersPoint::select('balance')->where('user_id',$value->id)->orderBy('id','desc')->first();
+
+
+            // echo $available_points->balance;die;
+            if(!isset($initial_points->balance)){
+                $initial_points = '0';
+            }
+            else{
+                $initial_points = $initial_points->balance;
+            }
+
+            if(!isset($available_points->balance)){
+                $available_points = '0';
+            }
+            else{
+                $available_points = $available_points->balance;
+            }
+            
+            fputcsv($new_csv,array($value->id,$value->first_name,$value->email,$value->company,$value->job_title,$value->country,$initial_points,$added_points-$initial_points,str_replace('-','',$spent_points),$available_points,$value->date_of_birth,$value->last_login));
+        }
+
+        fclose($new_csv);
         return response()->json([
-            'file_path' => url($responsePath),
+            'file_path' => $file_link,
         ]);
     }
 
@@ -667,15 +720,101 @@ class UserManageController extends Controller
 		{
 			if(isset($input['campaignID']) && !empty($input['campaignID']))
 			{
-				$file = Carbon::now()->timestamp.'-CampaignUserBudget.xlsx';				
-				$path = public_path('uploaded/campaign/userbudget/'.$file); 
-				$responsePath = 'uploaded/campaign/userbudget/'.$file;  
-				Excel::store(new CampaignUserBudgetExports($input), 'uploaded/campaign/userbudget/'.$file, 'real_public');
-				return response()->json([
-					'file_path' => url($responsePath),
-				]);
+				// $file = Carbon::now()->timestamp.'-CampaignUserBudget.xlsx';				
+				// $path = public_path('uploaded/campaign/userbudget/'.$file); 
+				// $responsePath = 'uploaded/campaign/userbudget/'.$file;  
+				// Excel::store(new CampaignUserBudgetExports($input), 'uploaded/campaign/userbudget/'.$file, 'real_public');
+				// return response()->json([
+				// 	'file_path' => url($responsePath),
+				// ]);
 				
-				//return Excel::download(new CampaignUserBudgetExports($input), $file);
+				// //return Excel::download(new CampaignUserBudgetExports($input), $file);
+                
+                $file_name = "/reports/CampaignUserBudget.csv";
+                $file_link = env('APP_URL').$file_name;
+                $columns = ['#','Employee', 'Mail', 'Initial Points','Edited/Updated','Added Points','Spent Points','Available Points'];
+                $new_csv = fopen(public_path($file_name) , 'w');
+                fputcsv($new_csv, $columns);
+
+                $result = UserCampaignsBudget::select('user_campaigns_budget.*','campaign_settings.budget_type')
+                        ->with(['user'])
+                        ->leftJoin('program_users', 'program_users.id', '=', 'user_campaigns_budget.program_user_id')
+                        ->leftJoin('campaign_settings', 'campaign_settings.campaign_id', '=', 'user_campaigns_budget.campaign_id')
+                        ->where('user_campaigns_budget.campaign_id','=',$request->campaignID)
+                        ->orderBy('program_users.first_name','ASC')
+                        ->get();
+
+                foreach($result as $key => $value){
+
+                    $name = $value->user->first_name." ".$value->user->last_name;
+                    $mail = $value->user->email;
+
+                    // echo "<pre>";print_r($value->toArray());dd();
+
+                    $initial_points = UserCampaignsBudgetLogs::select('budget')->where(['program_user_id'=>$value->program_user_id,'campaign_id'=>$request->campaignID])->first();
+
+                    // $available_points = UserCampaignsBudgetLogs::select('current_balance')->where('program_user_id',$value->program_user_id)->orderBy('id','desc')->first();
+
+                    $available_points = UserCampaignsBudget::select('budget')->where('program_user_id',$value->program_user_id)->orderBy('id','desc')->first();
+
+
+                    $added_points = UserCampaignsBudgetLogs::select('current_balance')->where(['program_user_id'=>$value->program_user_id,'campaign_id'=>$request->campaignID])->sum('budget');
+                    
+                    // if($value->budget_type ==1){
+                    //     $spent_points = UserNomination::where(['account_id'=>$value->user->account_id,'campaign_id'=>$request->campaignID,'point_type'=>'1'])->where(function($query){
+                    //         $query->where(['level_1_approval'=>'2','level_2_approval'=>'2'])->orWhere(function($query1){
+                    //             $query1->where(['level_1_approval'=>'1','level_2_approval'=>'1']);
+                    //         })->orWhere(function($query2){
+                    //             $query2->where(['level_1_approval'=>'2','level_2_approval'=>'1']);
+                    //         })->orWhere(function($query3){
+                    //             $query3->where(['level_1_approval'=>'1','level_2_approval'=>'2']);
+                    //         });
+                    //     })->sum('points');
+                    // }else{
+                    //     $spent_points = 0;
+                    // }
+                        
+                    $spent_points = UserCampaignsBudgetLogs::select('current_balance')->where(['program_user_id'=>$value->program_user_id,'campaign_id'=>$request->campaignID])->where('description', 'LIKE', "%deduction%")->sum('budget');
+                    if(empty($spent_points)){
+                        $spent_points = 0;
+                    }
+
+
+
+
+                    if(!isset($initial_points->budget)){
+                        $initial_points = '0';
+                    }
+                    else{
+                        $initial_points = $initial_points->budget;
+                    }
+
+
+                    if(!isset($available_points->budget)){
+                        $available_points = '0';
+                    }
+                    else{
+                        $available_points = $available_points->budget;
+                    }
+                    
+                    $add_points  = str_replace('-','',$added_points-$initial_points-$spent_points);
+                    if($add_points+$initial_points-$spent_points != $available_points){
+                        $edited_points = $add_points;
+                        $add_points = 0;
+                    }
+                    else{
+                        $edited_points = 0;
+                    }
+
+                    fputcsv($new_csv,array($value->user->account_id,$name,$mail,$initial_points,$edited_points,$add_points,$spent_points,$available_points));
+                }
+                fclose($new_csv);
+
+                return response()->json([
+                    'file_path' => $file_link,
+                ]);
+
+
 			}
 			else
 			{

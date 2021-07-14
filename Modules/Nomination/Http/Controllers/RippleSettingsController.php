@@ -501,10 +501,10 @@ class RippleSettingsController extends Controller
                     //}
 
                     if($request->send_type == 'schedule'){
-                        $dateTime = \Carbon\Carbon::parse($request->schedule_date.' '.date("h:i:sa"))->format('Y-m-d H:i:s');
+                        $dateTime = \Carbon\Carbon::parse($request->schedule_date.' '.$request->schedule_time)->format('Y-m-d H:i:s');
                         $timeone = $request->timezone;
                     }else{
-                        $dateTime = \Carbon\Carbon::parse($request->schedule_date.' '.$request->schedule_time)->format('Y-m-d H:i:s');
+                        $dateTime = \Carbon\Carbon::parse($request->schedule_date.' '.date("h:i:sa"))->format('Y-m-d H:i:s');
                         $timeone = Null;
                     }
                     
@@ -647,16 +647,19 @@ class RippleSettingsController extends Controller
                         ];
                         try {
 
-                            $link_to_ecard = $data['link_to_ecard'];        
-                            $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
-                            $emailcontent["template_type_id"] =  '7';
-                            $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
-                            $emailcontent["email_to"] = $data["email"];
-                            $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
+                            if($request->send_type == 'instant'){
+                                $link_to_ecard = $data['link_to_ecard'];        
+                                $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
+                                $emailcontent["template_type_id"] =  '7';
+                                $emailcontent["dynamic_code_value"] = array($data['username'],$data['sendername'],$link_to_ecard,$data['card_title']);
+                                $emailcontent["email_to"] = $data["email"];
+                                $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
-                            $mail_content = "<p>You have received an E-Card from ".$data['sendername']." </p>";
+                                $mail_content = "<p>You have received an E-Card from ".$data['sendername']." </p>";
 
-                            $saveNotification = $this->notification_service->creat_notification($sendToUser->account_id,$senderUser->account_id, $user_nomination_data->id, Null, '5', $mail_content);
+                                $saveNotification = $this->notification_service->creat_notification($sendToUser->account_id,$senderUser->account_id, $user_nomination_data->id, Null, '5', $mail_content);
+                            }
+                            
 
                             DB::commit();
                         } catch (\Exception $e) {

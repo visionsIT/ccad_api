@@ -3249,7 +3249,7 @@ public function updateLevelOne(Request $request, $id): JsonResponse
 
         if(!empty($pending_ecards)){
             foreach($pending_ecards as $timezone=>$timezoneData){
-                if($timezone == ''){
+                if($timezone == '' || $timezone == Null || $timezone == 'Null' || $timezone == 'undefined'){
                     $timezone = 'Asia/Dubai';
                 }
 
@@ -3261,6 +3261,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                     $plus5_min_time = Date("Y-m-d H:i:s", strtotime("5 minutes", strtotime($current_time)));
 
                     if (($ecards->send_datetime >= $select_timezone) && ($ecards->send_datetime <= $plus5_min_time)){
+
+
+                        #change_status_sent
+                        UsersEcards::where('id',$ecards->id)->update(['sent_status'=>'1']);
 
                         $image_url = [
                             'banner_img_url' => env('APP_URL')."/img/emailBanner.jpg",
@@ -3286,6 +3290,8 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                             'link_to_ecard' => $new_img_path
                         ];
 
+                        $user_nomination_data = UserNomination::where('ecard_id',$ecards->id)->first();
+
                         $link_to_ecard = $data['link_to_ecard'];
                         $link_to_ecard = "<a href=".$link_to_ecard.">Click here</a> to view your E-Card.";
                         $emailcontent["template_type_id"] = '7';
@@ -3293,8 +3299,10 @@ public function updateLevelOne(Request $request, $id): JsonResponse
                         $emailcontent["email_to"] = $data["email"];
                         $emaildata = Helper::emailDynamicCodesReplace($emailcontent);
 
-                        #change_status_sent
-                        UsersEcards::where('id',$ecards->id)->update(['sent_status'=>'1']);
+                        $mail_content = "<p>You have received an E-Card from ".$data['sendername']." </p>";
+                        $saveNotification = $this->notification_service->creat_notification($sendToUser->account_id,$senderUser->account_id, $user_nomination_data->id, Null, '5', $mail_content);
+
+                        
                     }
 
                 }#foreach_ends
