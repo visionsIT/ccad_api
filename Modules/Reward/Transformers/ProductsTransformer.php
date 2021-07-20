@@ -7,6 +7,8 @@ use DB;
 use Helper;
 use Modules\Reward\Models\QuantitySlot;
 use Modules\Reward\Models\RewardDeliveryCharge;
+use Modules\User\Models\ProgramUsers;
+
 
 class ProductsTransformer extends TransformerAbstract
 {
@@ -93,13 +95,20 @@ class ProductsTransformer extends TransformerAbstract
         }
         
         $denomination_final= array();
-        foreach ($denomination as $key => $value) {
-            if(is_numeric(trim($value['value'])) && is_numeric($points)){
-                $denomination_all[$key]['points']  = round(trim($value['price'])*$points,2);
-                $denomination_all[$key]['id'] = Helper::customCrypt($value['id']);
+        $user_data = \Auth::user();
+        $user = ProgramUsers::where('account_id',$user_data->id)->with('currencyConversion')->first();
+        
+            foreach ($denomination as $key => $value) {
+                if(is_numeric(trim($value['value'])) && is_numeric($points)){
+                    if(isset($user->currencyConversion->conversion)){
+                        $denomination_all[$key]['points']  = round(trim($value['price'])*$points,2)*$user->currencyConversion->conversion;
+                    }
+                    else{
+                        $denomination_all[$key]['points']  = round(trim($value['price'])*$points,2);
+                    }
+                    $denomination_all[$key]['id'] = Helper::customCrypt($value['id']);
+                }
             }
-        }
-
 		$login_currency = array();
 		$string = strtolower($product->catalog->name);
 		if (strpos($string, 'international') !== false) {

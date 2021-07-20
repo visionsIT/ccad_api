@@ -24,6 +24,9 @@ use Modules\Reward\Models\ProductOrder;
 use Modules\User\Models\ProgramUsers;
 use Carbon\Carbon;
 use Modules\Nomination\Models\UserCampaignRole;
+use Modules\CommonSetting\Models\CurrencyConversion;
+use Modules\CommonSetting\Transformers\CurrencyConversionTransformer;
+
 
 class CommonSettingController extends Controller
 {
@@ -1704,6 +1707,13 @@ class CommonSettingController extends Controller
 
     }
 
+
+
+
+
+    // *********************************Currency Conversion****************************************//
+
+    
     public function popularRewardCsv(Request $request){
         try{
             $from = $request['from'] . ' 00:00:01';
@@ -1747,4 +1757,116 @@ class CommonSettingController extends Controller
             return response()->json(['message' => 'No record found', 'status'=>'success', 'link' =>$file_link]);
         }
     }
+
+
+
+    public function addCurrencyConversion(Request $request){
+        try{
+
+            $rules = [
+                'from_currency' => 'required|integer|exists:countries,id',
+                'to_currency'   => 'required|integer|exists:countries,id',
+                'conversion'    => 'required|numeric'
+            ];
+            $validator = \Validator::make($request->all(), $rules);
+            if ($validator->fails())
+            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+            $from = $request->from_currency;
+            $to = $request->to_currency;
+            $conversion = $request->conversion;
+
+            if($from == $to){
+                return response()->json(['message' => 'Can not converts into same currency.','status' => 'error', 'errors' => []], 409);
+            }
+
+            $check = CurrencyConversion::where(['from_currency'=>$from,'to_currency' => $to])->count();
+            if($check > 0){
+                return response()->json(['message' => 'Dplicate entry.','status' => 'error', 'errors' => []], 409);
+            }
+
+            $insert_data = [
+                'from_currency' => $from,
+                'to_currency'   => $to,
+                'conversion'    => $conversion
+            ];
+
+            CurrencyConversion::create($insert_data);
+            return response()->json(['message' => 'Conversion successfully added.','status' => 'success', 'errors' => []], 200);
+
+        }
+        catch(\Throwable $th){
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
+        }
+    }
+
+
+
+    public function updateCurrencyConversion(Request $request){
+        try{
+
+            $rules = [
+                'from_currency' => 'required|integer|exists:countries,id',
+                'to_currency'   => 'required|integer|exists:countries,id',
+                'conversion'    => 'required|numeric',
+                'conversion_id'  => 'required|numeric|exists:currency_conversion,id'
+            ];
+            $validator = \Validator::make($request->all(), $rules);
+            if ($validator->fails())
+            return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+            
+            $from = $request->from_currency;
+            $to = $request->to_currency;
+            if($from == $to){
+                return response()->json(['message' => 'Can not converts into same currency.','status' => 'error', 'errors' => []], 409);
+            }
+            
+            $check = CurrencyConversion::where(['from_currency'=>$from,'to_currency' => $to])->where('id',"!=",$request->conversion_id)->count();
+            if($check > 0){
+                return response()->json(['message' => 'Dplicate entry.','status' => 'error', 'errors' => []], 409);
+            }
+
+            $data = CurrencyConversion::find($request->conversion_id);
+            $data->from_currency = $request->from_currency;
+            $data->to_currency = $request->to_currency;
+            $data->conversion = $request->conversion;
+            $data->save();
+
+            return response()->json(['message' => 'Conversion updated successfully.','status' => 'success', 'errors' => []], 200);
+
+        }
+        catch(\Throwable $th){
+            return response()->json(['message' => 'Something get wrong! Please try again.', 'status'=>'error', 'errors' => $th->getMessage()]);
+        }
+    }
+
+
+
+    public function currencyConversionList(){
+        $data = CurrencyConversion::where('status','!=','0')->get();
+        return fractal($data, new CurrencyConversionTransformer());
+    }
+
+
+
+    public function currencyConversionStatus(Request $request){
+        $rules = [
+            'status' => 'required|in:1,2,0',
+            'conversion_id'     => 'required|integer|exists:currency_conversion,id'
+        ];
+        $validator = \Validator::make($request->all(), $rules);
+        if($validator->fails())
+        return response()->json(['message' => 'The given data was invalid.', 'errors' => $validator->errors()], 422);
+
+        $data = CurrencyConversion::find($request->conversion_id);
+        $data->status = $request->status;
+        $data->save();
+
+        return response()->json(['message' => 'Conversion updated successfully.','status' => 'success', 'error' => []], 200);
+    }
+
+
+
+
+
 }

@@ -51,3 +51,10 @@ Route::post('emailSettings/status','EmailTemplatesController@emailTemplateStatus
 
 Route::post('emailSettings/saveEmailTemplateContent', 'EmailTemplatesController@saveDynamicEmailContent');
 Route::get('emailSettings/getEmailTemplate/{template_id}', 'EmailTemplatesController@getEmailTemplateByID');
+
+// *********************Currency Conversion*****************************//
+Route::post('add-currency-conversion','CommonSettingController@addCurrencyConversion');
+Route::post('update-currency-conversion','CommonSettingController@updateCurrencyConversion');
+Route::get('currency-conversion-list','CommonSettingController@currencyConversionList');
+Route::post('currency-conversion-status','CommonSettingController@currencyConversionStatus');
+
