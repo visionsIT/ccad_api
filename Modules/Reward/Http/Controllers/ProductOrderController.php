@@ -25,6 +25,8 @@ use Helper;
 use DB;
 use Modules\Reward\Models\QuantitySlot;
 use Modules\Reward\Models\RewardDeliveryCharge;
+use Modules\CommonSetting\Models\CurrencyConversion;
+
 
 class ProductOrderController extends Controller
 {
@@ -133,6 +135,15 @@ class ProductOrderController extends Controller
             $request['denomination_id'] = $denominationID;
             $request['conversion_rate'] = $conversion_rate_final;
             $request['country_id'] = $country_id;
+            
+
+            $conversion = ProgramUsers::where('account_id',$accountID)->with('CurrencyConversion')->first();
+
+            if(isset($conversion->CurrencyConversion->conversion)){
+                $conversion_rate_final = $conversion_rate_final*$conversion->CurrencyConversion->conversion;
+                $request['currency_conversion'] = $conversion->CurrencyConversion->conversion;
+            }
+
 
             $rules = [
                 'value'      => 'required|numeric',
