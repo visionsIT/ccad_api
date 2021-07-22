@@ -116,7 +116,8 @@ class ProductsTransformer extends TransformerAbstract
 		}
 		else
 		{
-			$login_currency = DB::table('countries')->select('id','currency_name as name','currency_code as code')->where('id',$user_country_id)->first();
+			// $login_currency = DB::table('countries')->select('id','currency_name as name','currency_code as code')->where('id',$user_country_id)->first();
+            $login_currency = DB::table('countries')->select('id','currency_name as name','currency_code as code')->where('id',$user->country_id)->first();
 		}
 
 		/*
